@@ -204,6 +204,215 @@ h6 {
   animation: fos-pulse 0.45s ease-out;
 }
 
+/* Wardrobe Equity — aligned with gallery typography & chrome */
+.equity-page {
+  margin-top: 60px;
+  max-width: 960px;
+  margin-left: auto;
+  margin-right: auto;
+  padding: 0 28px 48px;
+  box-sizing: border-box;
+  min-height: 100vh;
+  background: #ffffff;
+  color: #1a1a1a;
+  font-family: "Inter", "DM Sans", sans-serif;
+}
+
+.equity-page-title {
+  font-family: "Playfair Display", "Cormorant Garamond", Georgia, serif;
+  font-size: 2.8rem;
+  font-weight: 600;
+  letter-spacing: -0.04em;
+  margin: 0 0 8px;
+}
+
+.equity-page-lede {
+  margin: 0 0 28px;
+  font-size: 0.92rem;
+  color: #64748b;
+  max-width: 560px;
+  line-height: 1.5;
+}
+
+.equity-stat-grid {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 28px;
+}
+
+.equity-stat-card {
+  flex: 1 1 220px;
+  padding: 20px 22px;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  background: #ffffff;
+  box-sizing: border-box;
+}
+
+.equity-stat-label {
+  font-size: 9px;
+  font-family: "Inter", sans-serif;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: #64748b;
+}
+
+.equity-stat-value {
+  font-family: "Cormorant Garamond", "Playfair Display", serif;
+  font-size: 1.85rem;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  margin-top: 8px;
+  color: #1a1a1a;
+}
+
+.equity-stat-sub {
+  font-size: 0.8rem;
+  color: #64748b;
+  margin-top: 4px;
+}
+
+.equity-panel {
+  margin-bottom: 32px;
+  padding: 24px;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  background: #ffffff;
+  box-sizing: border-box;
+}
+
+.equity-section-title {
+  font-family: "Playfair Display", "Cormorant Garamond", Georgia, serif;
+  font-size: 1.25rem;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  margin: 0 0 6px;
+  color: #1a1a1a;
+}
+
+.equity-section-lede {
+  margin: 0 0 16px;
+  font-size: 0.88rem;
+  color: #64748b;
+  line-height: 1.45;
+}
+
+.equity-sim-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-end;
+}
+
+.equity-sim-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.equity-field-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #64748b;
+  font-family: "Inter", sans-serif;
+}
+
+.equity-select,
+.equity-input {
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: #ffffff;
+  color: #1a1a1a;
+  font-size: 0.9rem;
+  font-family: "Inter", sans-serif;
+}
+
+.equity-input {
+  width: 140px;
+  box-sizing: border-box;
+}
+
+.equity-sim-outcome {
+  padding: 10px 0;
+  font-size: 0.95rem;
+  font-family: "Inter", sans-serif;
+}
+
+.equity-sim-cpw {
+  color: #475569;
+}
+
+.equity-sim-hint {
+  color: #64748b;
+  font-size: 0.82rem;
+  margin-left: 8px;
+}
+
+.equity-insight-block {
+  margin-bottom: 36px;
+}
+
+.equity-asset-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.equity-asset-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  background: #ffffff;
+  box-sizing: border-box;
+}
+
+.equity-asset-thumb {
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.equity-asset-thumb--empty {
+  background: #f1f5f9;
+}
+
+.equity-asset-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.equity-asset-name {
+  font-family: "Cormorant Garamond", "Playfair Display", serif;
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: -0.04em;
+  color: #1a1a1a;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.equity-asset-meta {
+  font-size: 0.8rem;
+  color: #64748b;
+  font-family: "Inter", sans-serif;
+  margin-top: 2px;
+}
+
+.equity-empty {
+  color: #64748b;
+  font-size: 0.9rem;
+  margin: 0;
+}
+
 /* Sidebar: hairline only */
 .app-layout-sidebar {
   border-right: 1px solid #f0f0f0 !important;
