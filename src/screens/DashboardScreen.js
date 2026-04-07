@@ -2,6 +2,15 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 
 import { getCostPerWear, getPurchasePriceNum, getWearCount } from "../utils/wardrobeFinance";
 
+function dashboardAgentStatusLine(agentActivity) {
+  if (!agentActivity) return "Agent Status: Idle";
+  if (agentActivity.status === "running") return "Agent Status: Running";
+  const n = Array.isArray(agentActivity.history) ? agentActivity.history.length : 0;
+  if (n === 0) return "Agent Status: Idle";
+  if (n === 1) return "Agent Status: 1 task complete";
+  return `Agent Status: ${n} tasks complete`;
+}
+
 function useDashboardKpis(wardrobe) {
   return useMemo(() => {
     const totalWardrobeValue = wardrobe.reduce((sum, it) => sum + getPurchasePriceNum(it), 0);
@@ -98,7 +107,7 @@ function pickWearSuggestion(wardrobe, weather) {
   return list[0] || null;
 }
 
-export function DashboardScreen({ wardrobe, setActiveNav }) {
+export function DashboardScreen({ wardrobe, setActiveNav, agentActivity }) {
   const kpis = useDashboardKpis(wardrobe);
   const { weather, loading: weatherLoading, error: weatherError, refresh } = useLocalWeather();
   const suggestion = useMemo(() => pickWearSuggestion(wardrobe, weather), [wardrobe, weather]);
@@ -107,6 +116,9 @@ export function DashboardScreen({ wardrobe, setActiveNav }) {
     <div className="dashboard-page">
       <h1 className="dashboard-page-title">The Daily Brief.</h1>
       <p className="dashboard-page-lede">Your wardrobe at a glance — value, efficiency, and one guided move.</p>
+      <p className="dashboard-agent-status" role="status">
+        {dashboardAgentStatusLine(agentActivity)}
+      </p>
 
       <div className="dashboard-kpi-row">
         <div className="dashboard-kpi">

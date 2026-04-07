@@ -314,6 +314,24 @@ export default function App() {
     getAgentStatusTone,
   } = useAgentActivity(activeNav);
 
+  const [agentPanelOpen, setAgentPanelOpen] = useState(() => {
+    try {
+      const raw = localStorage.getItem("fos_agent_panel_open");
+      if (raw == null) return false;
+      return JSON.parse(raw) === true;
+    } catch {
+      return false;
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("fos_agent_panel_open", JSON.stringify(agentPanelOpen));
+    } catch {
+      /* ignore quota */
+    }
+  }, [agentPanelOpen]);
+
   const [agentInsights, setAgentInsights] = useAgentInsights();
 
   const fileRef = useRef(null);
@@ -1313,7 +1331,13 @@ export default function App() {
   return (
     <>
       <AppLayoutSidebarDataProvider profile={profile} wardrobe={wardrobe} events={events}>
-        <AppLayout activeNav={activeNav} setActiveNav={setActiveNav}>
+        <AppLayout
+          activeNav={activeNav}
+          setActiveNav={setActiveNav}
+          agentPanelOpen={agentPanelOpen}
+          onToggleAgentPanel={() => setAgentPanelOpen((o) => !o)}
+          agentActivity={agentActivity}
+        >
         <header
           style={{
             position: "sticky",
@@ -1379,7 +1403,7 @@ export default function App() {
 
         <main style={mergeStyles(ui.contentWrap, { flex: 1, padding: "32px 32px 48px", minWidth: 0 })}>
           {activeNav === "dashboard" && (
-            <DashboardScreen wardrobe={wardrobe} setActiveNav={setActiveNav} />
+            <DashboardScreen wardrobe={wardrobe} setActiveNav={setActiveNav} agentActivity={agentActivity} />
           )}
 
           {activeNav === "wardrobe" && (
@@ -1610,6 +1634,8 @@ export default function App() {
         agentActivity={agentActivity}
         formatDuration={formatDuration}
         getAgentStatusTone={getAgentStatusTone}
+        agentPanelOpen={agentPanelOpen}
+        setAgentPanelOpen={setAgentPanelOpen}
       />
     </>
   );

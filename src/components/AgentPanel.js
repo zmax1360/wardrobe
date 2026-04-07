@@ -6,8 +6,7 @@ import { ui } from "../styles/ui";
 import { mergeStyles } from "../utils/styleUtils";
 import { AgentMap } from "./AgentMap";
 
-export function AgentPanel({ agentActivity, formatDuration, getAgentStatusTone }) {
-  const [agentPanelOpen, setAgentPanelOpen] = useState(true);
+export function AgentPanel({ agentActivity, formatDuration, getAgentStatusTone, agentPanelOpen, setAgentPanelOpen }) {
   const [agentPanelMinimized, setAgentPanelMinimized] = useState(false);
   const [agentPanelPosition, setAgentPanelPosition] = useState({ x: 24, y: 150 });
   const [isDraggingAgentPanel, setIsDraggingAgentPanel] = useState(false);
@@ -98,42 +97,6 @@ export function AgentPanel({ agentActivity, formatDuration, getAgentStatusTone }
 
   return (
     <>
-      {!agentPanelOpen ? (
-        <button
-          type="button"
-          onClick={() => {
-            setAgentPanelOpen(true);
-            setAgentPanelMinimized(false);
-          }}
-          style={mergeStyles(ui.primaryButton, {
-            position: "fixed",
-            right: 20,
-            bottom: 20,
-            zIndex: 1400,
-            minHeight: 56,
-            padding: "14px 18px",
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 10,
-            boxShadow: "0 16px 40px rgba(32, 26, 23, 0.18)",
-          })}
-        >
-          <span style={{ fontSize: 18, lineHeight: 1 }}>◎</span>
-          <span>Agent Activity</span>
-          {agentActivity.status === "running" ? (
-            <span
-              style={{
-                width: 10,
-                height: 10,
-                borderRadius: 999,
-                background: "#FFFFFF",
-                display: "inline-block",
-              }}
-            />
-          ) : null}
-        </button>
-      ) : null}
-
       {agentPanelOpen ? (
         <div
           style={mergeStyles(ui.panel, ui.floatingPanel, {

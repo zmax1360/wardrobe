@@ -17,7 +17,7 @@ export function AppLayoutSidebarDataProvider({ profile, wardrobe, events, childr
   );
 }
 
-export function AppLayout({ activeNav, setActiveNav, children }) {
+export function AppLayout({ activeNav, setActiveNav, children, agentPanelOpen, onToggleAgentPanel, agentActivity }) {
   const ctx = useContext(AppLayoutSidebarDataContext);
   const profile = ctx?.profile;
   const profileIcon =
@@ -157,7 +157,32 @@ export function AppLayout({ activeNav, setActiveNav, children }) {
             );
           })}
         </div>
-        <div style={{ marginTop: "auto", display: "flex", flexDirection: "column", alignItems: "center", gap: 6, marginBottom: 16, width: "100%" }}>
+        <div
+          style={{
+            marginTop: "auto",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 6,
+            marginBottom: 16,
+            width: "100%",
+          }}
+        >
+          <button
+            type="button"
+            className="app-layout-activity-btn"
+            title={agentPanelOpen ? "Hide agent activity" : "Show agent activity"}
+            aria-pressed={agentPanelOpen === true}
+            onClick={() => onToggleAgentPanel?.()}
+          >
+            <span className="app-layout-activity-icon" aria-hidden>
+              ◎
+            </span>
+            <span className="app-layout-activity-label">Activity</span>
+            {agentActivity?.status === "running" ? (
+              <span className="app-layout-activity-running-dot" title="Agent running" />
+            ) : null}
+          </button>
           <button
             type="button"
             title="Sign out"
