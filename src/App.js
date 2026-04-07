@@ -269,7 +269,7 @@ export default function App() {
   const [draft, setDraft] = useState(defaultProfile);
 
   const [activeNav, setActiveNav] = useState("wardrobe");
-  const { wardrobe, addItem, updateItem, removeItem } = useWardrobe(hydrated);
+  const { wardrobe, setWardrobe, addItem, updateItem, removeItem } = useWardrobe(hydrated, firebaseUser);
   const [events, setEvents] = useState(() => {
     const e = loadJson(STORAGE_EVENTS, []);
     return Array.isArray(e) ? e : [];
