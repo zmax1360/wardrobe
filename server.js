@@ -1,3 +1,9 @@
+/**
+ * Wardrobe item schema (client / Firestore) — financial fields:
+ * purchasePrice (number), wearCount (int), purchaseDate (ISO date string),
+ * expectedLifespan (int, days). Derived: costPerWear = purchasePrice / max(wearCount, 1).
+ * Legacy: cost (string), timesWorn (int) — mirrored on migrate.
+ */
 const express = require("express");
 const multer = require("multer");
 const cors = require("cors");
@@ -36,6 +42,20 @@ app.delete("/api/delete-image/:filename", (req, res) => {
   const filePath = path.join(uploadDir, req.params.filename);
   if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
   res.json({ ok: true });
+});
+
+/** Mock product link ingestion — replace with headless scrape / affiliate API */
+app.post("/api/mock-product-link", (req, res) => {
+  const url = req.body && typeof req.body.url === "string" ? req.body.url.trim() : "";
+  if (!url) return res.status(400).json({ error: "url required" });
+  const hash = Math.abs(url.split("").reduce((a, c) => a + c.charCodeAt(0), 0));
+  const price = 49 + (hash % 200);
+  res.json({
+    title: "Imported piece (mock)",
+    price,
+    imageUrl: `https://picsum.photos/seed/srv${hash}/400/520`,
+    sourceUrl: url,
+  });
 });
 
 app.listen(PORT, () => console.log(`Image server running on port ${PORT}`));

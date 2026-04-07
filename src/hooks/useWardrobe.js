@@ -17,13 +17,47 @@ function loadWardrobeFromStorage() {
 }
 
 function stripWardrobeForStorage(items) {
-  return items.map(({ id, name, category, color, style, season, tags,
-    material, description, laundryStatus, timesWorn, cost,
-    purchaseDate, imagePreview, imageFilename }) => ({
-    id, name, category, color, style, season, tags,
-    material, description, laundryStatus, timesWorn, cost,
-    purchaseDate, imagePreview, imageFilename,
-  }));
+  return items.map(
+    ({
+      id,
+      name,
+      category,
+      color,
+      style,
+      season,
+      tags,
+      material,
+      description,
+      laundryStatus,
+      purchasePrice,
+      wearCount,
+      purchaseDate,
+      expectedLifespan,
+      timesWorn,
+      cost,
+      imagePreview,
+      imageFilename,
+    }) => ({
+      id,
+      name,
+      category,
+      color,
+      style,
+      season,
+      tags,
+      material,
+      description,
+      laundryStatus,
+      purchasePrice,
+      wearCount,
+      purchaseDate,
+      expectedLifespan,
+      timesWorn,
+      cost,
+      imagePreview,
+      imageFilename,
+    })
+  );
 }
 
 /** Firestore rejects `undefined`; JSON round-trip drops undefined keys on plain data. */

@@ -1,9 +1,21 @@
 import React, { useState } from "react";
 
+import { FINANCE } from "../styles/financeTheme";
 import { COLORS, baseTransition } from "../styles/theme";
 import { type } from "../styles/typography";
 import { ui } from "../styles/ui";
 import { mergeStyles } from "../utils/styleUtils";
+import { getCostPerWear, getPurchasePriceNum, getWearCount } from "../utils/wardrobeFinance";
+
+/** Mood board cell span pattern (repeat) */
+const MOOD_SPANS = [
+  { c: 2, r: 2 },
+  { c: 1, r: 1 },
+  { c: 1, r: 1 },
+  { c: 1, r: 2 },
+  { c: 2, r: 1 },
+  { c: 1, r: 1 },
+];
 
 export function WardrobeScreen({
   profile: _profile,
@@ -12,7 +24,13 @@ export function WardrobeScreen({
   agentInsights: _agentInsights,
   handlers,
 }) {
-  const [showEquity, setShowEquity] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [addTab, setAddTab] = useState("photo");
+  const [storeLink, setStoreLink] = useState("");
+  const [linkLoading, setLinkLoading] = useState(false);
+  const [removeBgNext, setRemoveBgNext] = useState(false);
+  const modalFileRef = React.useRef(null);
+
   const {
     fileRef,
     onFileChange,
@@ -29,230 +47,239 @@ export function WardrobeScreen({
     openEdit,
     removeItem,
     categories,
+    ingestFromMockLink,
+    addWardrobeFromFile,
   } = handlers;
+
+  const handleModalFile = (e) => {
+    const f = e.target.files?.[0];
+    e.target.value = "";
+    if (f) addWardrobeFromFile(f, { removeBg: removeBgNext });
+    setShowAddModal(false);
+    setRemoveBgNext(false);
+  };
+
+  const submitLink = async () => {
+    setLinkLoading(true);
+    try {
+      await ingestFromMockLink(storeLink);
+      setStoreLink("");
+      setShowAddModal(false);
+    } catch (err) {
+      alert(err?.message || "Could not import link");
+    } finally {
+      setLinkLoading(false);
+    }
+  };
 
   return (
     <>
-      <input ref={fileRef} type="file" accept="image/*" style={{ display: "none" }} onChange={onFileChange} />
-
-      <div
-        onDragOver={(e) => e.preventDefault()}
-        onDrop={onDrop}
-        onClick={() => !analyzing && fileRef.current?.click()}
-        style={mergeStyles(ui.softPanel, {
-          border: `1px dashed ${analyzing ? COLORS.textMuted : COLORS.primary}`,
-          padding: "36px 28px",
-          textAlign: "center",
-          marginBottom: 32,
-          cursor: analyzing ? "wait" : "pointer",
-          opacity: analyzing ? 0.85 : 1,
-          transition: baseTransition,
-        })}
-      >
-        {analyzing ? (
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
-            <div
-              style={{
-                width: 36,
-                height: 36,
-                border: `3px solid ${COLORS.border}`,
-                borderTopColor: COLORS.primary,
-                borderRadius: "50%",
-                animation: "fosSpin 0.8s linear infinite",
-              }}
-            />
-            <style>{`@keyframes fosSpin { to { transform: rotate(360deg); } }`}</style>
-            <span style={{ color: COLORS.textMuted }}>Analyzing image…</span>
-          </div>
-        ) : (
-          <>
-            <div style={{ fontSize: "1.5rem", marginBottom: 8 }}>＋</div>
-            <div style={{ fontWeight: 600, marginBottom: 6 }}>Drop a photo or click to upload</div>
-            <div style={{ color: COLORS.textMuted, fontSize: "0.88rem" }}>
-              JPEG, PNG, WebP — AI vision cataloging
-            </div>
-          </>
-        )}
-      </div>
-      {uploadError && (
-        <div
-          style={{
-            color: "#e8a0a0",
-            fontSize: "0.88rem",
-            marginTop: -16,
-            marginBottom: 20,
-          }}
-        >
-          {uploadError}
-        </div>
-      )}
+      <input ref={fileRef} type="file" accept="image/*" style={{ display: "none" }} onChange={(e) => onFileChange(e)} />
 
       <div
         style={{
-          display: "flex",
-          flexWrap: "wrap",
-          gap: 16,
-          marginBottom: 20,
-          fontSize: "0.88rem",
-          color: COLORS.textMuted,
+          background: FINANCE.bg,
+          color: FINANCE.text,
+          fontFamily: "'Inter', 'DM Sans', sans-serif",
+          minHeight: 400,
         }}
       >
-        <span>
-          <strong style={{ color: COLORS.text }}>{stats.total}</strong> items
-        </span>
-        <span>·</span>
-        <span>
-          Clean <strong style={{ color: COLORS.text }}>{stats.clean}</strong>
-        </span>
-        <span>·</span>
-        <span>
-          Dirty <strong style={{ color: COLORS.text }}>{stats.dirty}</strong>
-        </span>
-        <span>·</span>
-        <span>
-          In wash <strong style={{ color: COLORS.text }}>{stats.wash}</strong>
-        </span>
-        <button
-          type="button"
-          onClick={() => setShowEquity((v) => !v)}
-          style={{
-            marginLeft: "auto",
-            padding: "7px 16px",
-            borderRadius: 999,
-            border: `1px solid ${showEquity ? COLORS.accent : COLORS.border}`,
-            background: showEquity ? COLORS.accent : "transparent",
-            color: showEquity ? "#fff" : COLORS.textMuted,
-            fontSize: "0.82rem",
-            fontWeight: 600,
-            cursor: "pointer",
-            fontFamily: "'DM Sans', sans-serif",
-            letterSpacing: "0.02em",
-          }}
-        >
-          {showEquity ? "◀ Wardrobe" : "Equity Report ▶"}
-        </button>
-      </div>
-
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
-        {["All", ...categories].map((c) => {
-          const on = catFilter === c;
-          return (
-            <button
-              key={c}
-              type="button"
-              onClick={() => setCatFilter(c)}
-              style={{
-                padding: "6px 12px",
-                borderRadius: 999,
-                border: `1px solid ${on ? COLORS.primary : COLORS.border}`,
-                background: on ? COLORS.primarySoft : COLORS.surface2,
-                color: on ? COLORS.text : COLORS.textMuted,
-                cursor: "pointer",
-                fontSize: "0.8rem",
-                transition: baseTransition,
-              }}
-            >
-              {c}
-            </button>
-          );
-        })}
-      </div>
-
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 28 }}>
-        {["All", "Clean", "Dirty", "In wash"].map((l) => {
-          const on = laundryFilter === l;
-          return (
-            <button
-              key={l}
-              type="button"
-              onClick={() => setLaundryFilter(l)}
-              style={{
-                padding: "6px 12px",
-                borderRadius: 999,
-                border: `1px solid ${on ? COLORS.primary : COLORS.border}`,
-                background: on ? COLORS.primarySoft : COLORS.surface2,
-                color: on ? COLORS.text : COLORS.textMuted,
-                cursor: "pointer",
-                fontSize: "0.8rem",
-                transition: baseTransition,
-              }}
-            >
-              {l}
-            </button>
-          );
-        })}
-      </div>
-
-      {filteredWardrobe.length === 0 ? (
-        <p style={{ color: COLORS.textMuted }}>No pieces match these filters.</p>
-      ) : (
         <div
           style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
-            gap: 20,
+            display: "flex",
+            flexWrap: "wrap",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 16,
+            marginBottom: 28,
           }}
         >
-          {filteredWardrobe.map((it) => {
-            const tags = (it.tags || []).slice(0, 3);
-            const costNum = parseFloat(String(it.cost).replace(/[^0-9.]/g, ""));
-            const cpw =
-              it.timesWorn > 0 && !Number.isNaN(costNum) && costNum > 0
-                ? (costNum / it.timesWorn).toFixed(2)
-                : null;
+          <div>
+            <h1
+              style={{
+                fontFamily: "'Playfair Display', Georgia, serif",
+                fontSize: "1.85rem",
+                fontWeight: 600,
+                margin: "0 0 6px",
+                letterSpacing: "-0.02em",
+              }}
+            >
+              Closet mood board
+            </h1>
+            <p style={{ margin: 0, fontSize: "0.88rem", color: FINANCE.muted }}>
+              Financially aware wardrobe · CPW at a glance
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowAddModal(true)}
+            style={{
+              padding: "12px 22px",
+              borderRadius: 999,
+              border: `1px solid ${FINANCE.slate}`,
+              background: FINANCE.text,
+              color: "#fff",
+              fontSize: "0.85rem",
+              fontWeight: 600,
+              cursor: "pointer",
+              fontFamily: "'Inter', sans-serif",
+            }}
+          >
+            + Add piece
+          </button>
+        </div>
 
-            const laundryLabel =
-              it.laundryStatus === "clean"
-                ? "Clean ✓"
-                : it.laundryStatus === "dirty"
-                  ? "Dirty ✗"
-                  : "In Wash ↻";
+        <div
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            gap: 16,
+            marginBottom: 20,
+            fontSize: "0.85rem",
+            color: FINANCE.muted,
+          }}
+        >
+          <span>
+            <strong style={{ color: FINANCE.text }}>{stats.total}</strong> items
+          </span>
+          <span>·</span>
+          <span>
+            Clean <strong style={{ color: FINANCE.text }}>{stats.clean}</strong>
+          </span>
+          <span>·</span>
+          <span>
+            Dirty <strong style={{ color: FINANCE.text }}>{stats.dirty}</strong>
+          </span>
+          <span>·</span>
+          <span>
+            In wash <strong style={{ color: FINANCE.text }}>{stats.wash}</strong>
+          </span>
+        </div>
 
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
+          {["All", ...categories].map((c) => {
+            const on = catFilter === c;
             return (
-              <div
-                key={it.id}
-                onMouseEnter={(e) => Object.assign(e.currentTarget.style, ui.panelHover)}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = "translateY(0)";
-                  e.currentTarget.style.boxShadow = `${COLORS.shadow}, ${COLORS.cardGlow}`;
-                }}
-                style={mergeStyles(ui.panel, {
-                  borderRadius: 28,
-                  padding: 20,
-                  overflow: "hidden",
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: 18,
+              <button
+                key={c}
+                type="button"
+                onClick={() => setCatFilter(c)}
+                style={{
+                  padding: "6px 12px",
+                  borderRadius: 999,
+                  border: `1px solid ${on ? FINANCE.slate : FINANCE.border}`,
+                  background: on ? FINANCE.slateSoft : "transparent",
+                  color: on ? FINANCE.slate : FINANCE.muted,
+                  cursor: "pointer",
+                  fontSize: "0.8rem",
                   transition: baseTransition,
-                })}
+                }}
               >
+                {c}
+              </button>
+            );
+          })}
+        </div>
+
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 28 }}>
+          {["All", "Clean", "Dirty", "In wash"].map((l) => {
+            const on = laundryFilter === l;
+            return (
+              <button
+                key={l}
+                type="button"
+                onClick={() => setLaundryFilter(l)}
+                style={{
+                  padding: "6px 12px",
+                  borderRadius: 999,
+                  border: `1px solid ${on ? FINANCE.slate : FINANCE.border}`,
+                  background: on ? FINANCE.slateSoft : "transparent",
+                  color: on ? FINANCE.slate : FINANCE.muted,
+                  cursor: "pointer",
+                  fontSize: "0.8rem",
+                  transition: baseTransition,
+                }}
+              >
+                {l}
+              </button>
+            );
+          })}
+        </div>
+
+        {uploadError && (
+          <div style={{ color: "#c45c5c", fontSize: "0.88rem", marginBottom: 16 }}>{uploadError}</div>
+        )}
+
+        {filteredWardrobe.length === 0 ? (
+          <p style={{ color: FINANCE.muted }}>No pieces match these filters.</p>
+        ) : (
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
+              gridAutoRows: "minmax(120px, auto)",
+              gap: 14,
+            }}
+          >
+            {filteredWardrobe.map((it, idx) => {
+              const span = MOOD_SPANS[idx % MOOD_SPANS.length];
+              const tags = (it.tags || []).slice(0, 3);
+              const pp = getPurchasePriceNum(it);
+              const wc = getWearCount(it);
+              const cpw = pp > 0 ? getCostPerWear(it).toFixed(2) : null;
+
+              const laundryLabel =
+                it.laundryStatus === "clean"
+                  ? "Clean"
+                  : it.laundryStatus === "dirty"
+                    ? "Dirty"
+                    : "Wash";
+
+              return (
                 <div
+                  key={it.id}
                   style={{
-                    background: COLORS.surface2,
-                    borderRadius: 24,
-                    padding: 10,
-                    marginBottom: 18,
-                    position: "relative",
+                    gridColumn: `span ${span.c}`,
+                    gridRow: `span ${span.r}`,
+                    borderRadius: 18,
+                    border: `1px solid ${FINANCE.border}`,
+                    background: "#fff",
+                    overflow: "hidden",
+                    display: "flex",
+                    flexDirection: "column",
+                    transition: baseTransition,
+                    boxShadow: "0 8px 32px rgba(26,26,26,0.06)",
                   }}
                 >
-                  <div style={{ position: "relative", borderRadius: 20, overflow: "hidden" }}>
+                  <div
+                    style={{
+                      position: "relative",
+                      flex: 1,
+                      minHeight: span.r > 1 ? 200 : 140,
+                      background: FINANCE.slateSoft,
+                    }}
+                  >
                     {it.imagePreview ? (
                       <img
                         src={it.imagePreview}
                         alt=""
-                        style={mergeStyles(ui.imageCard, { aspectRatio: "4 / 5", width: "100%", height: "100%", objectFit: "cover" })}
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          objectFit: "cover",
+                          display: "block",
+                          transform: `rotate(${((idx * 7) % 5) - 2}deg) scale(1.02)`,
+                        }}
                       />
                     ) : (
                       <div
                         style={{
-                          aspectRatio: "4 / 5",
-                          width: "100%",
+                          height: "100%",
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
-                          color: COLORS.textMuted,
-                          fontSize: "0.85rem",
-                          background: COLORS.surface,
+                          color: FINANCE.muted,
+                          fontSize: "0.8rem",
                         }}
                       >
                         No photo
@@ -265,9 +292,10 @@ export function WardrobeScreen({
                         left: 10,
                         padding: "4px 8px",
                         borderRadius: 6,
-                        background: "rgba(28,25,23,0.7)",
-                        fontSize: "0.7rem",
-                        color: COLORS.text,
+                        background: "rgba(255,255,255,0.92)",
+                        fontSize: "0.65rem",
+                        color: FINANCE.text,
+                        border: `1px solid ${FINANCE.border}`,
                       }}
                     >
                       {laundryLabel}
@@ -279,235 +307,289 @@ export function WardrobeScreen({
                         right: 10,
                         padding: "4px 8px",
                         borderRadius: 6,
-                        background: COLORS.primary,
-                        color: "#FFFFFF",
-                        fontSize: "0.7rem",
+                        background: FINANCE.text,
+                        color: "#fff",
+                        fontSize: "0.65rem",
                         fontWeight: 600,
                       }}
                     >
                       {it.category}
                     </span>
                   </div>
-                </div>
-                <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 10 }}>
-                  <div style={{ ...type.cardTitle, fontSize: 24 }}>{it.name}</div>
-                  <div style={type.meta}>
-                    {it.color}
-                    {it.season ? ` · ${it.season}` : ""}
-                  </div>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                    {tags.map((t) => (
-                      <span
-                        key={t}
+                  <div style={{ padding: "14px 16px 16px", display: "flex", flexDirection: "column", gap: 8 }}>
+                    <div style={{ fontFamily: "'Playfair Display', serif", fontSize: "1.05rem", fontWeight: 600 }}>{it.name}</div>
+                    <div style={{ fontSize: "0.78rem", color: FINANCE.muted }}>
+                      {it.color}
+                      {it.season ? ` · ${it.season}` : ""}
+                    </div>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                      {tags.map((t) => (
+                        <span
+                          key={t}
+                          style={{
+                            padding: "3px 7px",
+                            borderRadius: 4,
+                            background: FINANCE.accentSoft,
+                            fontSize: "0.68rem",
+                            color: FINANCE.muted,
+                          }}
+                        >
+                          {t}
+                        </span>
+                      ))}
+                    </div>
+                    {it.description && (
+                      <div style={{ ...type.body, fontSize: "0.8rem", fontStyle: "italic", color: FINANCE.muted }}>{it.description}</div>
+                    )}
+                    <div style={{ fontSize: "0.78rem", color: FINANCE.muted }}>
+                      Worn <strong style={{ color: FINANCE.text }}>{wc}</strong> ·
+                      {cpw != null ? (
+                        <>
+                          {" "}
+                          CPW <strong style={{ color: FINANCE.text }}>${cpw}</strong>
+                        </>
+                      ) : (
+                        " add price for CPW"
+                      )}
+                    </div>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                      {[
+                        { key: "clean", label: "Clean" },
+                        { key: "dirty", label: "Dirty" },
+                        { key: "wash", label: "In wash" },
+                      ].map((b) => {
+                        const sel = it.laundryStatus === b.key;
+                        return (
+                          <button
+                            key={b.key}
+                            type="button"
+                            onClick={() => updateItem(it.id, { laundryStatus: b.key })}
+                            style={{
+                              padding: "6px 10px",
+                              borderRadius: 8,
+                              border: `1px solid ${sel ? FINANCE.slate : FINANCE.border}`,
+                              background: sel ? FINANCE.slateSoft : "transparent",
+                              fontSize: "0.72rem",
+                              cursor: "pointer",
+                              color: FINANCE.text,
+                            }}
+                          >
+                            {b.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 4 }}>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          updateItem(it.id, {
+                            wearCount: wc + 1,
+                            timesWorn: wc + 1,
+                            laundryStatus: "dirty",
+                          })
+                        }
                         style={{
-                          padding: "4px 8px",
-                          borderRadius: 6,
-                          background: COLORS.surface2,
-                          fontSize: "0.72rem",
-                          color: COLORS.textMuted,
+                          flex: 1,
+                          minWidth: 88,
+                          padding: "12px 14px",
+                          borderRadius: 10,
+                          border: "none",
+                          background: FINANCE.text,
+                          color: "#fff",
+                          fontWeight: 600,
+                          fontSize: "0.82rem",
+                          cursor: "pointer",
                         }}
                       >
-                        {t}
-                      </span>
-                    ))}
-                  </div>
-                  {it.description && (
-                    <div style={{ ...type.body, fontStyle: "italic" }}>{it.description}</div>
-                  )}
-                  <div style={type.meta}>
-                    Worn <strong style={{ color: COLORS.text }}>{it.timesWorn}</strong> times
-                    {cpw != null && (
-                      <>
-                        {" "}
-                        · CPW <strong style={{ color: COLORS.text }}>${cpw}</strong>
-                      </>
-                    )}
-                  </div>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                    {[
-                      { key: "clean", label: "Clean" },
-                      { key: "dirty", label: "Dirty" },
-                      { key: "wash", label: "In wash" },
-                    ].map((b) => {
-                      const sel = it.laundryStatus === b.key;
-                      const selStyle =
-                        sel && b.key === "clean"
-                          ? {
-                              background: COLORS.successSoft,
-                              color: COLORS.success,
-                              border: `1px solid rgba(111, 157, 122, 0.28)`,
-                            }
-                          : sel && b.key === "dirty"
-                            ? {
-                                background: COLORS.dangerSoft,
-                                color: COLORS.danger,
-                                border: `1px solid rgba(217, 124, 108, 0.24)`,
-                              }
-                            : sel && b.key === "wash"
-                              ? {
-                                  background: COLORS.primarySoft,
-                                  color: COLORS.primary,
-                                  border: `1px solid rgba(184, 92, 56, 0.24)`,
-                                }
-                              : {};
-                      return (
-                        <button
-                          key={b.key}
-                          type="button"
-                          onClick={() => updateItem(it.id, { laundryStatus: b.key })}
-                          style={mergeStyles(ui.chip, {
-                            padding: "10px 14px",
-                            cursor: "pointer",
-                            transition: baseTransition,
-                            ...selStyle,
-                          })}
-                        >
-                          {b.label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: "auto" }}>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        updateItem(it.id, {
-                          timesWorn: (it.timesWorn || 0) + 1,
-                          laundryStatus: "dirty",
-                        })
-                      }
-                      style={mergeStyles(ui.primaryButton, {
-                        flex: 1,
-                        minWidth: 100,
-                        minHeight: 54,
-                        padding: "15px 24px",
-                      })}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.background = COLORS.primaryHover;
-                        e.currentTarget.style.transform = "translateY(-1px)";
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.background = COLORS.primary;
-                        e.currentTarget.style.transform = "translateY(0)";
-                      }}
-                    >
-                      Wore it
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => openEdit(it)}
-                      style={mergeStyles(ui.secondaryButton, {
-                        minHeight: 54,
-                      })}
-                    >
-                      Edit
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => removeItem(it.id)}
-                      style={mergeStyles(ui.secondaryButton, {
-                        minHeight: 54,
-                        color: COLORS.danger,
-                        border: `1px solid ${COLORS.dangerSoft}`,
-                        background: "#FFF7F5",
-                      })}
-                    >
-                      Remove
-                    </button>
+                        Wore it
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => openEdit(it)}
+                        style={mergeStyles(ui.secondaryButton, { padding: "12px 14px", fontSize: "0.82rem" })}
+                      >
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => removeItem(it.id)}
+                        style={{
+                          padding: "12px 14px",
+                          borderRadius: 10,
+                          border: `1px solid ${COLORS.dangerSoft}`,
+                          background: "#fff",
+                          color: COLORS.danger,
+                          fontSize: "0.82rem",
+                          cursor: "pointer",
+                        }}
+                      >
+                        Remove
+                      </button>
+                    </div>
                   </div>
                 </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {showAddModal && (
+        <div
+          role="presentation"
+          onClick={() => setShowAddModal(false)}
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(26,26,26,0.45)",
+            zIndex: 100,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 24,
+          }}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: "100%",
+              maxWidth: 440,
+              borderRadius: 20,
+              padding: 28,
+              background: "#fff",
+              border: `1px solid ${FINANCE.border}`,
+              boxShadow: "0 24px 80px rgba(0,0,0,0.12)",
+            }}
+          >
+            <h2 style={{ fontFamily: "'Playfair Display', serif", margin: "0 0 8px", fontSize: "1.45rem" }}>Add to closet</h2>
+            <p style={{ margin: "0 0 20px", fontSize: "0.86rem", color: FINANCE.muted }}>
+              Photo (AI catalog) or paste a store link (mock ingest).
+            </p>
+            <div style={{ display: "flex", gap: 8, marginBottom: 18 }}>
+              {["photo", "link"].map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => setAddTab(t)}
+                  style={{
+                    padding: "8px 16px",
+                    borderRadius: 999,
+                    border: `1px solid ${addTab === t ? FINANCE.text : FINANCE.border}`,
+                    background: addTab === t ? FINANCE.text : "transparent",
+                    color: addTab === t ? "#fff" : FINANCE.muted,
+                    cursor: "pointer",
+                    fontSize: "0.82rem",
+                    textTransform: "capitalize",
+                  }}
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
+
+            {addTab === "photo" && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                <label style={{ display: "flex", alignItems: "center", gap: 10, fontSize: "0.85rem", color: FINANCE.text }}>
+                  <input
+                    type="checkbox"
+                    checked={removeBgNext}
+                    onChange={(e) => setRemoveBgNext(e.target.checked)}
+                  />
+                  Remove background (placeholder — wire clipping API here)
+                </label>
+                <input ref={modalFileRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleModalFile} />
+                <button
+                  type="button"
+                  disabled={analyzing}
+                  onClick={() => modalFileRef.current?.click()}
+                  style={{
+                    padding: "14px 18px",
+                    borderRadius: 12,
+                    border: `1px dashed ${FINANCE.border}`,
+                    background: FINANCE.accentSoft,
+                    cursor: analyzing ? "wait" : "pointer",
+                    fontSize: "0.9rem",
+                  }}
+                >
+                  {analyzing ? "Analyzing…" : "Choose image"}
+                </button>
+                <p style={{ margin: 0, fontSize: "0.78rem", color: FINANCE.muted }}>
+                  Or drop a file on the wardrobe page background (legacy).
+                </p>
               </div>
-            );
-          })}
+            )}
+
+            {addTab === "link" && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                <label style={{ fontSize: "0.75rem", fontWeight: 600, color: FINANCE.muted }}>Paste store link</label>
+                <input
+                  value={storeLink}
+                  onChange={(e) => setStoreLink(e.target.value)}
+                  placeholder="https://…"
+                  style={{
+                    padding: "12px 14px",
+                    borderRadius: 10,
+                    border: `1px solid ${FINANCE.border}`,
+                    fontSize: "0.9rem",
+                  }}
+                />
+                <button
+                  type="button"
+                  disabled={linkLoading}
+                  onClick={submitLink}
+                  style={{
+                    padding: "12px 18px",
+                    borderRadius: 10,
+                    border: "none",
+                    background: FINANCE.text,
+                    color: "#fff",
+                    fontWeight: 600,
+                    cursor: linkLoading ? "wait" : "pointer",
+                  }}
+                >
+                  {linkLoading ? "Simulating…" : "Simulate import"}
+                </button>
+              </div>
+            )}
+
+            <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 22 }}>
+              <button
+                type="button"
+                onClick={() => setShowAddModal(false)}
+                style={{
+                  padding: "10px 18px",
+                  borderRadius: 10,
+                  border: `1px solid ${FINANCE.border}`,
+                  background: "#fff",
+                  cursor: "pointer",
+                }}
+              >
+                Close
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
-      {showEquity && (() => {
-        const valued = _wardrobe.filter((it) => parseFloat(String(it.cost).replace(/[^0-9.]/g, "")) > 0);
-        const withCPW = valued.map((it) => {
-          const cost = parseFloat(String(it.cost).replace(/[^0-9.]/g, ""));
-          const worn = Number(it.timesWorn) || 1;
-          return { ...it, _cost: cost, _cpw: +(cost / worn).toFixed(2) };
-        });
-        const totalValue = valued.reduce((s, it) => s + parseFloat(String(it.cost).replace(/[^0-9.]/g, "")), 0);
-        const avgCPW = withCPW.length ? +(withCPW.reduce((s, i) => s + i._cpw, 0) / withCPW.length).toFixed(2) : 0;
-        const bestValue = [...withCPW].sort((a, b) => a._cpw - b._cpw).slice(0, 5);
-        const worstValue = [...withCPW].sort((a, b) => b._cpw - a._cpw).slice(0, 5);
-
-        const byCategory = {};
-        withCPW.forEach((it) => {
-          const cat = it.category || "Other";
-          if (!byCategory[cat]) byCategory[cat] = [];
-          byCategory[cat].push(it._cpw);
-        });
-        const catAvgs = Object.entries(byCategory)
-          .map(([cat, cpws]) => ({
-            cat,
-            avg: +(cpws.reduce((a, b) => a + b, 0) / cpws.length).toFixed(2),
-            count: cpws.length,
-          }))
-          .sort((a, b) => a.avg - b.avg);
-
-        return (
-          <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: 24 }}>
-
-            {/* Summary Stats */}
-            <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
-              {[
-                { label: "Total Wardrobe Value", value: `$${totalValue.toFixed(0)}`, sub: `${valued.length} priced items` },
-                { label: "Average Cost Per Wear", value: `$${avgCPW}`, sub: "across all items" },
-                { label: "Best Item", value: bestValue[0] ? `$${bestValue[0]._cpw}/wear` : "—", sub: bestValue[0]?.name ?? "" },
-                { label: "Most Expensive Habit", value: worstValue[0] ? `$${worstValue[0]._cpw}/wear` : "—", sub: worstValue[0]?.name ?? "" },
-              ].map((card) => (
-                <div key={card.label} style={{ flex: "1 1 180px", background: COLORS.surface, borderRadius: 14, padding: "18px 20px", border: `1px solid ${COLORS.border}` }}>
-                  <p style={{ margin: "0 0 4px", fontSize: "0.75rem", color: COLORS.textMuted, textTransform: "uppercase", letterSpacing: "0.05em" }}>{card.label}</p>
-                  <p style={{ margin: "0 0 2px", fontSize: "1.6rem", fontWeight: 700, color: COLORS.accent, fontFamily: "'Cormorant Garamond', serif" }}>{card.value}</p>
-                  <p style={{ margin: 0, fontSize: "0.78rem", color: COLORS.textMuted }}>{card.sub}</p>
-                </div>
-              ))}
-            </div>
-
-            {/* Best & Worst Value */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-              {[
-                { title: "🏆 Best Value (Lowest CPW)", items: bestValue, color: "#4A7C59" },
-                { title: "⚠️ Review These (Highest CPW)", items: worstValue, color: COLORS.danger ?? "#C0392B" },
-              ].map((section) => (
-                <div key={section.title} style={{ background: COLORS.surface, borderRadius: 14, padding: 20, border: `1px solid ${COLORS.border}` }}>
-                  <p style={{ margin: "0 0 14px", fontWeight: 700, fontSize: "0.88rem", color: COLORS.text }}>{section.title}</p>
-                  {section.items.map((it, idx) => (
-                    <div key={it.id} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
-                      <span style={{ fontSize: "0.75rem", fontWeight: 700, color: section.color, width: 18 }}>#{idx + 1}</span>
-                      {it.imagePreview && <img src={it.imagePreview} alt="" style={{ width: 36, height: 36, borderRadius: 8, objectFit: "cover" }} />}
-                      <div style={{ flex: 1 }}>
-                        <p style={{ margin: 0, fontSize: "0.85rem", fontWeight: 600 }}>{it.name}</p>
-                        <p style={{ margin: 0, fontSize: "0.78rem", color: COLORS.textMuted }}>${it._cost} · worn {it.timesWorn}× · <b style={{ color: section.color }}>${it._cpw}/wear</b></p>
-                      </div>
-                    </div>
-                  ))}
-                  {!section.items.length && <p style={{ fontSize: "0.85rem", color: COLORS.textMuted }}>Add prices to your items to see rankings.</p>}
-                </div>
-              ))}
-            </div>
-
-            {/* CPW by Category */}
-            {catAvgs.length > 0 && (
-              <div style={{ background: COLORS.surface, borderRadius: 14, padding: 20, border: `1px solid ${COLORS.border}` }}>
-                <p style={{ margin: "0 0 16px", fontWeight: 700, fontSize: "0.88rem" }}>Avg Cost Per Wear by Category</p>
-                {catAvgs.map(({ cat, avg, count }) => (
-                  <div key={cat} style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 10 }}>
-                    <span style={{ width: 110, fontSize: "0.82rem", color: COLORS.textMuted }}>{cat} ({count})</span>
-                    <div style={{ flex: 1, background: COLORS.border, borderRadius: 999, height: 8, overflow: "hidden" }}>
-                      <div style={{ width: `${Math.min(100, (avg / (worstValue[0]?._cpw || 1)) * 100)}%`, height: "100%", background: COLORS.accent, borderRadius: 999 }} />
-                    </div>
-                    <span style={{ fontSize: "0.82rem", fontWeight: 600, color: COLORS.accent, width: 60, textAlign: "right" }}>${avg}/wear</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        );
-      })()}
+      <div
+        onDragOver={(e) => e.preventDefault()}
+        onDrop={(e) => onDrop(e, {})}
+        style={{
+          marginTop: 32,
+          padding: "20px 24px",
+          borderRadius: 14,
+          border: `1px dashed ${FINANCE.border}`,
+          textAlign: "center",
+          fontSize: "0.82rem",
+          color: FINANCE.muted,
+          background: FINANCE.accentSoft,
+        }}
+      >
+        Drop an image here for quick add (same AI catalog flow)
+      </div>
     </>
   );
 }

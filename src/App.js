@@ -41,7 +41,16 @@ import { DesignerScreen } from "./screens/DesignerScreen";
 import { EvaluatorScreen } from "./screens/EvaluatorScreen";
 import { ShopperScreen } from "./screens/ShopperScreen";
 import { GapAnalysisScreen } from "./screens/GapAnalysisScreen";
+import { WardrobeEquityScreen } from "./screens/WardrobeEquityScreen";
 import { AgentPanel } from "./components/AgentPanel";
+import {
+  getWearCount,
+  getCostPerWear,
+  compareCleanItemsByPriorityCPW,
+  getPurchasePriceNum,
+} from "./utils/wardrobeFinance";
+import { mockScrapeProductFromUrl } from "./services/mockProductLink";
+import { placeholderRemoveBackground } from "./services/backgroundRemoval";
 
 const STORAGE_PROFILE = "fos_profile";
 const STORAGE_EVENTS = "fos_events";
@@ -280,7 +289,14 @@ export default function App() {
   const [uploadError, setUploadError] = useState("");
 
   const [editItem, setEditItem] = useState(null);
-  const [editForm, setEditForm] = useState({ name: "", color: "", cost: "", purchaseDate: "" });
+  const [editForm, setEditForm] = useState({
+    name: "",
+    color: "",
+    purchasePrice: "",
+    purchaseDate: "",
+    wearCount: "",
+    expectedLifespan: "",
+  });
 
   const {
     agentActivity,
@@ -540,7 +556,7 @@ export default function App() {
     }
   };
 
-  const addWardrobeFromFile = async (file) => {
+  const addWardrobeFromFile = async (file, options = {}) => {
     if (!file || !file.type.startsWith("image/")) {
       setUploadError("Please choose an image file.");
       return;
@@ -549,8 +565,12 @@ export default function App() {
     setAnalyzing(true);
     let uploadResult = { url: "", filename: null };
     try {
-      const mediaType = mediaTypeForFile(file);
-      const [uploadRes, b64] = await Promise.all([uploadImageToServer(file), fileToBase64(file)]);
+      let fileToUse = file;
+      if (options.removeBg) {
+        fileToUse = await placeholderRemoveBackground(file);
+      }
+      const mediaType = mediaTypeForFile(fileToUse);
+      const [uploadRes, b64] = await Promise.all([uploadImageToServer(fileToUse), fileToBase64(fileToUse)]);
       uploadResult = uploadRes;
       const parsed = await catalogImageWithVision(b64, mediaType);
       const category = CATEGORIES.includes(parsed.category) ? parsed.category : "Accessories";
@@ -568,9 +588,12 @@ export default function App() {
         material: String(parsed.material || ""),
         description: String(parsed.description || ""),
         laundryStatus: "clean",
+        purchasePrice: "",
+        wearCount: 0,
         timesWorn: 0,
         cost: "",
         purchaseDate: new Date().toISOString().split("T")[0],
+        expectedLifespan: 365,
       };
       addItem(item);
     } catch (e) {
@@ -583,36 +606,70 @@ export default function App() {
     }
   };
 
-  const onDrop = (e) => {
+  const onDrop = (e, opts = {}) => {
     e.preventDefault();
     const f = e.dataTransfer.files?.[0];
-    if (f) addWardrobeFromFile(f);
+    if (f) addWardrobeFromFile(f, opts);
   };
 
-  const onFileChange = (e) => {
+  const onFileChange = (e, opts = {}) => {
     const f = e.target.files?.[0];
     e.target.value = "";
-    if (f) addWardrobeFromFile(f);
+    if (f) addWardrobeFromFile(f, opts);
+  };
+
+  const ingestFromMockLink = async (url) => {
+    const data = await mockScrapeProductFromUrl(url);
+    const id = crypto.randomUUID ? crypto.randomUUID() : String(Date.now());
+    addItem({
+      id,
+      imagePreview: data.imageUrl,
+      imageFilename: null,
+      name: data.title,
+      category: "Tops",
+      color: "",
+      style: "",
+      season: "",
+      tags: ["link-import"],
+      material: "",
+      description: `Imported from link (mock): ${data.sourceUrl}`,
+      laundryStatus: "clean",
+      purchasePrice: data.price,
+      wearCount: 0,
+      timesWorn: 0,
+      cost: String(data.price),
+      purchaseDate: new Date().toISOString().split("T")[0],
+      expectedLifespan: 365,
+    });
   };
 
   const openEdit = (it) => {
     setEditItem(it);
+    const pp = getPurchasePriceNum(it);
     setEditForm({
       name: it.name,
       color: it.color,
-      cost: it.cost === "" || it.cost == null ? "" : String(it.cost),
+      purchasePrice: pp > 0 ? String(pp) : it.cost === "" || it.cost == null ? "" : String(it.cost),
       purchaseDate: it.purchaseDate ?? new Date().toISOString().split("T")[0],
+      wearCount: String(getWearCount(it)),
+      expectedLifespan: it.expectedLifespan != null ? String(it.expectedLifespan) : "365",
     });
   };
 
   const saveEdit = () => {
     if (!editItem) return;
-    const costVal = editForm.cost.trim();
+    const priceStr = editForm.purchasePrice.trim();
+    const wc = Math.max(0, parseInt(String(editForm.wearCount).replace(/\D/g, ""), 10) || 0);
+    const lifespan = Math.max(0, parseInt(String(editForm.expectedLifespan).replace(/\D/g, ""), 10) || 0);
     updateItem(editItem.id, {
       name: editForm.name.trim() || editItem.name,
       color: editForm.color.trim(),
-      cost: costVal === "" ? "" : costVal,
+      purchasePrice: priceStr === "" ? "" : parseFloat(priceStr.replace(/[^0-9.]/g, "")) || priceStr,
+      cost: priceStr,
+      wearCount: wc,
+      timesWorn: wc,
       purchaseDate: editForm.purchaseDate || editItem.purchaseDate,
+      expectedLifespan: lifespan || 365,
     });
     setEditItem(null);
   };
@@ -644,19 +701,21 @@ export default function App() {
   const agentTitle =
     activeNav === "wardrobe"
       ? "Wardrobe"
-      : activeNav === "calendar"
-        ? "Calendar"
-        : activeNav === "planner"
-          ? "Planner"
-          : activeNav === "designer"
-            ? "Style Designer"
-            : activeNav === "evaluator"
-              ? "Outfit Evaluator"
-              : activeNav === "shopper"
-                ? "Shopping Agent"
-                : activeNav === "gaps"
-                  ? "Gap Analysis"
-                  : "Profile";
+      : activeNav === "equity"
+        ? "Wardrobe Equity"
+        : activeNav === "calendar"
+          ? "Calendar"
+          : activeNav === "planner"
+            ? "Planner"
+            : activeNav === "designer"
+              ? "Style Designer"
+              : activeNav === "evaluator"
+                ? "Outfit Evaluator"
+                : activeNav === "shopper"
+                  ? "Shopping Agent"
+                  : activeNav === "gaps"
+                    ? "Gap Analysis"
+                    : "Profile";
   const userName = profile?.name || "";
 
   const styleIntelligence = useMemo(() => {
@@ -689,11 +748,11 @@ export default function App() {
     if (wardrobe.length) {
       let maxW = -1;
       for (const it of wardrobe) {
-        const w = Number(it.timesWorn) || 0;
+        const w = getWearCount(it);
         if (w > maxW) maxW = w;
       }
       if (maxW > 0) {
-        const top = wardrobe.filter((it) => (Number(it.timesWorn) || 0) === maxW);
+        const top = wardrobe.filter((it) => getWearCount(it) === maxW);
         top.sort((a, b) => String(a.name || "").localeCompare(String(b.name || "")));
         mostUsedItem = top[0].name || "Untitled";
       } else {
@@ -1317,9 +1376,13 @@ export default function App() {
                 openEdit,
                 removeItem,
                 categories: CATEGORIES,
+                ingestFromMockLink,
+                addWardrobeFromFile,
               }}
             />
           )}
+
+          {activeNav === "equity" && <WardrobeEquityScreen wardrobe={wardrobe} />}
 
           {activeNav === "calendar" && (
             <CalendarAgent events={events} setEvents={setEvents} baseTransition={baseTransition} />
@@ -1441,12 +1504,36 @@ export default function App() {
               style={mergeStyles(ui.input, { marginBottom: 14, background: COLORS.surface2 })}
             />
             <label style={{ display: "block", color: COLORS.textMuted, fontSize: "0.75rem", marginBottom: 8 }}>
-              Cost (optional, for CPW)
+              Purchase price (for CPW)
             </label>
             <input
-              value={editForm.cost}
-              onChange={(e) => setEditForm((f) => ({ ...f, cost: e.target.value }))}
+              value={editForm.purchasePrice}
+              onChange={(e) => setEditForm((f) => ({ ...f, purchasePrice: e.target.value }))}
               placeholder="e.g. 89"
+              onFocus={focusInputVisual}
+              onBlur={blurInputVisual}
+              style={mergeStyles(ui.input, { marginBottom: 14, background: COLORS.surface2 })}
+            />
+            <label style={{ display: "block", color: COLORS.textMuted, fontSize: "0.75rem", marginBottom: 8 }}>
+              Wear count
+            </label>
+            <input
+              type="number"
+              min={0}
+              value={editForm.wearCount}
+              onChange={(e) => setEditForm((f) => ({ ...f, wearCount: e.target.value }))}
+              onFocus={focusInputVisual}
+              onBlur={blurInputVisual}
+              style={mergeStyles(ui.input, { marginBottom: 14, background: COLORS.surface2 })}
+            />
+            <label style={{ display: "block", color: COLORS.textMuted, fontSize: "0.75rem", marginBottom: 8 }}>
+              Expected lifespan (days)
+            </label>
+            <input
+              type="number"
+              min={1}
+              value={editForm.expectedLifespan}
+              onChange={(e) => setEditForm((f) => ({ ...f, expectedLifespan: e.target.value }))}
               onFocus={focusInputVisual}
               onBlur={blurInputVisual}
               style={mergeStyles(ui.input, { marginBottom: 20, background: COLORS.surface2 })}
@@ -1980,10 +2067,15 @@ function buildProfileSummary(p) {
 }
 
 function buildCleanWardrobeList(items) {
-  const clean = items.filter((it) => it.laundryStatus === "clean");
+  const clean = [...items.filter((it) => it.laundryStatus === "clean")].sort(compareCleanItemsByPriorityCPW);
   if (clean.length === 0) return "";
   return clean
-    .map((it) => `- ${it.name} (${it.category}): ${it.color}, style: ${it.style || "—"}, season: ${it.season || "—"}`)
+    .map((it, i) => {
+      const cpw = getCostPerWear(it);
+      const pp = getPurchasePriceNum(it);
+      const cpwHint = pp > 0 ? ` · CPW $${cpw.toFixed(2)} (priority ${i + 1})` : "";
+      return `- ${it.name} (${it.category}): ${it.color}, style: ${it.style || "—"}, season: ${it.season || "—"}${cpwHint}`;
+    })
     .join("\n");
 }
 
@@ -2488,7 +2580,10 @@ function PlannerAgent({ profile, wardrobe, events, setActiveNav, baseTransition,
     [upcomingSorted, selectedEventId]
   );
 
-  const cleanItems = useMemo(() => wardrobe.filter((it) => it.laundryStatus === "clean"), [wardrobe]);
+  const cleanItems = useMemo(() => {
+    const clean = wardrobe.filter((it) => it.laundryStatus === "clean");
+    return [...clean].sort(compareCleanItemsByPriorityCPW);
+  }, [wardrobe]);
 
   const plannerAgentInsightsBlock = useMemo(() => {
     const a = agentInsights || {};
@@ -2569,7 +2664,7 @@ ${profileSummary}
 Agent insights:
 ${plannerAgentInsightsBlock}
 
-Wardrobe items (clean pieces only — use exact names from this list):
+Wardrobe items (clean pieces only — use exact names from this list). Items are ordered by cost-per-wear priority (highest CPW first): prefer including these when they fit the occasion so the wearer gets more value from expensive, under-worn pieces.
 ${wardrobeItems}
 
 Occasion / context:

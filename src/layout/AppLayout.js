@@ -139,6 +139,7 @@ export function AppLayout({ activeNav, setActiveNav, children }) {
               title: "Wardrobe",
               items: [
                 { id: "wardrobe", icon: "👗", label: "Wardrobe" },
+                { id: "equity", icon: "◈", label: "Equity" },
                 { id: "calendar", icon: "📅", label: "Calendar" },
                 { id: "profile", icon: "👤", label: "Profile" },
               ],
