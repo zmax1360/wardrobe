@@ -13,7 +13,7 @@ h6 {
   letter-spacing: -0.03em;
 }
 
-/* Wardrobe page: breathing room */
+/* Wardrobe page */
 .wardrobe-page {
   margin-top: 60px;
   background: #ffffff;
@@ -26,7 +26,7 @@ h6 {
 }
 
 .wardrobe-page-title {
-  font-size: 2.5rem;
+  font-size: 2.8rem;
   font-weight: 600;
   letter-spacing: -0.04em;
   margin: 0 0 6px;
@@ -35,58 +35,154 @@ h6 {
 .wardrobe-gallery-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 2.5rem;
+  gap: 4rem;
   margin-top: 80px;
+  align-items: stretch;
 }
 
-/* Ghost cards — #F0F0F0 edge, no shadow, crisp white */
+/* Cards — white field, hairline edge */
 .wardrobe-gallery-card {
+  height: 100%;
   border-radius: 12px;
-  border: 1px solid #f0f0f0;
+  border: 1px solid rgba(0, 0, 0, 0.04);
   background: #ffffff;
   box-sizing: border-box;
   position: relative;
-  transition: border-color 0.25s ease;
+  transition: all 0.3s ease;
   box-shadow: none;
 }
 
 .wardrobe-gallery-card:hover {
-  border-color: #e8e8e8;
+  border-color: rgba(0, 0, 0, 0.08);
 }
 
-/* Actions hidden until hover */
-.wardrobe-card-options {
-  max-height: 0;
-  opacity: 0;
+.wardrobe-card-inner {
+  box-sizing: border-box;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: 3rem;
+}
+
+.wardrobe-card-category {
+  font-size: 9px;
+  font-family: "Inter", sans-serif;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+}
+
+.wardrobe-card-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: nowrap;
+  margin: 0;
+}
+
+.wardrobe-card-name-group {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.wardrobe-card-name {
+  font-family: "Cormorant Garamond", "Playfair Display", serif;
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1.25;
+  color: #1a1a1a;
+  min-width: 0;
+  margin: 0;
+  letter-spacing: -0.04em;
   overflow: hidden;
-  transition: max-height 0.35s ease, opacity 0.3s ease;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wardrobe-card-cpw {
+  font-family: "Inter", sans-serif;
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: #1a1a1a;
+  margin: 0;
+  flex-shrink: 0;
+}
+
+.wardrobe-card-cpw-empty {
+  font-weight: 500;
+  color: #64748b;
+  font-size: 0.75rem;
+}
+
+.wardrobe-card-desc {
+  margin-top: 6px;
+}
+
+.wardrobe-card-desc-text {
+  font-size: 0.7rem;
+  font-style: italic;
+  color: #64748b;
+  line-height: 1.45;
+}
+
+.wardrobe-card-image-frame {
+  overflow: hidden;
+}
+
+.wardrobe-card-image-frame .wardrobe-card-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: auto;
+  object-fit: contain;
+  object-position: center;
+}
+
+.wardrobe-card-footer {
+  margin-top: auto;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+/* Ghost controls — strip fades; anchored to card bottom via footer */
+.wardrobe-card-options {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
+  justify-content: flex-end;
   gap: 8px;
   margin: 0;
   padding: 0;
+  width: 100%;
+  z-index: 2;
+  opacity: 0;
   pointer-events: none;
+  transition: opacity 0.3s ease-in-out;
 }
 
 .wardrobe-gallery-card:hover .wardrobe-card-options {
-  max-height: 160px;
   opacity: 1;
-  margin-top: 10px;
-  padding-top: 4px;
   pointer-events: auto;
 }
 
 .wardrobe-card-wear-label {
-  position: absolute;
-  bottom: 2rem;
-  left: 2rem;
   font-family: "Inter", sans-serif;
-  font-size: 0.65rem;
+  font-size: 9px;
   font-weight: 400;
-  color: #b0b0b0;
-  letter-spacing: 0.06em;
+  color: #c8c8c8;
+  letter-spacing: 0.04em;
   pointer-events: none;
+  align-self: flex-start;
 }
 
 @keyframes fos-pulse {

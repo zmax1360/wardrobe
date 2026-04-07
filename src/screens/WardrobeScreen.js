@@ -2,10 +2,44 @@ import React, { useState } from "react";
 
 import { FINANCE } from "../styles/financeTheme";
 import { COLORS, baseTransition } from "../styles/theme";
-import { type } from "../styles/typography";
 import { calculateCPW, getPurchasePriceNum, getWearCount } from "../utils/wardrobeFinance";
 
+const GALLERY_BG = "#FFFFFF";
 const CARD_BG = "#FFFFFF";
+
+/** Hide noisy raw URLs and long uncleaned blobs on cards. */
+const DESCRIPTION_MAX_CHARS = 200;
+
+function firstHttpUrlInString(str) {
+  const m = String(str).match(/https?:\/\/[^\s<>"']+/i);
+  return m ? m[0] : null;
+}
+
+/**
+ * @returns {{ kind: "link"; href: string } | { kind: "text"; text: string } | null}
+ */
+function describeWardrobeCardText(raw) {
+  if (raw == null || typeof raw !== "string") return null;
+  const t = raw.trim();
+  if (!t) return null;
+
+  if (t.toLowerCase().startsWith("http")) {
+    return { kind: "link", href: t };
+  }
+
+  if (t.length > DESCRIPTION_MAX_CHARS) {
+    const embedded = firstHttpUrlInString(t);
+    if (embedded) return { kind: "link", href: embedded };
+    return null;
+  }
+
+  const embedded = firstHttpUrlInString(t);
+  if (embedded && (t.length > 90 || /imported|mock|source:/i.test(t))) {
+    return { kind: "link", href: embedded };
+  }
+
+  return { kind: "text", text: t };
+}
 
 export function WardrobeScreen({
   profile: _profile,
@@ -70,7 +104,7 @@ export function WardrobeScreen({
       <div
         className="wardrobe-page"
         style={{
-          background: "#FFFFFF",
+          background: GALLERY_BG,
           color: FINANCE.text,
           fontFamily: "'Inter', 'DM Sans', sans-serif",
           minHeight: 400,
@@ -210,15 +244,6 @@ export function WardrobeScreen({
                     ? "#D4A017"
                     : "#8B8B8B";
 
-              const metaCaps = {
-                fontSize: "10px",
-                letterSpacing: "0.15em",
-                textTransform: "uppercase",
-                fontFamily: "'Inter', sans-serif",
-                fontWeight: 600,
-                color: FINANCE.muted,
-              };
-
               return (
                 <div
                   key={it.id}
@@ -230,17 +255,9 @@ export function WardrobeScreen({
                     flexDirection: "column",
                   }}
                 >
-                  <div
-                    style={{
-                      padding: "3rem",
-                      paddingBottom: "3.25rem",
-                      display: "flex",
-                      flexDirection: "column",
-                      flex: 1,
-                      minHeight: 0,
-                    }}
-                  >
+                  <div className="wardrobe-card-inner">
                     <div
+                      className="wardrobe-card-image-frame"
                       style={{
                         position: "relative",
                         aspectRatio: "3 / 4",
@@ -250,41 +267,15 @@ export function WardrobeScreen({
                         alignItems: "center",
                         justifyContent: "center",
                         background: CARD_BG,
+                        minHeight: 0,
                       }}
                     >
-                      <span
-                        style={{
-                          position: "absolute",
-                          top: 10,
-                          right: 10,
-                          width: 6,
-                          height: 6,
-                          borderRadius: "50%",
-                          background: statusDotColor,
-                          opacity: 0.72,
-                          pointerEvents: "none",
-                        }}
-                        title={
-                          it.laundryStatus === "clean"
-                            ? "Clean"
-                            : it.laundryStatus === "dirty"
-                              ? "Dirty"
-                              : "In wash"
-                        }
-                        aria-hidden
-                      />
                       {it.imagePreview ? (
                         <img
+                          className="wardrobe-card-image"
                           src={it.imagePreview}
                           alt=""
-                          style={{
-                            maxWidth: "100%",
-                            maxHeight: "100%",
-                            width: "auto",
-                            height: "auto",
-                            objectFit: "contain",
-                            display: "block",
-                          }}
+                          style={{ display: "block" }}
                         />
                       ) : (
                         <div style={{ color: FINANCE.muted, fontSize: "0.8rem" }}>No photo</div>
@@ -292,58 +283,52 @@ export function WardrobeScreen({
                     </div>
 
                     <div
+                      className="wardrobe-card-text-block"
                       style={{
-                        paddingTop: "1.25rem",
+                        paddingTop: 20,
                         display: "flex",
                         flexDirection: "column",
                         flex: 1,
                         minHeight: 0,
                       }}
                     >
-                      <div style={{ ...metaCaps, marginBottom: 8 }}>{(it.category || "Uncategorized").toUpperCase()}</div>
+                      <div className="wardrobe-card-category" style={{ marginBottom: 8 }}>
+                        {it.category || "Uncategorized"}
+                      </div>
 
-                      <div
-                        style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "baseline",
-                          gap: 12,
-                          flexWrap: "nowrap",
-                          margin: 0,
-                        }}
-                      >
-                        <div
-                          style={{
-                            fontFamily: "'Cormorant Garamond', 'Playfair Display', serif",
-                            fontSize: "1rem",
-                            fontWeight: 600,
-                            lineHeight: 1.25,
-                            color: FINANCE.text,
-                            flex: "1 1 auto",
-                            minWidth: 0,
-                            margin: 0,
-                            letterSpacing: "-0.03em",
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            whiteSpace: "nowrap",
-                          }}
-                        >
-                          {it.name}
+                      <div className="wardrobe-card-title-row">
+                        <div className="wardrobe-card-name-group">
+                          <span
+                            style={{
+                              width: 6,
+                              height: 6,
+                              borderRadius: "50%",
+                              background: statusDotColor,
+                              flexShrink: 0,
+                              opacity: 0.85,
+                            }}
+                            title={
+                              it.laundryStatus === "clean"
+                                ? "Clean"
+                                : it.laundryStatus === "dirty"
+                                  ? "Dirty"
+                                  : "In wash"
+                            }
+                            aria-label={
+                              it.laundryStatus === "clean"
+                                ? "Clean"
+                                : it.laundryStatus === "dirty"
+                                  ? "Dirty"
+                                  : "In wash"
+                            }
+                          />
+                          <div className="wardrobe-card-name">{it.name}</div>
                         </div>
-                        <div
-                          style={{
-                            fontFamily: "'Inter', sans-serif",
-                            fontSize: "0.8125rem",
-                            fontWeight: 700,
-                            color: FINANCE.text,
-                            margin: 0,
-                            flexShrink: 0,
-                          }}
-                        >
+                        <div className="wardrobe-card-cpw">
                           {cpwFormatted != null ? (
                             <>${cpwFormatted}</>
                           ) : (
-                            <span style={{ fontWeight: 500, color: FINANCE.muted, fontSize: "0.75rem" }}>—</span>
+                            <span className="wardrobe-card-cpw-empty">—</span>
                           )}
                         </div>
                       </div>
@@ -354,36 +339,71 @@ export function WardrobeScreen({
                           {it.season ? ` · ${it.season}` : ""}
                         </div>
                       )}
-                      {it.description && (
-                        <div style={{ ...type.body, fontSize: "0.75rem", fontStyle: "italic", color: FINANCE.muted, marginTop: 4 }}>
-                          {it.description}
-                        </div>
-                      )}
+                      {(() => {
+                        const desc = describeWardrobeCardText(it.description);
+                        if (!desc) return null;
+                        if (desc.kind === "link") {
+                          return (
+                            <div className="wardrobe-card-desc">
+                              <a
+                                href={desc.href}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                style={{ fontSize: "10px", color: "#999", textDecoration: "underline" }}
+                              >
+                                View Product Page
+                              </a>
+                            </div>
+                          );
+                        }
+                        return (
+                          <div className="wardrobe-card-desc">
+                            <span className="wardrobe-card-desc-text">{desc.text}</span>
+                          </div>
+                        );
+                      })()}
+                    </div>
 
+                    <div className="wardrobe-card-footer">
+                      <div className="wardrobe-card-wear-label" aria-label={`${wc} wears`}>
+                        {wc} wears
+                      </div>
                       <div className="wardrobe-card-options">
                         {[
-                          { key: "clean", label: "Clean" },
-                          { key: "dirty", label: "Dirty" },
-                          { key: "wash", label: "In wash" },
+                          { key: "clean", label: "Clean", dot: "#2D6A4F" },
+                          { key: "dirty", label: "Dirty", dot: "#D4A017" },
+                          { key: "wash", label: "In wash", dot: "#8B8B8B" },
                         ].map((b) => {
                           const sel = it.laundryStatus === b.key;
                           return (
                             <button
                               key={b.key}
                               type="button"
+                              aria-label={`Set laundry: ${b.label}`}
                               onClick={() => updateItem(it.id, { laundryStatus: b.key })}
                               style={{
-                                padding: "5px 10px",
-                                borderRadius: 6,
-                                border: `1px solid ${sel ? "rgba(0,0,0,0.2)" : "rgba(0,0,0,0.08)"}`,
+                                width: 28,
+                                height: 28,
+                                padding: 0,
+                                borderRadius: "50%",
+                                border: `1px solid ${sel ? "rgba(0,0,0,0.22)" : "rgba(0,0,0,0.08)"}`,
                                 background: "transparent",
-                                fontSize: "0.65rem",
                                 cursor: "pointer",
-                                color: FINANCE.text,
-                                fontFamily: "'Inter', sans-serif",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
                               }}
                             >
-                              {b.label}
+                              <span
+                                style={{
+                                  width: 6,
+                                  height: 6,
+                                  borderRadius: "50%",
+                                  background: b.dot,
+                                  opacity: sel ? 1 : 0.45,
+                                }}
+                                aria-hidden
+                              />
                             </button>
                           );
                         })}
@@ -448,9 +468,6 @@ export function WardrobeScreen({
                         </button>
                       </div>
                     </div>
-                  </div>
-                  <div className="wardrobe-card-wear-label" aria-label={`${wc} wears`}>
-                    {wc} wears
                   </div>
                 </div>
               );
