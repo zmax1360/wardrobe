@@ -35,6 +35,7 @@ function stripWardrobeForStorage(items) {
       expectedLifespan,
       timesWorn,
       cost,
+      mockPrice,
       imagePreview,
       imageFilename,
     }) => ({
@@ -54,6 +55,7 @@ function stripWardrobeForStorage(items) {
       expectedLifespan,
       timesWorn,
       cost,
+      mockPrice,
       imagePreview,
       imageFilename,
     })

@@ -1,8 +1,8 @@
 /**
- * Wardrobe item schema (client / Firestore) — financial fields:
- * purchasePrice (number), wearCount (int), purchaseDate (ISO date string),
- * expectedLifespan (int, days). Derived: costPerWear = purchasePrice / max(wearCount, 1).
- * Legacy: cost (string), timesWorn (int) — mirrored on migrate.
+ * Wardrobe item schema — Financial Asset Gallery:
+ * purchasePrice (number, default 0), wearCount (int, default 0), category (string),
+ * mockPrice (optional, from link-import mocks). Derived CPW: calculateCPW(price, wears) = price / max(wears, 1).
+ * Legacy: cost (string), timesWorn (int).
  */
 const express = require("express");
 const multer = require("multer");
@@ -49,10 +49,11 @@ app.post("/api/mock-product-link", (req, res) => {
   const url = req.body && typeof req.body.url === "string" ? req.body.url.trim() : "";
   if (!url) return res.status(400).json({ error: "url required" });
   const hash = Math.abs(url.split("").reduce((a, c) => a + c.charCodeAt(0), 0));
-  const price = 49 + (hash % 200);
+  const mockPrice = 49 + (hash % 200);
   res.json({
     title: "Imported piece (mock)",
-    price,
+    price: mockPrice,
+    mockPrice,
     imageUrl: `https://picsum.photos/seed/srv${hash}/400/520`,
     sourceUrl: url,
   });

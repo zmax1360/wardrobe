@@ -67,7 +67,7 @@ export function AppLayout({ activeNav, setActiveNav, children }) {
     >
       <aside
         style={mergeStyles(ui.sidebar, {
-          width: 80,
+          width: 72,
           flexShrink: 0,
           position: "fixed",
           left: 0,
@@ -76,10 +76,15 @@ export function AppLayout({ activeNav, setActiveNav, children }) {
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
-          paddingTop: 24,
-          gap: 8,
+          paddingTop: 20,
+          gap: 6,
           zIndex: 20,
           overflowY: "auto",
+          boxShadow: "none",
+          borderRight: "1px solid #EEEEEE",
+          background: "#FFFFFF",
+          backdropFilter: "none",
+          WebkitBackdropFilter: "none",
         })}
       >
         <div

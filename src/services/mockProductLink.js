@@ -7,10 +7,11 @@ export async function mockScrapeProductFromUrl(url) {
   }
   await new Promise((r) => setTimeout(r, 700));
   const hash = Math.abs(url.split("").reduce((a, c) => a + c.charCodeAt(0), 0));
-  const price = 49 + (hash % 200);
+  const mockPrice = 49 + (hash % 200);
   return {
     title: "Imported piece (mock)",
-    price,
+    price: mockPrice,
+    mockPrice,
     imageUrl: `https://picsum.photos/seed/fos${hash}/400/520`,
     sourceUrl: url.trim(),
   };

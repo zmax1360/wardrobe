@@ -3,11 +3,19 @@
  * Canonical: purchasePrice, wearCount, purchaseDate, expectedLifespan (days).
  */
 
+import { calculateCPW } from "./calculateCPW";
+
+export { calculateCPW } from "./calculateCPW";
+
 export function getPurchasePriceNum(it) {
   if (it == null) return 0;
   if (it.purchasePrice != null && it.purchasePrice !== "") {
     const n = typeof it.purchasePrice === "number" ? it.purchasePrice : parseFloat(String(it.purchasePrice).replace(/[^0-9.-]/g, ""));
     return Number.isFinite(n) ? n : 0;
+  }
+  if (it.mockPrice != null && it.mockPrice !== "") {
+    const n = typeof it.mockPrice === "number" ? it.mockPrice : parseFloat(String(it.mockPrice).replace(/[^0-9.-]/g, ""));
+    if (Number.isFinite(n)) return n;
   }
   if (it.cost == null || it.cost === "") return 0;
   const n = parseFloat(String(it.cost).replace(/[^0-9.-]/g, ""));
@@ -24,9 +32,7 @@ export function getWearCount(it) {
 
 /** Cost per wear: purchasePrice / max(wearCount, 1) */
 export function getCostPerWear(it) {
-  const price = getPurchasePriceNum(it);
-  const wc = getWearCount(it);
-  return price / Math.max(wc, 1);
+  return calculateCPW(getPurchasePriceNum(it), getWearCount(it));
 }
 
 /** Sort clean items: highest CPW first (under-worn expensive pieces). */

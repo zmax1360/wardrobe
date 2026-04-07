@@ -45,7 +45,6 @@ import { WardrobeEquityScreen } from "./screens/WardrobeEquityScreen";
 import { AgentPanel } from "./components/AgentPanel";
 import {
   getWearCount,
-  getCostPerWear,
   compareCleanItemsByPriorityCPW,
   getPurchasePriceNum,
 } from "./utils/wardrobeFinance";
@@ -263,6 +262,13 @@ function defaultProfile() {
     bottomSize: "",
     shoeSize: "",
   };
+}
+
+/** Cost per wear for wardrobe financials — mirrors `utils/calculateCPW.js`. */
+function calculateCPW(price, wears) {
+  const p = typeof price === "number" && Number.isFinite(price) ? price : parseFloat(String(price ?? 0).replace(/[^0-9.-]/g, "")) || 0;
+  const w = typeof wears === "number" && Number.isFinite(wears) ? wears : parseInt(String(wears ?? 0), 10) || 0;
+  return p / Math.max(w, 1);
 }
 
 export default function App() {
@@ -588,7 +594,7 @@ export default function App() {
         material: String(parsed.material || ""),
         description: String(parsed.description || ""),
         laundryStatus: "clean",
-        purchasePrice: "",
+        purchasePrice: 0,
         wearCount: 0,
         timesWorn: 0,
         cost: "",
@@ -620,6 +626,7 @@ export default function App() {
 
   const ingestFromMockLink = async (url) => {
     const data = await mockScrapeProductFromUrl(url);
+    const mockPrice = data.mockPrice ?? data.price;
     const id = crypto.randomUUID ? crypto.randomUUID() : String(Date.now());
     addItem({
       id,
@@ -634,10 +641,11 @@ export default function App() {
       material: "",
       description: `Imported from link (mock): ${data.sourceUrl}`,
       laundryStatus: "clean",
-      purchasePrice: data.price,
+      mockPrice,
+      purchasePrice: mockPrice,
       wearCount: 0,
       timesWorn: 0,
-      cost: String(data.price),
+      cost: String(mockPrice),
       purchaseDate: new Date().toISOString().split("T")[0],
       expectedLifespan: 365,
     });
@@ -1304,17 +1312,29 @@ export default function App() {
       <AppLayoutSidebarDataProvider profile={profile} wardrobe={wardrobe} events={events}>
         <AppLayout activeNav={activeNav} setActiveNav={setActiveNav}>
         <header
-          style={mergeStyles(ui.topBar, {
+          style={{
             position: "sticky",
             top: 0,
             zIndex: 10,
-            padding: "28px 32px",
+            padding: "20px 32px 16px 40px",
             width: "100%",
             boxSizing: "border-box",
-          })}
+            background: "transparent",
+            border: "none",
+            boxShadow: "none",
+          }}
         >
-          <div style={type.eyebrow}>{agentTitle}</div>
-          <div style={{ ...type.heroTitle, fontSize: 42, marginTop: 10, lineHeight: 1.05 }}>
+          <div style={{ ...type.eyebrow, fontSize: "0.65rem", opacity: 0.75 }}>{agentTitle}</div>
+          <div
+            style={{
+              fontFamily: "'Cormorant Garamond', serif",
+              fontSize: "1.35rem",
+              fontWeight: 500,
+              marginTop: 6,
+              color: COLORS.text,
+              letterSpacing: "0.02em",
+            }}
+          >
             Welcome{userName ? `, ${userName}` : ""}
           </div>
         </header>
@@ -2071,8 +2091,9 @@ function buildCleanWardrobeList(items) {
   if (clean.length === 0) return "";
   return clean
     .map((it, i) => {
-      const cpw = getCostPerWear(it);
       const pp = getPurchasePriceNum(it);
+      const wc = getWearCount(it);
+      const cpw = calculateCPW(pp, wc);
       const cpwHint = pp > 0 ? ` · CPW $${cpw.toFixed(2)} (priority ${i + 1})` : "";
       return `- ${it.name} (${it.category}): ${it.color}, style: ${it.style || "—"}, season: ${it.season || "—"}${cpwHint}`;
     })

@@ -5,17 +5,9 @@ import { COLORS, baseTransition } from "../styles/theme";
 import { type } from "../styles/typography";
 import { ui } from "../styles/ui";
 import { mergeStyles } from "../utils/styleUtils";
-import { getCostPerWear, getPurchasePriceNum, getWearCount } from "../utils/wardrobeFinance";
+import { calculateCPW, getPurchasePriceNum, getWearCount } from "../utils/wardrobeFinance";
 
-/** Mood board cell span pattern (repeat) */
-const MOOD_SPANS = [
-  { c: 2, r: 2 },
-  { c: 1, r: 1 },
-  { c: 1, r: 1 },
-  { c: 1, r: 2 },
-  { c: 2, r: 1 },
-  { c: 1, r: 1 },
-];
+const CARD_BG = "#F9F9F9";
 
 export function WardrobeScreen({
   profile: _profile,
@@ -104,10 +96,10 @@ export function WardrobeScreen({
                 letterSpacing: "-0.02em",
               }}
             >
-              Closet mood board
+              Financial Asset Gallery
             </h1>
             <p style={{ margin: 0, fontSize: "0.88rem", color: FINANCE.muted }}>
-              Financially aware wardrobe · CPW at a glance
+              Wardrobe as balance sheet · CPW on every piece
             </p>
           </div>
           <button
@@ -216,47 +208,89 @@ export function WardrobeScreen({
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
-              gridAutoRows: "minmax(120px, auto)",
-              gap: 14,
+              gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))",
+              gap: 20,
             }}
           >
-            {filteredWardrobe.map((it, idx) => {
-              const span = MOOD_SPANS[idx % MOOD_SPANS.length];
+            {filteredWardrobe.map((it) => {
               const tags = (it.tags || []).slice(0, 3);
               const pp = getPurchasePriceNum(it);
               const wc = getWearCount(it);
-              const cpw = pp > 0 ? getCostPerWear(it).toFixed(2) : null;
+              const cpwFormatted = pp > 0 ? calculateCPW(pp, wc).toFixed(2) : null;
 
               const laundryLabel =
                 it.laundryStatus === "clean"
                   ? "Clean"
                   : it.laundryStatus === "dirty"
                     ? "Dirty"
-                    : "Wash";
+                    : "In wash";
+
+              const metaCaps = {
+                fontSize: "0.58rem",
+                letterSpacing: "0.14em",
+                textTransform: "uppercase",
+                fontFamily: "'Inter', sans-serif",
+                fontWeight: 600,
+                color: FINANCE.muted,
+              };
 
               return (
                 <div
                   key={it.id}
                   style={{
-                    gridColumn: `span ${span.c}`,
-                    gridRow: `span ${span.r}`,
-                    borderRadius: 18,
+                    borderRadius: 16,
                     border: `1px solid ${FINANCE.border}`,
-                    background: "#fff",
+                    background: CARD_BG,
                     overflow: "hidden",
                     display: "flex",
                     flexDirection: "column",
+                    position: "relative",
                     transition: baseTransition,
-                    boxShadow: "0 8px 32px rgba(26,26,26,0.06)",
                   }}
                 >
+                  <button
+                    type="button"
+                    title="Log wear"
+                    aria-label="Log wear"
+                    onClick={() =>
+                      updateItem(it.id, {
+                        wearCount: wc + 1,
+                        timesWorn: wc + 1,
+                      })
+                    }
+                    style={{
+                      position: "absolute",
+                      top: 12,
+                      right: 12,
+                      zIndex: 2,
+                      width: 36,
+                      height: 36,
+                      borderRadius: "50%",
+                      border: `1px solid ${FINANCE.border}`,
+                      background: "#fff",
+                      color: FINANCE.text,
+                      fontSize: "1.25rem",
+                      lineHeight: 1,
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      boxShadow: "0 4px 14px rgba(0,0,0,0.06)",
+                    }}
+                  >
+                    +
+                  </button>
+
                   <div
                     style={{
-                      position: "relative",
-                      flex: 1,
-                      minHeight: span.r > 1 ? 200 : 140,
-                      background: FINANCE.slateSoft,
+                      aspectRatio: "3 / 4",
+                      width: "100%",
+                      padding: 24,
+                      boxSizing: "border-box",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      background: CARD_BG,
                     }}
                   >
                     {it.imagePreview ? (
@@ -264,73 +298,50 @@ export function WardrobeScreen({
                         src={it.imagePreview}
                         alt=""
                         style={{
-                          width: "100%",
-                          height: "100%",
-                          objectFit: "cover",
+                          maxWidth: "100%",
+                          maxHeight: "100%",
+                          width: "auto",
+                          height: "auto",
+                          objectFit: "contain",
                           display: "block",
-                          transform: `rotate(${((idx * 7) % 5) - 2}deg) scale(1.02)`,
                         }}
                       />
                     ) : (
-                      <div
-                        style={{
-                          height: "100%",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          color: FINANCE.muted,
-                          fontSize: "0.8rem",
-                        }}
-                      >
-                        No photo
+                      <div style={{ color: FINANCE.muted, fontSize: "0.8rem" }}>No photo</div>
+                    )}
+                  </div>
+
+                  <div style={{ padding: "12px 16px 20px", position: "relative", flex: 1, minHeight: 120 }}>
+                    <div style={{ ...metaCaps, marginBottom: 6 }}>
+                      {(it.category || "Uncategorized").toUpperCase()} · {laundryLabel.toUpperCase()}
+                    </div>
+                    <div
+                      style={{
+                        fontFamily: "'Cormorant Garamond', 'Playfair Display', serif",
+                        fontSize: "1rem",
+                        fontWeight: 600,
+                        lineHeight: 1.35,
+                        color: FINANCE.text,
+                        paddingRight: 72,
+                      }}
+                    >
+                      {it.name}
+                    </div>
+                    {(it.color || it.season) && (
+                      <div style={{ fontSize: "0.75rem", color: FINANCE.muted, marginTop: 4 }}>
+                        {it.color}
+                        {it.season ? ` · ${it.season}` : ""}
                       </div>
                     )}
-                    <span
-                      style={{
-                        position: "absolute",
-                        top: 10,
-                        left: 10,
-                        padding: "4px 8px",
-                        borderRadius: 6,
-                        background: "rgba(255,255,255,0.92)",
-                        fontSize: "0.65rem",
-                        color: FINANCE.text,
-                        border: `1px solid ${FINANCE.border}`,
-                      }}
-                    >
-                      {laundryLabel}
-                    </span>
-                    <span
-                      style={{
-                        position: "absolute",
-                        top: 10,
-                        right: 10,
-                        padding: "4px 8px",
-                        borderRadius: 6,
-                        background: FINANCE.text,
-                        color: "#fff",
-                        fontSize: "0.65rem",
-                        fontWeight: 600,
-                      }}
-                    >
-                      {it.category}
-                    </span>
-                  </div>
-                  <div style={{ padding: "14px 16px 16px", display: "flex", flexDirection: "column", gap: 8 }}>
-                    <div style={{ fontFamily: "'Playfair Display', serif", fontSize: "1.05rem", fontWeight: 600 }}>{it.name}</div>
-                    <div style={{ fontSize: "0.78rem", color: FINANCE.muted }}>
-                      {it.color}
-                      {it.season ? ` · ${it.season}` : ""}
-                    </div>
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 8 }}>
                       {tags.map((t) => (
                         <span
                           key={t}
                           style={{
-                            padding: "3px 7px",
+                            padding: "2px 6px",
                             borderRadius: 4,
-                            background: FINANCE.accentSoft,
-                            fontSize: "0.68rem",
+                            background: "rgba(255,255,255,0.8)",
+                            fontSize: "0.65rem",
                             color: FINANCE.muted,
                           }}
                         >
@@ -339,20 +350,38 @@ export function WardrobeScreen({
                       ))}
                     </div>
                     {it.description && (
-                      <div style={{ ...type.body, fontSize: "0.8rem", fontStyle: "italic", color: FINANCE.muted }}>{it.description}</div>
+                      <div style={{ ...type.body, fontSize: "0.75rem", fontStyle: "italic", color: FINANCE.muted, marginTop: 6 }}>
+                        {it.description}
+                      </div>
                     )}
-                    <div style={{ fontSize: "0.78rem", color: FINANCE.muted }}>
-                      Worn <strong style={{ color: FINANCE.text }}>{wc}</strong> ·
-                      {cpw != null ? (
+                    <div style={{ fontSize: "0.72rem", color: FINANCE.muted, marginTop: 8 }}>
+                      Wears logged: <strong style={{ color: FINANCE.text }}>{wc}</strong>
+                    </div>
+
+                    <div
+                      style={{
+                        position: "absolute",
+                        right: 14,
+                        bottom: 14,
+                        textAlign: "right",
+                        fontFamily: "'Inter', sans-serif",
+                      }}
+                    >
+                      {cpwFormatted != null ? (
                         <>
-                          {" "}
-                          CPW <strong style={{ color: FINANCE.text }}>${cpw}</strong>
+                          <div style={{ fontSize: "0.58rem", letterSpacing: "0.12em", textTransform: "uppercase", color: FINANCE.muted }}>
+                            CPW
+                          </div>
+                          <div style={{ fontSize: "1.05rem", fontWeight: 600, color: FINANCE.text, letterSpacing: "-0.02em" }}>
+                            ${cpwFormatted}
+                          </div>
                         </>
                       ) : (
-                        " add price for CPW"
+                        <div style={{ fontSize: "0.7rem", color: FINANCE.muted, maxWidth: 100 }}>Add price</div>
                       )}
                     </div>
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 14 }}>
                       {[
                         { key: "clean", label: "Clean" },
                         { key: "dirty", label: "Dirty" },
@@ -365,11 +394,11 @@ export function WardrobeScreen({
                             type="button"
                             onClick={() => updateItem(it.id, { laundryStatus: b.key })}
                             style={{
-                              padding: "6px 10px",
-                              borderRadius: 8,
+                              padding: "5px 8px",
+                              borderRadius: 6,
                               border: `1px solid ${sel ? FINANCE.slate : FINANCE.border}`,
-                              background: sel ? FINANCE.slateSoft : "transparent",
-                              fontSize: "0.72rem",
+                              background: sel ? "#fff" : "transparent",
+                              fontSize: "0.65rem",
                               cursor: "pointer",
                               color: FINANCE.text,
                             }}
@@ -379,35 +408,11 @@ export function WardrobeScreen({
                         );
                       })}
                     </div>
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 4 }}>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          updateItem(it.id, {
-                            wearCount: wc + 1,
-                            timesWorn: wc + 1,
-                            laundryStatus: "dirty",
-                          })
-                        }
-                        style={{
-                          flex: 1,
-                          minWidth: 88,
-                          padding: "12px 14px",
-                          borderRadius: 10,
-                          border: "none",
-                          background: FINANCE.text,
-                          color: "#fff",
-                          fontWeight: 600,
-                          fontSize: "0.82rem",
-                          cursor: "pointer",
-                        }}
-                      >
-                        Wore it
-                      </button>
+                    <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
                       <button
                         type="button"
                         onClick={() => openEdit(it)}
-                        style={mergeStyles(ui.secondaryButton, { padding: "12px 14px", fontSize: "0.82rem" })}
+                        style={mergeStyles(ui.secondaryButton, { padding: "8px 12px", fontSize: "0.78rem" })}
                       >
                         Edit
                       </button>
@@ -415,12 +420,12 @@ export function WardrobeScreen({
                         type="button"
                         onClick={() => removeItem(it.id)}
                         style={{
-                          padding: "12px 14px",
-                          borderRadius: 10,
+                          padding: "8px 12px",
+                          borderRadius: 999,
                           border: `1px solid ${COLORS.dangerSoft}`,
                           background: "#fff",
                           color: COLORS.danger,
-                          fontSize: "0.82rem",
+                          fontSize: "0.78rem",
                           cursor: "pointer",
                         }}
                       >
