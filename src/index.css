@@ -1,3 +1,119 @@
 body {
   margin: 0;
 }
+
+/* Luxury gallery: serif headings */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: "Playfair Display", "Cormorant Garamond", Georgia, serif;
+  letter-spacing: -0.03em;
+}
+
+/* Wardrobe page: breathing room */
+.wardrobe-page {
+  margin-top: 60px;
+  background: #ffffff;
+  min-height: 100vh;
+  box-sizing: border-box;
+}
+
+.wardrobe-page-header {
+  margin-bottom: 24px;
+}
+
+.wardrobe-page-title {
+  font-size: 2.5rem;
+  font-weight: 600;
+  letter-spacing: -0.04em;
+  margin: 0 0 6px;
+}
+
+.wardrobe-gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 2.5rem;
+  margin-top: 80px;
+}
+
+/* Ghost cards — #F0F0F0 edge, no shadow, crisp white */
+.wardrobe-gallery-card {
+  border-radius: 12px;
+  border: 1px solid #f0f0f0;
+  background: #ffffff;
+  box-sizing: border-box;
+  position: relative;
+  transition: border-color 0.25s ease;
+  box-shadow: none;
+}
+
+.wardrobe-gallery-card:hover {
+  border-color: #e8e8e8;
+}
+
+/* Actions hidden until hover */
+.wardrobe-card-options {
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  transition: max-height 0.35s ease, opacity 0.3s ease;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  pointer-events: none;
+}
+
+.wardrobe-gallery-card:hover .wardrobe-card-options {
+  max-height: 160px;
+  opacity: 1;
+  margin-top: 10px;
+  padding-top: 4px;
+  pointer-events: auto;
+}
+
+.wardrobe-card-wear-label {
+  position: absolute;
+  bottom: 2rem;
+  left: 2rem;
+  font-family: "Inter", sans-serif;
+  font-size: 0.65rem;
+  font-weight: 400;
+  color: #b0b0b0;
+  letter-spacing: 0.06em;
+  pointer-events: none;
+}
+
+@keyframes fos-pulse {
+  0% {
+    transform: scale(1);
+    color: inherit;
+  }
+  45% {
+    transform: scale(1.05);
+    color: #1a4d2e;
+  }
+  100% {
+    transform: scale(1);
+    color: inherit;
+  }
+}
+
+.fos-wear-count--pulse {
+  animation: fos-pulse 0.45s ease-out;
+}
+
+/* Sidebar: hairline only */
+.app-layout-sidebar {
+  border-right: 1px solid #f0f0f0 !important;
+  box-shadow: none !important;
+}
+
+.app-layout-sidebar-brand {
+  border-bottom: none !important;
+}

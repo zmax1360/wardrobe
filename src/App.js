@@ -1317,6 +1317,7 @@ export default function App() {
             top: 0,
             zIndex: 10,
             padding: "20px 32px 16px 40px",
+            marginBottom: "4rem",
             width: "100%",
             boxSizing: "border-box",
             background: "transparent",
@@ -1328,11 +1329,11 @@ export default function App() {
           <div
             style={{
               fontFamily: "'Cormorant Garamond', serif",
-              fontSize: "1.35rem",
+              fontSize: "1.2rem",
               fontWeight: 500,
               marginTop: 6,
               color: COLORS.text,
-              letterSpacing: "0.02em",
+              letterSpacing: "-0.03em",
             }}
           >
             Welcome{userName ? `, ${userName}` : ""}

@@ -3,11 +3,9 @@ import React, { useState } from "react";
 import { FINANCE } from "../styles/financeTheme";
 import { COLORS, baseTransition } from "../styles/theme";
 import { type } from "../styles/typography";
-import { ui } from "../styles/ui";
-import { mergeStyles } from "../utils/styleUtils";
 import { calculateCPW, getPurchasePriceNum, getWearCount } from "../utils/wardrobeFinance";
 
-const CARD_BG = "#F9F9F9";
+const CARD_BG = "#FFFFFF";
 
 export function WardrobeScreen({
   profile: _profile,
@@ -21,6 +19,7 @@ export function WardrobeScreen({
   const [storeLink, setStoreLink] = useState("");
   const [linkLoading, setLinkLoading] = useState(false);
   const [removeBgNext, setRemoveBgNext] = useState(false);
+  const [pulseWearId, setPulseWearId] = useState(null);
   const modalFileRef = React.useRef(null);
 
   const {
@@ -69,33 +68,26 @@ export function WardrobeScreen({
       <input ref={fileRef} type="file" accept="image/*" style={{ display: "none" }} onChange={(e) => onFileChange(e)} />
 
       <div
+        className="wardrobe-page"
         style={{
-          background: FINANCE.bg,
+          background: "#FFFFFF",
           color: FINANCE.text,
           fontFamily: "'Inter', 'DM Sans', sans-serif",
           minHeight: 400,
         }}
       >
         <div
+          className="wardrobe-page-header"
           style={{
             display: "flex",
             flexWrap: "wrap",
             alignItems: "center",
             justifyContent: "space-between",
             gap: 16,
-            marginBottom: 28,
           }}
         >
           <div>
-            <h1
-              style={{
-                fontFamily: "'Playfair Display', Georgia, serif",
-                fontSize: "1.85rem",
-                fontWeight: 600,
-                margin: "0 0 6px",
-                letterSpacing: "-0.02em",
-              }}
-            >
+            <h1 className="wardrobe-page-title" style={{ margin: "0 0 6px" }}>
               Financial Asset Gallery
             </h1>
             <p style={{ margin: 0, fontSize: "0.88rem", color: FINANCE.muted }}>
@@ -205,29 +197,22 @@ export function WardrobeScreen({
         {filteredWardrobe.length === 0 ? (
           <p style={{ color: FINANCE.muted }}>No pieces match these filters.</p>
         ) : (
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))",
-              gap: 20,
-            }}
-          >
+          <div className="wardrobe-gallery-grid">
             {filteredWardrobe.map((it) => {
-              const tags = (it.tags || []).slice(0, 3);
               const pp = getPurchasePriceNum(it);
               const wc = getWearCount(it);
               const cpwFormatted = pp > 0 ? calculateCPW(pp, wc).toFixed(2) : null;
 
-              const laundryLabel =
+              const statusDotColor =
                 it.laundryStatus === "clean"
-                  ? "Clean"
+                  ? "#2D6A4F"
                   : it.laundryStatus === "dirty"
-                    ? "Dirty"
-                    : "In wash";
+                    ? "#D4A017"
+                    : "#8B8B8B";
 
               const metaCaps = {
-                fontSize: "0.58rem",
-                letterSpacing: "0.14em",
+                fontSize: "10px",
+                letterSpacing: "0.15em",
                 textTransform: "uppercase",
                 fontFamily: "'Inter', sans-serif",
                 fontWeight: 600,
@@ -237,201 +222,235 @@ export function WardrobeScreen({
               return (
                 <div
                   key={it.id}
+                  className="wardrobe-gallery-card"
                   style={{
-                    borderRadius: 16,
-                    border: `1px solid ${FINANCE.border}`,
-                    background: CARD_BG,
+                    position: "relative",
                     overflow: "hidden",
                     display: "flex",
                     flexDirection: "column",
-                    position: "relative",
-                    transition: baseTransition,
                   }}
                 >
-                  <button
-                    type="button"
-                    title="Log wear"
-                    aria-label="Log wear"
-                    onClick={() =>
-                      updateItem(it.id, {
-                        wearCount: wc + 1,
-                        timesWorn: wc + 1,
-                      })
-                    }
-                    style={{
-                      position: "absolute",
-                      top: 12,
-                      right: 12,
-                      zIndex: 2,
-                      width: 36,
-                      height: 36,
-                      borderRadius: "50%",
-                      border: `1px solid ${FINANCE.border}`,
-                      background: "#fff",
-                      color: FINANCE.text,
-                      fontSize: "1.25rem",
-                      lineHeight: 1,
-                      cursor: "pointer",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      boxShadow: "0 4px 14px rgba(0,0,0,0.06)",
-                    }}
-                  >
-                    +
-                  </button>
-
                   <div
                     style={{
-                      aspectRatio: "3 / 4",
-                      width: "100%",
-                      padding: 24,
-                      boxSizing: "border-box",
+                      padding: "3rem",
+                      paddingBottom: "3.25rem",
                       display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      background: CARD_BG,
+                      flexDirection: "column",
+                      flex: 1,
+                      minHeight: 0,
                     }}
                   >
-                    {it.imagePreview ? (
-                      <img
-                        src={it.imagePreview}
-                        alt=""
+                    <div
+                      style={{
+                        position: "relative",
+                        aspectRatio: "3 / 4",
+                        width: "100%",
+                        boxSizing: "border-box",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        background: CARD_BG,
+                      }}
+                    >
+                      <span
                         style={{
-                          maxWidth: "100%",
-                          maxHeight: "100%",
-                          width: "auto",
-                          height: "auto",
-                          objectFit: "contain",
-                          display: "block",
+                          position: "absolute",
+                          top: 10,
+                          right: 10,
+                          width: 6,
+                          height: 6,
+                          borderRadius: "50%",
+                          background: statusDotColor,
+                          opacity: 0.72,
+                          pointerEvents: "none",
                         }}
+                        title={
+                          it.laundryStatus === "clean"
+                            ? "Clean"
+                            : it.laundryStatus === "dirty"
+                              ? "Dirty"
+                              : "In wash"
+                        }
+                        aria-hidden
                       />
-                    ) : (
-                      <div style={{ color: FINANCE.muted, fontSize: "0.8rem" }}>No photo</div>
-                    )}
-                  </div>
-
-                  <div style={{ padding: "12px 16px 20px", position: "relative", flex: 1, minHeight: 120 }}>
-                    <div style={{ ...metaCaps, marginBottom: 6 }}>
-                      {(it.category || "Uncategorized").toUpperCase()} · {laundryLabel.toUpperCase()}
-                    </div>
-                    <div
-                      style={{
-                        fontFamily: "'Cormorant Garamond', 'Playfair Display', serif",
-                        fontSize: "1rem",
-                        fontWeight: 600,
-                        lineHeight: 1.35,
-                        color: FINANCE.text,
-                        paddingRight: 72,
-                      }}
-                    >
-                      {it.name}
-                    </div>
-                    {(it.color || it.season) && (
-                      <div style={{ fontSize: "0.75rem", color: FINANCE.muted, marginTop: 4 }}>
-                        {it.color}
-                        {it.season ? ` · ${it.season}` : ""}
-                      </div>
-                    )}
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 8 }}>
-                      {tags.map((t) => (
-                        <span
-                          key={t}
+                      {it.imagePreview ? (
+                        <img
+                          src={it.imagePreview}
+                          alt=""
                           style={{
-                            padding: "2px 6px",
-                            borderRadius: 4,
-                            background: "rgba(255,255,255,0.8)",
-                            fontSize: "0.65rem",
-                            color: FINANCE.muted,
+                            maxWidth: "100%",
+                            maxHeight: "100%",
+                            width: "auto",
+                            height: "auto",
+                            objectFit: "contain",
+                            display: "block",
                           }}
-                        >
-                          {t}
-                        </span>
-                      ))}
-                    </div>
-                    {it.description && (
-                      <div style={{ ...type.body, fontSize: "0.75rem", fontStyle: "italic", color: FINANCE.muted, marginTop: 6 }}>
-                        {it.description}
-                      </div>
-                    )}
-                    <div style={{ fontSize: "0.72rem", color: FINANCE.muted, marginTop: 8 }}>
-                      Wears logged: <strong style={{ color: FINANCE.text }}>{wc}</strong>
-                    </div>
-
-                    <div
-                      style={{
-                        position: "absolute",
-                        right: 14,
-                        bottom: 14,
-                        textAlign: "right",
-                        fontFamily: "'Inter', sans-serif",
-                      }}
-                    >
-                      {cpwFormatted != null ? (
-                        <>
-                          <div style={{ fontSize: "0.58rem", letterSpacing: "0.12em", textTransform: "uppercase", color: FINANCE.muted }}>
-                            CPW
-                          </div>
-                          <div style={{ fontSize: "1.05rem", fontWeight: 600, color: FINANCE.text, letterSpacing: "-0.02em" }}>
-                            ${cpwFormatted}
-                          </div>
-                        </>
+                        />
                       ) : (
-                        <div style={{ fontSize: "0.7rem", color: FINANCE.muted, maxWidth: 100 }}>Add price</div>
+                        <div style={{ color: FINANCE.muted, fontSize: "0.8rem" }}>No photo</div>
                       )}
                     </div>
 
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 14 }}>
-                      {[
-                        { key: "clean", label: "Clean" },
-                        { key: "dirty", label: "Dirty" },
-                        { key: "wash", label: "In wash" },
-                      ].map((b) => {
-                        const sel = it.laundryStatus === b.key;
-                        return (
-                          <button
-                            key={b.key}
-                            type="button"
-                            onClick={() => updateItem(it.id, { laundryStatus: b.key })}
-                            style={{
-                              padding: "5px 8px",
-                              borderRadius: 6,
-                              border: `1px solid ${sel ? FINANCE.slate : FINANCE.border}`,
-                              background: sel ? "#fff" : "transparent",
-                              fontSize: "0.65rem",
-                              cursor: "pointer",
-                              color: FINANCE.text,
-                            }}
-                          >
-                            {b.label}
-                          </button>
-                        );
-                      })}
-                    </div>
-                    <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
-                      <button
-                        type="button"
-                        onClick={() => openEdit(it)}
-                        style={mergeStyles(ui.secondaryButton, { padding: "8px 12px", fontSize: "0.78rem" })}
-                      >
-                        Edit
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => removeItem(it.id)}
+                    <div
+                      style={{
+                        paddingTop: "1.25rem",
+                        display: "flex",
+                        flexDirection: "column",
+                        flex: 1,
+                        minHeight: 0,
+                      }}
+                    >
+                      <div style={{ ...metaCaps, marginBottom: 8 }}>{(it.category || "Uncategorized").toUpperCase()}</div>
+
+                      <div
                         style={{
-                          padding: "8px 12px",
-                          borderRadius: 999,
-                          border: `1px solid ${COLORS.dangerSoft}`,
-                          background: "#fff",
-                          color: COLORS.danger,
-                          fontSize: "0.78rem",
-                          cursor: "pointer",
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "baseline",
+                          gap: 12,
+                          flexWrap: "nowrap",
+                          margin: 0,
                         }}
                       >
-                        Remove
-                      </button>
+                        <div
+                          style={{
+                            fontFamily: "'Cormorant Garamond', 'Playfair Display', serif",
+                            fontSize: "1rem",
+                            fontWeight: 600,
+                            lineHeight: 1.25,
+                            color: FINANCE.text,
+                            flex: "1 1 auto",
+                            minWidth: 0,
+                            margin: 0,
+                            letterSpacing: "-0.03em",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {it.name}
+                        </div>
+                        <div
+                          style={{
+                            fontFamily: "'Inter', sans-serif",
+                            fontSize: "0.8125rem",
+                            fontWeight: 700,
+                            color: FINANCE.text,
+                            margin: 0,
+                            flexShrink: 0,
+                          }}
+                        >
+                          {cpwFormatted != null ? (
+                            <>${cpwFormatted}</>
+                          ) : (
+                            <span style={{ fontWeight: 500, color: FINANCE.muted, fontSize: "0.75rem" }}>—</span>
+                          )}
+                        </div>
+                      </div>
+
+                      {(it.color || it.season) && (
+                        <div style={{ fontSize: "0.75rem", color: FINANCE.muted, marginTop: 0 }}>
+                          {it.color}
+                          {it.season ? ` · ${it.season}` : ""}
+                        </div>
+                      )}
+                      {it.description && (
+                        <div style={{ ...type.body, fontSize: "0.75rem", fontStyle: "italic", color: FINANCE.muted, marginTop: 4 }}>
+                          {it.description}
+                        </div>
+                      )}
+
+                      <div className="wardrobe-card-options">
+                        {[
+                          { key: "clean", label: "Clean" },
+                          { key: "dirty", label: "Dirty" },
+                          { key: "wash", label: "In wash" },
+                        ].map((b) => {
+                          const sel = it.laundryStatus === b.key;
+                          return (
+                            <button
+                              key={b.key}
+                              type="button"
+                              onClick={() => updateItem(it.id, { laundryStatus: b.key })}
+                              style={{
+                                padding: "5px 10px",
+                                borderRadius: 6,
+                                border: `1px solid ${sel ? "rgba(0,0,0,0.2)" : "rgba(0,0,0,0.08)"}`,
+                                background: "transparent",
+                                fontSize: "0.65rem",
+                                cursor: "pointer",
+                                color: FINANCE.text,
+                                fontFamily: "'Inter', sans-serif",
+                              }}
+                            >
+                              {b.label}
+                            </button>
+                          );
+                        })}
+                        <button
+                          type="button"
+                          onClick={() => openEdit(it)}
+                          style={{
+                            padding: "6px 12px",
+                            borderRadius: 6,
+                            border: "1px solid rgba(0,0,0,0.12)",
+                            background: "transparent",
+                            fontSize: "0.72rem",
+                            cursor: "pointer",
+                            color: FINANCE.text,
+                            fontFamily: "'Inter', sans-serif",
+                          }}
+                        >
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => removeItem(it.id)}
+                          style={{
+                            padding: "6px 12px",
+                            borderRadius: 6,
+                            border: "1px solid rgba(200,100,90,0.35)",
+                            background: "transparent",
+                            color: COLORS.danger,
+                            fontSize: "0.72rem",
+                            cursor: "pointer",
+                            fontFamily: "'Inter', sans-serif",
+                          }}
+                        >
+                          Remove
+                        </button>
+                        <button
+                          type="button"
+                          className={pulseWearId === it.id ? "fos-wear-count--pulse" : undefined}
+                          onClick={() => {
+                            setPulseWearId(it.id);
+                            updateItem(it.id, {
+                              wearCount: wc + 1,
+                              timesWorn: wc + 1,
+                            });
+                          }}
+                          onAnimationEnd={(e) => {
+                            e.stopPropagation();
+                            setPulseWearId((p) => (p === it.id ? null : p));
+                          }}
+                          style={{
+                            padding: "6px 12px",
+                            borderRadius: 6,
+                            border: "1px solid rgba(0,0,0,0.12)",
+                            background: "transparent",
+                            fontSize: "0.72rem",
+                            cursor: "pointer",
+                            color: FINANCE.text,
+                            fontFamily: "'Inter', sans-serif",
+                          }}
+                        >
+                          + Log wear
+                        </button>
+                      </div>
                     </div>
+                  </div>
+                  <div className="wardrobe-card-wear-label" aria-label={`${wc} wears`}>
+                    {wc} wears
                   </div>
                 </div>
               );
