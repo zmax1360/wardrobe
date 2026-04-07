@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 
 import { COLORS, baseTransition } from "../styles/theme";
 import { type } from "../styles/typography";
@@ -12,6 +12,7 @@ export function WardrobeScreen({
   agentInsights: _agentInsights,
   handlers,
 }) {
+  const [showEquity, setShowEquity] = useState(false);
   const {
     fileRef,
     onFileChange,
@@ -111,6 +112,25 @@ export function WardrobeScreen({
         <span>
           In wash <strong style={{ color: COLORS.text }}>{stats.wash}</strong>
         </span>
+        <button
+          type="button"
+          onClick={() => setShowEquity((v) => !v)}
+          style={{
+            marginLeft: "auto",
+            padding: "7px 16px",
+            borderRadius: 999,
+            border: `1px solid ${showEquity ? COLORS.accent : COLORS.border}`,
+            background: showEquity ? COLORS.accent : "transparent",
+            color: showEquity ? "#fff" : COLORS.textMuted,
+            fontSize: "0.82rem",
+            fontWeight: 600,
+            cursor: "pointer",
+            fontFamily: "'DM Sans', sans-serif",
+            letterSpacing: "0.02em",
+          }}
+        >
+          {showEquity ? "◀ Wardrobe" : "Equity Report ▶"}
+        </button>
       </div>
 
       <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
@@ -401,6 +421,93 @@ export function WardrobeScreen({
           })}
         </div>
       )}
+
+      {showEquity && (() => {
+        const valued = _wardrobe.filter((it) => parseFloat(String(it.cost).replace(/[^0-9.]/g, "")) > 0);
+        const withCPW = valued.map((it) => {
+          const cost = parseFloat(String(it.cost).replace(/[^0-9.]/g, ""));
+          const worn = Number(it.timesWorn) || 1;
+          return { ...it, _cost: cost, _cpw: +(cost / worn).toFixed(2) };
+        });
+        const totalValue = valued.reduce((s, it) => s + parseFloat(String(it.cost).replace(/[^0-9.]/g, "")), 0);
+        const avgCPW = withCPW.length ? +(withCPW.reduce((s, i) => s + i._cpw, 0) / withCPW.length).toFixed(2) : 0;
+        const bestValue = [...withCPW].sort((a, b) => a._cpw - b._cpw).slice(0, 5);
+        const worstValue = [...withCPW].sort((a, b) => b._cpw - a._cpw).slice(0, 5);
+
+        const byCategory = {};
+        withCPW.forEach((it) => {
+          const cat = it.category || "Other";
+          if (!byCategory[cat]) byCategory[cat] = [];
+          byCategory[cat].push(it._cpw);
+        });
+        const catAvgs = Object.entries(byCategory)
+          .map(([cat, cpws]) => ({
+            cat,
+            avg: +(cpws.reduce((a, b) => a + b, 0) / cpws.length).toFixed(2),
+            count: cpws.length,
+          }))
+          .sort((a, b) => a.avg - b.avg);
+
+        return (
+          <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: 24 }}>
+
+            {/* Summary Stats */}
+            <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
+              {[
+                { label: "Total Wardrobe Value", value: `$${totalValue.toFixed(0)}`, sub: `${valued.length} priced items` },
+                { label: "Average Cost Per Wear", value: `$${avgCPW}`, sub: "across all items" },
+                { label: "Best Item", value: bestValue[0] ? `$${bestValue[0]._cpw}/wear` : "—", sub: bestValue[0]?.name ?? "" },
+                { label: "Most Expensive Habit", value: worstValue[0] ? `$${worstValue[0]._cpw}/wear` : "—", sub: worstValue[0]?.name ?? "" },
+              ].map((card) => (
+                <div key={card.label} style={{ flex: "1 1 180px", background: COLORS.surface, borderRadius: 14, padding: "18px 20px", border: `1px solid ${COLORS.border}` }}>
+                  <p style={{ margin: "0 0 4px", fontSize: "0.75rem", color: COLORS.textMuted, textTransform: "uppercase", letterSpacing: "0.05em" }}>{card.label}</p>
+                  <p style={{ margin: "0 0 2px", fontSize: "1.6rem", fontWeight: 700, color: COLORS.accent, fontFamily: "'Cormorant Garamond', serif" }}>{card.value}</p>
+                  <p style={{ margin: 0, fontSize: "0.78rem", color: COLORS.textMuted }}>{card.sub}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Best & Worst Value */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+              {[
+                { title: "🏆 Best Value (Lowest CPW)", items: bestValue, color: "#4A7C59" },
+                { title: "⚠️ Review These (Highest CPW)", items: worstValue, color: COLORS.danger ?? "#C0392B" },
+              ].map((section) => (
+                <div key={section.title} style={{ background: COLORS.surface, borderRadius: 14, padding: 20, border: `1px solid ${COLORS.border}` }}>
+                  <p style={{ margin: "0 0 14px", fontWeight: 700, fontSize: "0.88rem", color: COLORS.text }}>{section.title}</p>
+                  {section.items.map((it, idx) => (
+                    <div key={it.id} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+                      <span style={{ fontSize: "0.75rem", fontWeight: 700, color: section.color, width: 18 }}>#{idx + 1}</span>
+                      {it.imagePreview && <img src={it.imagePreview} alt="" style={{ width: 36, height: 36, borderRadius: 8, objectFit: "cover" }} />}
+                      <div style={{ flex: 1 }}>
+                        <p style={{ margin: 0, fontSize: "0.85rem", fontWeight: 600 }}>{it.name}</p>
+                        <p style={{ margin: 0, fontSize: "0.78rem", color: COLORS.textMuted }}>${it._cost} · worn {it.timesWorn}× · <b style={{ color: section.color }}>${it._cpw}/wear</b></p>
+                      </div>
+                    </div>
+                  ))}
+                  {!section.items.length && <p style={{ fontSize: "0.85rem", color: COLORS.textMuted }}>Add prices to your items to see rankings.</p>}
+                </div>
+              ))}
+            </div>
+
+            {/* CPW by Category */}
+            {catAvgs.length > 0 && (
+              <div style={{ background: COLORS.surface, borderRadius: 14, padding: 20, border: `1px solid ${COLORS.border}` }}>
+                <p style={{ margin: "0 0 16px", fontWeight: 700, fontSize: "0.88rem" }}>Avg Cost Per Wear by Category</p>
+                {catAvgs.map(({ cat, avg, count }) => (
+                  <div key={cat} style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 10 }}>
+                    <span style={{ width: 110, fontSize: "0.82rem", color: COLORS.textMuted }}>{cat} ({count})</span>
+                    <div style={{ flex: 1, background: COLORS.border, borderRadius: 999, height: 8, overflow: "hidden" }}>
+                      <div style={{ width: `${Math.min(100, (avg / (worstValue[0]?._cpw || 1)) * 100)}%`, height: "100%", background: COLORS.accent, borderRadius: 999 }} />
+                    </div>
+                    <span style={{ fontSize: "0.82rem", fontWeight: 600, color: COLORS.accent, width: 60, textAlign: "right" }}>${avg}/wear</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })()}
     </>
   );
 }

@@ -280,7 +280,7 @@ export default function App() {
   const [uploadError, setUploadError] = useState("");
 
   const [editItem, setEditItem] = useState(null);
-  const [editForm, setEditForm] = useState({ name: "", color: "", cost: "" });
+  const [editForm, setEditForm] = useState({ name: "", color: "", cost: "", purchaseDate: "" });
 
   const {
     agentActivity,
@@ -570,6 +570,7 @@ export default function App() {
         laundryStatus: "clean",
         timesWorn: 0,
         cost: "",
+        purchaseDate: new Date().toISOString().split("T")[0],
       };
       addItem(item);
     } catch (e) {
@@ -600,6 +601,7 @@ export default function App() {
       name: it.name,
       color: it.color,
       cost: it.cost === "" || it.cost == null ? "" : String(it.cost),
+      purchaseDate: it.purchaseDate ?? new Date().toISOString().split("T")[0],
     });
   };
 
@@ -610,6 +612,7 @@ export default function App() {
       name: editForm.name.trim() || editItem.name,
       color: editForm.color.trim(),
       cost: costVal === "" ? "" : costVal,
+      purchaseDate: editForm.purchaseDate || editItem.purchaseDate,
     });
     setEditItem(null);
   };
@@ -1448,6 +1451,26 @@ export default function App() {
               onBlur={blurInputVisual}
               style={mergeStyles(ui.input, { marginBottom: 20, background: COLORS.surface2 })}
             />
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              <label style={{ fontSize: "0.78rem", fontWeight: 600, color: COLORS.textMuted, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                Purchase Date
+              </label>
+              <input
+                type="date"
+                value={editForm.purchaseDate}
+                onChange={(e) => setEditForm((f) => ({ ...f, purchaseDate: e.target.value }))}
+                style={{
+                  padding: "10px 12px",
+                  borderRadius: 10,
+                  border: `1px solid ${COLORS.border}`,
+                  background: COLORS.bg,
+                  color: COLORS.text,
+                  fontSize: "0.92rem",
+                  fontFamily: "'DM Sans', sans-serif",
+                  outline: "none",
+                }}
+              />
+            </div>
             <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
               <button
                 type="button"

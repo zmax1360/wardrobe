@@ -19,11 +19,16 @@ function loadWardrobeFromStorage() {
 function stripWardrobeForStorage(items) {
   return items.map(({ id, name, category, color, style, season, tags,
     material, description, laundryStatus, timesWorn, cost,
-    imagePreview, imageFilename }) => ({
+    purchaseDate, imagePreview, imageFilename }) => ({
     id, name, category, color, style, season, tags,
     material, description, laundryStatus, timesWorn, cost,
-    imagePreview, imageFilename,
+    purchaseDate, imagePreview, imageFilename,
   }));
+}
+
+/** Firestore rejects `undefined`; JSON round-trip drops undefined keys on plain data. */
+function wardrobeForFirestore(items) {
+  return JSON.parse(JSON.stringify(items));
 }
 
 export function useWardrobe(hydrated, firebaseUser) {
@@ -52,7 +57,7 @@ export function useWardrobe(hydrated, firebaseUser) {
     if (firebaseUser) {
       setDoc(
         doc(db, "users", firebaseUser.uid),
-        { wardrobe: stripped },
+        { wardrobe: wardrobeForFirestore(stripped) },
         { merge: true }
       ).catch(() => {});
     }
