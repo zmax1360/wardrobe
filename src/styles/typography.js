@@ -1,0 +1,65 @@
+import { COLORS } from "./theme";
+
+export const type = {
+  heroTitle: {
+    fontFamily: "'Cormorant Garamond', serif",
+    fontSize: 56,
+    lineHeight: 0.95,
+    letterSpacing: -1.2,
+    fontWeight: 600,
+    color: COLORS.text,
+  },
+  pageTitle: {
+    fontFamily: "'Cormorant Garamond', serif",
+    fontSize: 42,
+    lineHeight: 1,
+    letterSpacing: -0.8,
+    fontWeight: 600,
+    color: COLORS.text,
+  },
+  sectionTitle: {
+    fontFamily: "'Cormorant Garamond', serif",
+    fontSize: 30,
+    lineHeight: 1.05,
+    letterSpacing: -0.4,
+    fontWeight: 600,
+    color: COLORS.text,
+  },
+  cardTitle: {
+    fontFamily: "'Cormorant Garamond', serif",
+    fontSize: 22,
+    lineHeight: 1.1,
+    fontWeight: 600,
+    color: COLORS.text,
+  },
+  eyebrow: {
+    fontFamily: "'DM Sans', sans-serif",
+    fontSize: 12,
+    lineHeight: 1.2,
+    letterSpacing: "0.18em",
+    textTransform: "uppercase",
+    fontWeight: 700,
+    color: COLORS.primary,
+  },
+  body: {
+    fontFamily: "'DM Sans', sans-serif",
+    fontSize: 15,
+    lineHeight: 1.6,
+    fontWeight: 400,
+    color: COLORS.textSoft,
+  },
+  bodyStrong: {
+    fontFamily: "'DM Sans', sans-serif",
+    fontSize: 15,
+    lineHeight: 1.6,
+    fontWeight: 600,
+    color: COLORS.text,
+  },
+  meta: {
+    fontFamily: "'DM Sans', sans-serif",
+    fontSize: 13,
+    lineHeight: 1.4,
+    fontWeight: 500,
+    color: COLORS.textMuted,
+  },
+};
