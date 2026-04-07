@@ -97,6 +97,7 @@ export function AppLayout({ activeNav, setActiveNav, children }) {
           }}
         >
           {[
+            { id: "dashboard", icon: "🏠", label: "Home" },
             { id: "planner", icon: "✨", label: "Planner" },
             { id: "evaluator", icon: "✅", label: "Evaluator" },
             { id: "gaps", icon: "🔍", label: "Gap Analysis" },

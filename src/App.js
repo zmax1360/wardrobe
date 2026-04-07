@@ -42,6 +42,7 @@ import { EvaluatorScreen } from "./screens/EvaluatorScreen";
 import { ShopperScreen } from "./screens/ShopperScreen";
 import { GapAnalysisScreen } from "./screens/GapAnalysisScreen";
 import { WardrobeEquityScreen } from "./screens/WardrobeEquityScreen";
+import { DashboardScreen } from "./screens/DashboardScreen";
 import { AgentPanel } from "./components/AgentPanel";
 import {
   getWearCount,
@@ -283,7 +284,7 @@ export default function App() {
   const [onboardingStep, setOnboardingStep] = useState(1);
   const [draft, setDraft] = useState(defaultProfile);
 
-  const [activeNav, setActiveNav] = useState("wardrobe");
+  const [activeNav, setActiveNav] = useState("dashboard");
   const { wardrobe, setWardrobe, addItem, updateItem, removeItem } = useWardrobe(hydrated, firebaseUser);
   const [events, setEvents] = useState(() => {
     const e = loadJson(STORAGE_EVENTS, []);
@@ -707,9 +708,11 @@ export default function App() {
   }, [wardrobe, catFilter, laundryFilter]);
 
   const agentTitle =
-    activeNav === "wardrobe"
-      ? "Wardrobe"
-      : activeNav === "equity"
+    activeNav === "dashboard"
+      ? "Home"
+      : activeNav === "wardrobe"
+        ? "Wardrobe"
+        : activeNav === "equity"
         ? "Wardrobe Equity"
         : activeNav === "calendar"
           ? "Calendar"
@@ -1375,6 +1378,10 @@ export default function App() {
         </div>
 
         <main style={mergeStyles(ui.contentWrap, { flex: 1, padding: "32px 32px 48px", minWidth: 0 })}>
+          {activeNav === "dashboard" && (
+            <DashboardScreen wardrobe={wardrobe} setActiveNav={setActiveNav} />
+          )}
+
           {activeNav === "wardrobe" && (
             <WardrobeScreen
               profile={profile}
