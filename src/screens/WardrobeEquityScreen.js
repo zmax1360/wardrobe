@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 
 import { FINANCE } from "../styles/financeTheme";
-import { getCostPerWear, getPurchasePriceNum, getWearCount } from "../utils/wardrobeFinance";
+import { calculateCPW, getCostPerWear, getPurchasePriceNum, getWearCount } from "../utils/wardrobeFinance";
 
 const CATEGORIES = [
   "Tops",
@@ -16,8 +16,9 @@ const CATEGORIES = [
 const INSIGHT_LIMIT = 6;
 
 /**
- * Total value uses the same numeric rules as Wardrobe: `purchasePrice`, then `mockPrice`, then legacy `cost`.
- * Average CPW includes only items with purchase-side value greater than 0.
+ * Synced with Asset Gallery / `WardrobeScreen` financials:
+ * - Total value: sum of `getPurchasePriceNum` per item (purchasePrice → mockPrice → legacy cost), same as card CPW inputs.
+ * - Average CPW: mean of `calculateCPW(price, wears)` only where `getPurchasePriceNum(it) > 0`.
  */
 function useEquityMetrics(wardrobe) {
   return useMemo(() => {
@@ -25,7 +26,10 @@ function useEquityMetrics(wardrobe) {
 
     const priced = wardrobe.filter((it) => getPurchasePriceNum(it) > 0);
     const avgCPW =
-      priced.length > 0 ? priced.reduce((sum, it) => sum + getCostPerWear(it), 0) / priced.length : 0;
+      priced.length > 0
+        ? priced.reduce((sum, it) => sum + calculateCPW(getPurchasePriceNum(it), getWearCount(it)), 0) /
+          priced.length
+        : 0;
 
     const byCpwAsc = [...priced].sort((a, b) => getCostPerWear(a) - getCostPerWear(b));
     const topValueAssets = byCpwAsc.slice(0, INSIGHT_LIMIT);
@@ -52,7 +56,7 @@ function useEquityMetrics(wardrobe) {
 function AssetInsightRow({ it }) {
   const price = getPurchasePriceNum(it);
   const wears = getWearCount(it);
-  const cpw = getCostPerWear(it);
+  const cpw = calculateCPW(price, wears);
 
   return (
     <div className="equity-asset-row">
@@ -101,12 +105,14 @@ export function WardrobeEquityScreen({ wardrobe }) {
         <div className="equity-stat-card">
           <div className="equity-stat-label">Total wardrobe value</div>
           <div className="equity-stat-value">${metrics.totalWardrobeValue.toFixed(0)}</div>
-          <div className="equity-stat-sub">Sum of purchase values ({metrics.pricedCount} priced)</div>
+          <div className="equity-stat-sub">
+            Same basis as Asset Gallery — sum of purchase prices (plus catalog / legacy value when set)
+          </div>
         </div>
         <div className="equity-stat-card">
           <div className="equity-stat-label">Average CPW</div>
           <div className="equity-stat-value">{metrics.pricedCount ? `$${metrics.avgCPW.toFixed(2)}` : "—"}</div>
-          <div className="equity-stat-sub">Mean CPW across items with purchase price greater than zero</div>
+          <div className="equity-stat-sub">Mean CPW for items with purchase-side price greater than zero only</div>
         </div>
       </div>
 
@@ -156,8 +162,8 @@ export function WardrobeEquityScreen({ wardrobe }) {
       </div>
 
       <section className="equity-insight-block">
-        <h2 className="equity-section-title">Top value assets</h2>
-        <p className="equity-section-lede">Lowest cost per wear — strong utilization vs. price.</p>
+        <h2 className="equity-section-title">Top Value Assets</h2>
+        <p className="equity-section-lede">Lowest CPW among priced pieces — best value per wear.</p>
         <div className="equity-asset-list">
           {metrics.topValueAssets.length === 0 ? (
             <p className="equity-empty">Add purchase prices and wears to rank CPW.</p>
@@ -168,8 +174,8 @@ export function WardrobeEquityScreen({ wardrobe }) {
       </section>
 
       <section className="equity-insight-block">
-        <h2 className="equity-section-title">Underutilized assets</h2>
-        <p className="equity-section-lede">Highest cost per wear — wear more often or reconsider holding cost.</p>
+        <h2 className="equity-section-title">Underutilized Assets</h2>
+        <p className="equity-section-lede">Highest CPW among priced pieces — wear more or reconsider holding cost.</p>
         <div className="equity-asset-list">
           {metrics.underutilizedAssets.length === 0 ? (
             <p className="equity-empty">Add purchase prices and wears to rank CPW.</p>

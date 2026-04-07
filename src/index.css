@@ -391,8 +391,9 @@ h6 {
 
 .equity-asset-name {
   font-family: "Cormorant Garamond", "Playfair Display", serif;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   font-weight: 600;
+  line-height: 1.25;
   letter-spacing: -0.04em;
   color: #1a1a1a;
   overflow: hidden;
