@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 
-import { calculateCPW, getPurchasePriceNum, getWearCount } from "../utils/wardrobeFinance";
+import { calculateCPW, getPurchasePriceNum, getTimesWorn } from "../utils/wardrobeFinance";
 
 /** Alive copy; when an agent run is active, surface it. */
 function agentCrewStatusLine(agentActivity) {
@@ -16,11 +16,11 @@ function useDashboardKpis(wardrobe) {
     const priced = wardrobe.filter((it) => getPurchasePriceNum(it) > 0);
     const avgCPW =
       priced.length > 0
-        ? priced.reduce((sum, it) => sum + calculateCPW(getPurchasePriceNum(it), getWearCount(it)), 0) /
+        ? priced.reduce((sum, it) => sum + calculateCPW(getPurchasePriceNum(it), getTimesWorn(it)), 0) /
           priced.length
         : 0;
 
-    const wornCount = wardrobe.filter((it) => getWearCount(it) > 0).length;
+    const wornCount = wardrobe.filter((it) => getTimesWorn(it) > 0).length;
     const utilityPct =
       wardrobe.length > 0 ? Math.round((wornCount / wardrobe.length) * 100) : null;
 
@@ -120,16 +120,16 @@ function pickSpotlightItem(wardrobe, weather) {
   if (!wardrobe.length) return null;
   const clean = wardrobe.filter((it) => it.laundryStatus === "clean");
   const pool = clean.length ? clean : wardrobe;
-  let list = [...pool].sort((a, b) => getWearCount(a) - getWearCount(b));
+  let list = [...pool].sort((a, b) => getTimesWorn(a) - getTimesWorn(b));
 
   if (weather && typeof weather.temp === "number") {
     const cat = (it) => String(it.category || "").toLowerCase();
     if (weather.temp < 11) {
       const outer = list.filter((it) => cat(it).includes("outer"));
-      if (outer.length) list = outer.sort((a, b) => getWearCount(a) - getWearCount(b));
+      if (outer.length) list = outer.sort((a, b) => getTimesWorn(a) - getTimesWorn(b));
     } else if (weather.temp > 24) {
       const light = list.filter((it) => /top|dress|shirt|tee|tank|skirt|short/i.test(cat(it) + (it.name || "")));
-      if (light.length) list = light.sort((a, b) => getWearCount(a) - getWearCount(b));
+      if (light.length) list = light.sort((a, b) => getTimesWorn(a) - getTimesWorn(b));
     }
   }
 

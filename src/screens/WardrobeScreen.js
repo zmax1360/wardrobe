@@ -1,12 +1,25 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useRef } from "react";
 
 import { FINANCE } from "../styles/financeTheme";
 import { COLORS, baseTransition } from "../styles/theme";
-import { calculateCPW, getPurchasePriceNum, getWearCount } from "../utils/wardrobeFinance";
+import { calculateCPW, getPurchasePriceNum, getTimesWorn, WARDROBE_OCCASION_VALUES } from "../utils/wardrobeFinance";
 import { CHIC_WARDROBE_MOODS } from "../constants/chicMoods";
+import { useWardrobeAgent } from "../hooks/useWardrobeAgent";
 
 const GALLERY_BG = "#FFFFFF";
 const CARD_BG = "#FFFFFF";
+
+const MANUAL_CATEGORIES = [
+  "Tops",
+  "Bottoms",
+  "Outerwear",
+  "Shoes",
+  "Accessories",
+  "Dresses",
+  "Activewear",
+  "Formal",
+];
+const SEASON_OPTIONS = ["Spring", "Summer", "Fall", "Winter", "All"];
 
 /** Hide noisy raw URLs and long uncleaned blobs on cards. */
 const DESCRIPTION_MAX_CHARS = 200;
@@ -51,14 +64,31 @@ export function WardrobeScreen({
 }) {
   const [showAddModal, setShowAddModal] = useState(false);
   const [addTab, setAddTab] = useState("photo");
-  const [storeLink, setStoreLink] = useState("");
-  const [linkLoading, setLinkLoading] = useState(false);
-  const [linkPreview, setLinkPreview] = useState(null);
-  const [linkPreviewError, setLinkPreviewError] = useState(null);
-  const [linkImportMood, setLinkImportMood] = useState(null);
   const [removeBgNext, setRemoveBgNext] = useState(false);
   const [pulseWearId, setPulseWearId] = useState(null);
-  const modalFileRef = React.useRef(null);
+  const [agentQuery, setAgentQuery] = useState("");
+
+  const [manualName, setManualName] = useState("");
+  const [manualCategory, setManualCategory] = useState("");
+  const [manualPurchasePrice, setManualPurchasePrice] = useState("");
+  const [manualColor, setManualColor] = useState("");
+  const [manualBrand, setManualBrand] = useState("");
+  const [manualSeason, setManualSeason] = useState([]);
+  const [manualOccasion, setManualOccasion] = useState([]);
+  const [manualMaterial, setManualMaterial] = useState("");
+  const [manualNotes, setManualNotes] = useState("");
+  const [manualMood, setManualMood] = useState("");
+  const [manualSourceUrl, setManualSourceUrl] = useState("");
+  const [manualImageFile, setManualImageFile] = useState(null);
+  const [manualImagePreviewUrl, setManualImagePreviewUrl] = useState(null);
+  const [moreDetailsOpen, setMoreDetailsOpen] = useState(false);
+  const [manualSaving, setManualSaving] = useState(false);
+
+  const modalFileRef = useRef(null);
+  const manualImageInputRef = useRef(null);
+
+  const { ask: askWardrobeAgent, response: agentResponse, loading: agentLoading, error: agentError } =
+    useWardrobeAgent();
 
   const {
     fileRef,
@@ -76,60 +106,84 @@ export function WardrobeScreen({
     openEdit,
     removeItem,
     categories,
-    previewStoreLink,
-    confirmStoreImport,
+    addManualWardrobeItem,
     addWardrobeFromFile,
   } = handlers;
 
-  /** Debounced fetch to POST /api/ingest-link (preview); confirm uses same payload via confirmStoreImport. */
-  useEffect(() => {
-    if (!showAddModal || addTab !== "link") return;
-    const u = storeLink.trim();
-    if (!/^https?:\/\//i.test(u)) {
-      setLinkPreview(null);
-      setLinkPreviewError(null);
+  const resetManualForm = () => {
+    setManualName("");
+    setManualCategory("");
+    setManualPurchasePrice("");
+    setManualColor("");
+    setManualBrand("");
+    setManualSeason([]);
+    setManualOccasion([]);
+    setManualMaterial("");
+    setManualNotes("");
+    setManualMood("");
+    setManualSourceUrl("");
+    setManualImageFile(null);
+    if (manualImagePreviewUrl) URL.revokeObjectURL(manualImagePreviewUrl);
+    setManualImagePreviewUrl(null);
+    setMoreDetailsOpen(false);
+    setManualSaving(false);
+  };
+
+  const toggleSeason = (s) => {
+    if (s === "All") {
+      setManualSeason((prev) => (prev.includes("All") ? [] : ["All"]));
       return;
     }
-    let cancelled = false;
-    setLinkPreviewError(null);
-    const t = setTimeout(async () => {
-      setLinkLoading(true);
-      try {
-        const data = await previewStoreLink(u);
-        if (!cancelled) {
-          setLinkPreview(data);
-          setLinkImportMood(null);
-          setLinkPreviewError(null);
-        }
-      } catch (err) {
-        if (!cancelled) {
-          setLinkPreview(null);
-          setLinkPreviewError(err?.message || "Could not load preview");
-        }
-      } finally {
-        if (!cancelled) setLinkLoading(false);
-      }
-    }, 280);
-    return () => {
-      cancelled = true;
-      clearTimeout(t);
-    };
-  }, [storeLink, showAddModal, addTab, previewStoreLink]);
+    setManualSeason((prev) => {
+      const base = prev.filter((x) => x !== "All");
+      if (base.includes(s)) return base.filter((x) => x !== s);
+      return [...base, s];
+    });
+  };
 
-  useEffect(() => {
-    if (addTab !== "link") {
-      setLinkPreview(null);
-      setLinkPreviewError(null);
-      setLinkLoading(false);
-      setLinkImportMood(null);
+  const toggleOccasion = (o) => {
+    setManualOccasion((prev) => (prev.includes(o) ? prev.filter((x) => x !== o) : [...prev, o]));
+  };
+
+  const onManualImagePick = (fileList) => {
+    const f = fileList?.[0];
+    if (!f || !f.type.startsWith("image/")) return;
+    if (manualImagePreviewUrl) URL.revokeObjectURL(manualImagePreviewUrl);
+    setManualImageFile(f);
+    setManualImagePreviewUrl(URL.createObjectURL(f));
+  };
+
+  const canSubmitManual =
+    manualName.trim().length > 0 &&
+    manualCategory !== "" &&
+    manualPurchasePrice.trim() !== "" &&
+    Number.isFinite(parseFloat(manualPurchasePrice.replace(/[^0-9.-]/g, "")));
+
+  const submitManualWardrobe = async () => {
+    if (!canSubmitManual || manualSaving) return;
+    setManualSaving(true);
+    try {
+      await addManualWardrobeItem({
+        name: manualName,
+        category: manualCategory,
+        purchasePrice: manualPurchasePrice,
+        color: manualColor,
+        brand: manualBrand,
+        season: manualSeason,
+        occasion: manualOccasion,
+        material: manualMaterial,
+        notes: manualNotes,
+        mood: manualMood,
+        sourceUrl: manualSourceUrl,
+        imageFile: manualImageFile,
+      });
+      resetManualForm();
+      setShowAddModal(false);
+    } catch (err) {
+      alert(err?.message || "Could not add item");
+    } finally {
+      setManualSaving(false);
     }
-  }, [addTab]);
-
-  const resetLinkImportState = () => {
-    setStoreLink("");
-    setLinkPreview(null);
-    setLinkPreviewError(null);
-    setLinkImportMood(null);
   };
 
   const handleModalFile = (e) => {
@@ -140,17 +194,9 @@ export function WardrobeScreen({
     setRemoveBgNext(false);
   };
 
-  const confirmLinkAsset = () => {
-    if (!linkPreview || !linkImportMood) return;
-    confirmStoreImport({ ...linkPreview, mood: linkImportMood });
-    resetLinkImportState();
-    setShowAddModal(false);
-  };
-
-  const formatPreviewPrice = (p) => {
-    const n = typeof p === "number" ? p : parseFloat(String(p ?? "").replace(/[^0-9.]/g, ""));
-    if (!Number.isFinite(n)) return "—";
-    return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(n);
+  const onWardrobeAgentSubmit = (e) => {
+    e.preventDefault();
+    askWardrobeAgent(agentQuery);
   };
 
   return (
@@ -187,7 +233,7 @@ export function WardrobeScreen({
           <button
             type="button"
             onClick={() => {
-              resetLinkImportState();
+              resetManualForm();
               setShowAddModal(true);
             }}
             style={{
@@ -293,7 +339,7 @@ export function WardrobeScreen({
           <div className="wardrobe-gallery-grid">
             {filteredWardrobe.map((it) => {
               const pp = getPurchasePriceNum(it);
-              const wc = getWearCount(it);
+              const wc = getTimesWorn(it);
               const cpwFormatted = pp > 0 ? calculateCPW(pp, wc).toFixed(2) : null;
 
               const statusDotColor =
@@ -337,7 +383,9 @@ export function WardrobeScreen({
                           style={{ display: "block" }}
                         />
                       ) : (
-                        <div style={{ color: FINANCE.muted, fontSize: "0.8rem" }}>No photo</div>
+                        <div className="wardrobe-card-placeholder" aria-hidden>
+                          {(it.name || "?").trim().charAt(0).toUpperCase()}
+                        </div>
                       )}
                     </div>
 
@@ -518,7 +566,6 @@ export function WardrobeScreen({
                           onClick={() => {
                             setPulseWearId(it.id);
                             updateItem(it.id, {
-                              wearCount: wc + 1,
                               timesWorn: wc + 1,
                             });
                           }}
@@ -552,8 +599,9 @@ export function WardrobeScreen({
       {showAddModal && (
         <div
           role="presentation"
+          className="wardrobe-add-modal-backdrop"
           onClick={() => {
-            resetLinkImportState();
+            resetManualForm();
             setShowAddModal(false);
           }}
           style={{
@@ -564,45 +612,45 @@ export function WardrobeScreen({
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            padding: 24,
           }}
         >
           <div
             role="dialog"
             aria-modal="true"
+            className="wardrobe-add-modal-dialog"
             onClick={(e) => e.stopPropagation()}
             style={{
               width: "100%",
-              maxWidth: linkPreview && addTab === "link" ? 520 : 440,
-              borderRadius: 20,
-              padding: 28,
+              maxWidth: addTab === "manual" ? 480 : 440,
               background: "#fff",
               border: `1px solid ${FINANCE.border}`,
               boxShadow: "0 24px 80px rgba(0,0,0,0.12)",
             }}
           >
-            <h2 style={{ fontFamily: "'Playfair Display', serif", margin: "0 0 8px", fontSize: "1.45rem" }}>Add to closet</h2>
-            <p style={{ margin: "0 0 20px", fontSize: "0.86rem", color: FINANCE.muted }}>
-              Photo (AI catalog) or paste a product link — preview updates automatically before you confirm.
+            <h2 className="wardrobe-add-modal-title" style={{ fontFamily: "'Playfair Display', serif", margin: "0 0 8px", fontSize: "1.45rem" }}>Add to closet</h2>
+            <p className="wardrobe-add-modal-lede" style={{ margin: "0 0 20px", fontSize: "0.86rem", color: FINANCE.muted }}>
+              Photo (AI catalog) or add details manually — no store login required.
             </p>
             <div style={{ display: "flex", gap: 8, marginBottom: 18 }}>
-              {["photo", "link"].map((t) => (
+              {[
+                { id: "photo", label: "Photo" },
+                { id: "manual", label: "Manual" },
+              ].map(({ id, label }) => (
                 <button
-                  key={t}
+                  key={id}
                   type="button"
-                  onClick={() => setAddTab(t)}
+                  onClick={() => setAddTab(id)}
                   style={{
                     padding: "8px 16px",
                     borderRadius: 999,
-                    border: `1px solid ${addTab === t ? FINANCE.text : FINANCE.border}`,
-                    background: addTab === t ? FINANCE.text : "transparent",
-                    color: addTab === t ? "#fff" : FINANCE.muted,
+                    border: `1px solid ${addTab === id ? FINANCE.text : FINANCE.border}`,
+                    background: addTab === id ? FINANCE.text : "transparent",
+                    color: addTab === id ? "#fff" : FINANCE.muted,
                     cursor: "pointer",
                     fontSize: "0.82rem",
-                    textTransform: "capitalize",
                   }}
                 >
-                  {t}
+                  {label}
                 </button>
               ))}
             </div>
@@ -639,115 +687,182 @@ export function WardrobeScreen({
               </div>
             )}
 
-            {addTab === "link" && (
-              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                <label style={{ fontSize: "0.75rem", fontWeight: 600, color: FINANCE.muted }}>Paste product URL</label>
+            {addTab === "manual" && (
+              <div className="wardrobe-manual-form">
+                <label className="wardrobe-manual-label">Item name *</label>
                 <input
-                  value={storeLink}
-                  onChange={(e) => setStoreLink(e.target.value)}
-                  placeholder="https://…"
-                  style={{
-                    padding: "12px 14px",
-                    borderRadius: 10,
-                    border: `1px solid ${FINANCE.border}`,
-                    fontSize: "0.9rem",
+                  className="wardrobe-manual-input"
+                  value={manualName}
+                  onChange={(e) => setManualName(e.target.value)}
+                  placeholder="e.g. Navy Blazer"
+                  autoComplete="off"
+                />
+
+                <label className="wardrobe-manual-label">Category *</label>
+                <select
+                  className="wardrobe-manual-input wardrobe-manual-select"
+                  value={manualCategory}
+                  onChange={(e) => setManualCategory(e.target.value)}
+                >
+                  <option value="">Select…</option>
+                  {MANUAL_CATEGORIES.map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
+                </select>
+
+                <label className="wardrobe-manual-label">Purchase price *</label>
+                <div className="wardrobe-manual-price-wrap">
+                  <span className="wardrobe-manual-price-prefix" aria-hidden>
+                    $
+                  </span>
+                  <input
+                    className="wardrobe-manual-input wardrobe-manual-input--price"
+                    type="text"
+                    inputMode="decimal"
+                    value={manualPurchasePrice}
+                    onChange={(e) => setManualPurchasePrice(e.target.value)}
+                    placeholder="0.00"
+                  />
+                </div>
+
+                <label className="wardrobe-manual-label">Image (optional)</label>
+                <input
+                  ref={manualImageInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="wardrobe-manual-file-input"
+                  onChange={(e) => {
+                    onManualImagePick(e.target.files);
+                    e.target.value = "";
                   }}
                 />
-                <p style={{ margin: 0, fontSize: "0.72rem", color: FINANCE.muted }}>
-                  Preview loads from the page (Open Graph / structured data) and saves a local copy of the image.
-                </p>
+                <div
+                  role="button"
+                  tabIndex={0}
+                  className="wardrobe-manual-dropzone"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") manualImageInputRef.current?.click();
+                  }}
+                  onClick={() => manualImageInputRef.current?.click()}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    onManualImagePick(e.dataTransfer.files);
+                  }}
+                >
+                  {manualImagePreviewUrl ? (
+                    <img src={manualImagePreviewUrl} alt="" className="wardrobe-manual-dropzone-img" />
+                  ) : (
+                    <div className="wardrobe-manual-placeholder-tile">
+                      <span className="wardrobe-manual-placeholder-letter">
+                        {(manualName.trim().charAt(0) || "?").toUpperCase()}
+                      </span>
+                      <span className="wardrobe-manual-dropzone-hint">Click or drop an image</span>
+                    </div>
+                  )}
+                </div>
 
-                {linkLoading && (
-                  <div style={{ fontSize: "0.82rem", color: FINANCE.muted }}>Loading preview…</div>
-                )}
+                <label className="wardrobe-manual-label">Product URL (optional)</label>
+                <input
+                  className="wardrobe-manual-input"
+                  type="url"
+                  value={manualSourceUrl}
+                  onChange={(e) => setManualSourceUrl(e.target.value)}
+                  placeholder="https://… paste link for reference"
+                  autoComplete="off"
+                />
 
-                {linkPreviewError && !linkLoading && (
-                  <div style={{ fontSize: "0.82rem", color: "#b54a4a", lineHeight: 1.4 }}>{linkPreviewError}</div>
-                )}
-
-                {linkPreview && !linkLoading && (
-                  <div
-                    className="wardrobe-link-preview-card"
-                    style={
-                      linkPreview.brandAccent
-                        ? { borderLeft: `4px solid ${linkPreview.brandAccent}` }
-                        : undefined
-                    }
-                  >
-                    <div className="wardrobe-link-preview-inner">
-                      {linkPreview.brand ? (
-                        <div
-                          className="wardrobe-link-preview-brand"
-                          style={{ color: linkPreview.brandAccent || FINANCE.slate }}
-                        >
-                          {linkPreview.brand}
-                        </div>
-                      ) : null}
-                      <div
-                        className="wardrobe-link-preview-frame"
-                        style={{ background: CARD_BG }}
-                      >
-                        {linkPreview.imageUrl ? (
-                          <img src={linkPreview.imageUrl} alt="" />
-                        ) : null}
-                      </div>
-                      <div className="wardrobe-link-preview-meta">
-                        <div className="wardrobe-link-preview-title">{linkPreview.title || "Product"}</div>
-                        <div className="wardrobe-link-preview-price">
-                          {formatPreviewPrice(linkPreview.mockPrice ?? linkPreview.price)}
-                        </div>
-                        <div className="wardrobe-link-mood-alignment">
-                          <div
-                            style={{
-                              fontSize: "0.72rem",
-                              fontWeight: 600,
-                              color: FINANCE.muted,
-                              marginBottom: 8,
-                              letterSpacing: "0.04em",
-                              textTransform: "uppercase",
-                            }}
-                          >
-                            Mood alignment
-                          </div>
-                          <div
-                            style={{
-                              display: "flex",
-                              flexWrap: "wrap",
-                              gap: 8,
-                              marginBottom: 14,
-                            }}
-                          >
-                            {CHIC_WARDROBE_MOODS.map((m) => {
-                              const on = linkImportMood === m;
-                              return (
-                                <button
-                                  key={m}
-                                  type="button"
-                                  className={`wardrobe-mood-pill${on ? " wardrobe-mood-pill--selected" : ""}`}
-                                  onClick={() => setLinkImportMood(m)}
-                                >
-                                  {m}
-                                </button>
-                              );
-                            })}
-                          </div>
-                        </div>
+                <button
+                  type="button"
+                  className="wardrobe-manual-details-toggle"
+                  onClick={() => setMoreDetailsOpen((o) => !o)}
+                  aria-expanded={moreDetailsOpen}
+                >
+                  More details {moreDetailsOpen ? "▴" : "▾"}
+                </button>
+                <div className={`wardrobe-manual-details-panel ${moreDetailsOpen ? "wardrobe-manual-details-panel--open" : ""}`}>
+                  <div className="wardrobe-manual-details-inner">
+                    <label className="wardrobe-manual-label">Color</label>
+                    <input
+                      className="wardrobe-manual-input"
+                      value={manualColor}
+                      onChange={(e) => setManualColor(e.target.value)}
+                      placeholder="e.g. Navy Blue"
+                    />
+                    <label className="wardrobe-manual-label">Brand</label>
+                    <input
+                      className="wardrobe-manual-input"
+                      value={manualBrand}
+                      onChange={(e) => setManualBrand(e.target.value)}
+                      placeholder="e.g. Ralph Lauren"
+                    />
+                    <span className="wardrobe-manual-label">Season</span>
+                    <div className="wardrobe-manual-pill-row">
+                      {SEASON_OPTIONS.map((s) => (
                         <button
+                          key={s}
                           type="button"
-                          className="wardrobe-link-preview-confirm"
-                          onClick={confirmLinkAsset}
-                          disabled={!linkImportMood}
-                          style={{
-                            background: linkPreview.brandAccent || FINANCE.text,
-                            color: "#fff",
-                          }}
+                          className={`wardrobe-manual-pill ${manualSeason.includes(s) ? "wardrobe-manual-pill--on" : ""}`}
+                          onClick={() => toggleSeason(s)}
                         >
-                          Confirm Asset
+                          {s}
                         </button>
-                      </div>
+                      ))}
+                    </div>
+                    <span className="wardrobe-manual-label">Occasion</span>
+                    <div className="wardrobe-manual-pill-row">
+                      {WARDROBE_OCCASION_VALUES.map((o) => (
+                        <button
+                          key={o}
+                          type="button"
+                          className={`wardrobe-manual-pill ${manualOccasion.includes(o) ? "wardrobe-manual-pill--on" : ""}`}
+                          onClick={() => toggleOccasion(o)}
+                        >
+                          {o.charAt(0).toUpperCase() + o.slice(1)}
+                        </button>
+                      ))}
+                    </div>
+                    <label className="wardrobe-manual-label">Material</label>
+                    <input
+                      className="wardrobe-manual-input"
+                      value={manualMaterial}
+                      onChange={(e) => setManualMaterial(e.target.value)}
+                      placeholder="e.g. Cotton"
+                    />
+                    <label className="wardrobe-manual-label">Notes</label>
+                    <textarea
+                      className="wardrobe-manual-input wardrobe-manual-textarea"
+                      value={manualNotes}
+                      onChange={(e) => setManualNotes(e.target.value)}
+                      placeholder="Any details about this item..."
+                      rows={3}
+                    />
+                    <span className="wardrobe-manual-label">Mood</span>
+                    <div className="wardrobe-manual-pill-row">
+                      {CHIC_WARDROBE_MOODS.map((m) => (
+                        <button
+                          key={m}
+                          type="button"
+                          className={`wardrobe-manual-pill ${manualMood === m ? "wardrobe-manual-pill--on" : ""}`}
+                          onClick={() => setManualMood((cur) => (cur === m ? "" : m))}
+                        >
+                          {m}
+                        </button>
+                      ))}
                     </div>
                   </div>
-                )}
+                </div>
+
+                <button
+                  type="button"
+                  className="wardrobe-manual-submit"
+                  disabled={!canSubmitManual || manualSaving}
+                  onClick={submitManualWardrobe}
+                >
+                  {manualSaving ? "Adding…" : "Add to Wardrobe"}
+                </button>
               </div>
             )}
 
@@ -755,7 +870,7 @@ export function WardrobeScreen({
               <button
                 type="button"
                 onClick={() => {
-                  resetLinkImportState();
+                  resetManualForm();
                   setShowAddModal(false);
                 }}
                 style={{
@@ -788,6 +903,38 @@ export function WardrobeScreen({
         }}
       >
         Drop an image here for quick add (same AI catalog flow)
+      </div>
+
+      <div className="wardrobe-agent-wrap">
+        <form className="wardrobe-agent-form" onSubmit={onWardrobeAgentSubmit}>
+          <div className="wardrobe-agent-bar">
+            <input
+              className="wardrobe-agent-input"
+              type="search"
+              enterKeyHint="send"
+              placeholder="Ask your wardrobe agent..."
+              value={agentQuery}
+              onChange={(e) => setAgentQuery(e.target.value)}
+              disabled={agentLoading}
+              aria-label="Ask your wardrobe agent"
+            />
+            <button
+              type="submit"
+              className="wardrobe-agent-send"
+              disabled={agentLoading}
+              aria-label="Send question"
+            >
+              →
+            </button>
+          </div>
+        </form>
+        {agentLoading ? (
+          <p className="wardrobe-agent-reply wardrobe-agent-reply--loading">Thinking...</p>
+        ) : agentError ? (
+          <p className="wardrobe-agent-reply wardrobe-agent-reply--error">{agentError}</p>
+        ) : agentResponse ? (
+          <p className="wardrobe-agent-reply">{agentResponse}</p>
+        ) : null}
       </div>
     </>
   );

@@ -1,8 +1,6 @@
 /**
- * Wardrobe item schema — Financial Asset Gallery:
- * purchasePrice (number, default 0), wearCount (int, default 0), category (string),
- * mockPrice (optional, from link-import). Derived CPW: calculateCPW(price, wears) = price / max(wears, 1).
- * Legacy: cost (string), timesWorn (int).
+ * Wardrobe item schema (client canonical): purchasePrice, timesWorn, category, etc.
+ * Ingest API may return legacy-shaped price fields; client maps to purchasePrice.
  */
 const express = require("express");
 const multer = require("multer");
@@ -253,7 +251,7 @@ async function downloadImageToWardrobe(imageUrl, referer, baseReq) {
       Accept: "image/avif,image/webp,image/apng,image/*,*/*;q=0.8",
       Referer: referer,
     },
-    signal: AbortSignal.timeout(25000),
+    signal: AbortSignal.timeout(35000),
   });
 
   if (!res.ok) throw new Error(`Image HTTP ${res.status}`);
@@ -285,20 +283,66 @@ async function downloadImageToWardrobe(imageUrl, referer, baseReq) {
 async function scrapeProductPage(urlString) {
   const pageUrl = new URL(urlString);
 
-  const htmlRes = await fetch(urlString, {
-    headers: FETCH_HEADERS,
-    signal: AbortSignal.timeout(20000),
-  });
+  const cleanUrl = (() => {
+    try {
+      const u = new URL(urlString);
+      [
+        "utm_source",
+        "utm_medium",
+        "utm_campaign",
+        "gclid",
+        "gbraid",
+        "gad_source",
+        "gclsrc",
+        "gad_campaignid",
+      ].forEach((p) => u.searchParams.delete(p));
+      return u.toString();
+    } catch {
+      return urlString;
+    }
+  })();
 
-  if (!htmlRes.ok) throw new Error(`Page HTTP ${htmlRes.status}`);
+  const controller = new AbortController();
+  const PAGE_FETCH_MS = 28000;
+  const timeout = setTimeout(() => controller.abort(), PAGE_FETCH_MS);
 
-  const html = await htmlRes.text();
+  let html;
+  try {
+    const response = await fetch(cleanUrl, {
+      signal: controller.signal,
+      redirect: "follow",
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+        Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9",
+        // Omit "br" — some Node fetch stacks stall decoding brotli on large retail HTML.
+        "Accept-Encoding": "gzip, deflate",
+        "Cache-Control": "no-cache",
+        Pragma: "no-cache",
+        "Sec-Fetch-Dest": "document",
+        "Sec-Fetch-Mode": "navigate",
+        "Sec-Fetch-Site": "none",
+        "Upgrade-Insecure-Requests": "1",
+      },
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    html = await response.text();
+  } catch (e) {
+    if (e?.name === "AbortError" || e?.cause?.name === "AbortError") {
+      throw new Error(`Page fetch timed out (${PAGE_FETCH_MS / 1000}s)`);
+    }
+    throw e;
+  } finally {
+    clearTimeout(timeout);
+  }
+
   const $ = cheerio.load(html);
 
   const title = extractTitle($);
   let price = extractPrice($);
 
-  let imageRemote = pickPrimaryImage($, urlString);
+  let imageRemote = pickPrimaryImage($, cleanUrl);
 
   const brandInfo = resolveBrand(pageUrl.hostname, title);
 
@@ -334,9 +378,64 @@ app.delete("/api/delete-image/:filename", (req, res) => {
  * Title: og:title; price: product/og meta + JSON-LD when present.
  * Persists the resolved image to public/wardrobe-images/.
  */
+function buildIngestJsonBody(scraped, url, mockPrice, opts) {
+  const { imageUrl, localFilename, preview, imageRemote } = opts;
+  const tags = ["link-import"];
+  if (scraped.brandInfo.brand) tags.unshift(scraped.brandInfo.brand);
+
+  const description = scraped.brandInfo.brand
+    ? `Imported from ${scraped.brandInfo.brand}. View product: ${url}`
+    : `Imported from link. View product: ${url}`;
+
+  return {
+    title: scraped.title,
+    price: mockPrice,
+    mockPrice,
+    imageUrl,
+    localFilename,
+    imageRemote: imageRemote ?? null,
+    preview: Boolean(preview),
+    sourceUrl: url,
+    category: scraped.category,
+    brand: scraped.brandInfo.brand,
+    brandAccent: scraped.brandInfo.brandAccent,
+    tags,
+    description,
+  };
+}
+
+/** Download og:image to wardrobe-images/ — used after fast preview or standalone. */
+app.post("/api/ingest-finalize", async (req, res) => {
+  const sourceUrl =
+    req.body && typeof req.body.sourceUrl === "string" ? req.body.sourceUrl.trim() : "";
+  const imageRemote =
+    req.body && typeof req.body.imageRemote === "string" ? req.body.imageRemote.trim() : "";
+  if (!sourceUrl || !imageRemote) {
+    return res.status(400).json({ error: "sourceUrl and imageRemote required" });
+  }
+
+  const base = publicBase(req);
+
+  try {
+    const { filename, imageUrl } = await downloadImageToWardrobe(imageRemote, sourceUrl, () => base);
+    res.json({
+      imageUrl,
+      localFilename: filename,
+      sourceUrl,
+    });
+  } catch (e) {
+    console.error("ingest-finalize:", e.message);
+    res.status(500).json({
+      error: e.message || "Failed to save product image",
+    });
+  }
+});
+
 app.post("/api/ingest-link", async (req, res) => {
   const url = req.body && typeof req.body.url === "string" ? req.body.url.trim() : "";
   if (!url) return res.status(400).json({ error: "url required" });
+
+  const previewOnly = Boolean(req.body && (req.body.preview === true || req.body.previewOnly === true));
 
   let parsed;
   try {
@@ -366,32 +465,31 @@ app.post("/api/ingest-link", async (req, res) => {
       });
     }
 
+    if (previewOnly) {
+      return res.json(
+        buildIngestJsonBody(scraped, url, mockPrice, {
+          imageUrl: scraped.imageRemote,
+          localFilename: null,
+          preview: true,
+          imageRemote: scraped.imageRemote,
+        })
+      );
+    }
+
     const { filename, imageUrl } = await downloadImageToWardrobe(
       scraped.imageRemote,
       url,
       () => base
     );
 
-    const tags = ["link-import"];
-    if (scraped.brandInfo.brand) tags.unshift(scraped.brandInfo.brand);
-
-    const description = scraped.brandInfo.brand
-      ? `Imported from ${scraped.brandInfo.brand}. View product: ${url}`
-      : `Imported from link. View product: ${url}`;
-
-    res.json({
-      title: scraped.title,
-      price: mockPrice,
-      mockPrice,
-      imageUrl,
-      localFilename: filename,
-      sourceUrl: url,
-      category: scraped.category,
-      brand: scraped.brandInfo.brand,
-      brandAccent: scraped.brandInfo.brandAccent,
-      tags,
-      description,
-    });
+    res.json(
+      buildIngestJsonBody(scraped, url, mockPrice, {
+        imageUrl,
+        localFilename: filename,
+        preview: false,
+        imageRemote: scraped.imageRemote,
+      })
+    );
   } catch (e) {
     console.error("ingest-link:", e.message);
     res.status(500).json({

@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 
 import { FINANCE } from "../styles/financeTheme";
-import { calculateCPW, getCostPerWear, getPurchasePriceNum, getWearCount } from "../utils/wardrobeFinance";
+import { calculateCPW, getCostPerWear, getPurchasePriceNum, getTimesWorn } from "../utils/wardrobeFinance";
 
 const CATEGORIES = [
   "Tops",
@@ -17,7 +17,7 @@ const INSIGHT_LIMIT = 6;
 
 /**
  * Synced with Asset Gallery / `WardrobeScreen` financials:
- * - Total value: sum of `getPurchasePriceNum` per item (purchasePrice → mockPrice → legacy cost), same as card CPW inputs.
+ * - Total value: sum of `getPurchasePriceNum` per item (`purchasePrice`).
  * - Average CPW: mean of `calculateCPW(price, wears)` only where `getPurchasePriceNum(it) > 0`.
  */
 function useEquityMetrics(wardrobe) {
@@ -27,7 +27,7 @@ function useEquityMetrics(wardrobe) {
     const priced = wardrobe.filter((it) => getPurchasePriceNum(it) > 0);
     const avgCPW =
       priced.length > 0
-        ? priced.reduce((sum, it) => sum + calculateCPW(getPurchasePriceNum(it), getWearCount(it)), 0) /
+        ? priced.reduce((sum, it) => sum + calculateCPW(getPurchasePriceNum(it), getTimesWorn(it)), 0) /
           priced.length
         : 0;
 
@@ -39,7 +39,7 @@ function useEquityMetrics(wardrobe) {
 
     const highWaste = [...priced]
       .sort((a, b) => getPurchasePriceNum(b) * getCostPerWear(b) - getPurchasePriceNum(a) * getCostPerWear(a))
-      .filter((it) => getPurchasePriceNum(it) >= 50 && getWearCount(it) <= 3)
+      .filter((it) => getPurchasePriceNum(it) >= 50 && getTimesWorn(it) <= 3)
       .slice(0, 8);
 
     return {
@@ -55,7 +55,7 @@ function useEquityMetrics(wardrobe) {
 
 function AssetInsightRow({ it }) {
   const price = getPurchasePriceNum(it);
-  const wears = getWearCount(it);
+  const wears = getTimesWorn(it);
   const cpw = calculateCPW(price, wears);
 
   return (
@@ -84,7 +84,7 @@ export function WardrobeEquityScreen({ wardrobe }) {
   const categoryAvgWears = useMemo(() => {
     const items = wardrobe.filter((it) => (it.category || "") === simCategory);
     if (!items.length) return 1;
-    const sum = items.reduce((s, it) => s + getWearCount(it), 0);
+    const sum = items.reduce((s, it) => s + getTimesWorn(it), 0);
     return Math.max(1, sum / items.length);
   }, [wardrobe, simCategory]);
 
@@ -106,7 +106,7 @@ export function WardrobeEquityScreen({ wardrobe }) {
           <div className="equity-stat-label">Total wardrobe value</div>
           <div className="equity-stat-value">${metrics.totalWardrobeValue.toFixed(0)}</div>
           <div className="equity-stat-sub">
-            Same basis as Asset Gallery — sum of purchase prices (plus catalog / legacy value when set)
+            Same basis as Asset Gallery — sum of purchase prices
           </div>
         </div>
         <div className="equity-stat-card">

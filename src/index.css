@@ -250,6 +250,398 @@ h6 {
   background: rgba(0, 0, 0, 0.04);
 }
 
+/* Wardrobe agent — cream + terracotta search bar, single Q/A */
+.wardrobe-agent-wrap {
+  margin-top: 36px;
+  width: 100%;
+  max-width: 720px;
+}
+
+.wardrobe-agent-form {
+  margin: 0;
+}
+
+.wardrobe-agent-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 10px 8px 20px;
+  border-radius: 999px;
+  border: 1px solid rgba(193, 127, 89, 0.45);
+  background: #faf9f6;
+  box-sizing: border-box;
+  transition: border-color 0.2s ease;
+}
+
+.wardrobe-agent-bar:focus-within {
+  border-color: rgba(184, 92, 60, 0.88);
+}
+
+.wardrobe-agent-input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  font-size: 0.92rem;
+  font-family: "Inter", "DM Sans", sans-serif;
+  color: #1a1a1a;
+  outline: none;
+}
+
+.wardrobe-agent-input::placeholder {
+  color: #94a3b8;
+}
+
+.wardrobe-agent-send {
+  flex-shrink: 0;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(184, 92, 60, 0.12);
+  color: #b85c3c;
+  cursor: pointer;
+  font-size: 1.1rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s ease;
+}
+
+.wardrobe-agent-send:hover:not(:disabled) {
+  background: rgba(184, 92, 60, 0.22);
+}
+
+.wardrobe-agent-send:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.wardrobe-agent-reply {
+  margin: 14px 0 0;
+  padding: 0 4px 0 8px;
+  font-size: 0.88rem;
+  line-height: 1.55;
+  font-style: italic;
+  color: #64748b;
+}
+
+.wardrobe-agent-reply--loading {
+  color: #94a3b8;
+}
+
+.wardrobe-agent-reply--error {
+  font-style: normal;
+  color: #b57a72;
+}
+
+/* Add to closet modal — desktop default; compact on narrow viewports */
+.wardrobe-add-modal-backdrop {
+  padding: 24px;
+  box-sizing: border-box;
+}
+
+.wardrobe-add-modal-dialog {
+  box-sizing: border-box;
+  border-radius: 20px;
+  padding: 28px;
+  max-height: min(88vh, 900px);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 540px) {
+  .wardrobe-add-modal-backdrop {
+    padding: 12px;
+    align-items: flex-end !important;
+  }
+
+  .wardrobe-add-modal-dialog {
+    padding: 16px 14px calc(14px + env(safe-area-inset-bottom, 0px));
+    border-radius: 16px 16px 0 0;
+    max-height: min(85vh, 100%);
+  }
+
+  .wardrobe-add-modal-title {
+    font-size: 1.2rem !important;
+  }
+
+  .wardrobe-add-modal-lede {
+    margin-bottom: 14px !important;
+    font-size: 0.8rem !important;
+  }
+
+  .wardrobe-manual-form {
+    gap: 8px;
+  }
+
+  .wardrobe-manual-label {
+    margin-top: 2px;
+    font-size: 0.68rem;
+  }
+
+  .wardrobe-manual-input,
+  .wardrobe-manual-select {
+    padding: 8px 12px;
+    font-size: 0.88rem;
+  }
+
+  .wardrobe-manual-price-prefix {
+    padding: 8px 0 8px 12px;
+    font-size: 0.88rem;
+  }
+
+  .wardrobe-manual-dropzone {
+    min-height: 104px;
+  }
+
+  .wardrobe-manual-dropzone-img {
+    max-height: 132px;
+  }
+
+  .wardrobe-manual-placeholder-letter {
+    font-size: 1.75rem;
+  }
+
+  .wardrobe-manual-submit {
+    margin-top: 8px;
+    padding: 11px 16px;
+    font-size: 0.88rem;
+  }
+
+  .wardrobe-manual-pill {
+    padding: 5px 10px;
+    font-size: 0.76rem;
+  }
+}
+
+/* Manual “Add to closet” tab — cream fields, terracotta accents */
+.wardrobe-manual-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.wardrobe-manual-label {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #64748b;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  margin-top: 4px;
+}
+
+.wardrobe-manual-input,
+.wardrobe-manual-select {
+  width: 100%;
+  box-sizing: border-box;
+  background: #faf9f6;
+  border: 1px solid rgba(184, 92, 60, 0.5);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 0.9rem;
+  font-family: "Inter", "DM Sans", sans-serif;
+  color: #1a1a1a;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.wardrobe-manual-input:focus,
+.wardrobe-manual-select:focus,
+.wardrobe-manual-textarea:focus {
+  border-color: rgba(184, 92, 60, 0.95);
+}
+
+.wardrobe-manual-textarea {
+  resize: vertical;
+  min-height: 72px;
+}
+
+.wardrobe-manual-select {
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2364748b' d='M3 4.5L6 8l3-3.5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 32px;
+}
+
+.wardrobe-manual-price-wrap {
+  display: flex;
+  align-items: stretch;
+  border: 1px solid rgba(184, 92, 60, 0.5);
+  border-radius: 8px;
+  background: #faf9f6;
+  overflow: hidden;
+  transition: border-color 0.2s ease;
+}
+
+.wardrobe-manual-price-wrap:focus-within {
+  border-color: rgba(184, 92, 60, 0.95);
+}
+
+.wardrobe-manual-price-prefix {
+  display: flex;
+  align-items: center;
+  padding: 10px 0 10px 14px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #475569;
+}
+
+.wardrobe-manual-input--price {
+  border: none !important;
+  flex: 1;
+  border-radius: 0 !important;
+}
+
+.wardrobe-manual-file-input {
+  position: absolute;
+  width: 0;
+  height: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.wardrobe-manual-dropzone {
+  border: 1px dashed rgba(184, 92, 60, 0.45);
+  border-radius: 8px;
+  min-height: 140px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  background: #faf9f6;
+  overflow: hidden;
+}
+
+.wardrobe-manual-dropzone:focus {
+  outline: 2px solid rgba(184, 92, 60, 0.5);
+  outline-offset: 2px;
+}
+
+.wardrobe-manual-dropzone-img {
+  width: 100%;
+  max-height: 200px;
+  object-fit: contain;
+}
+
+.wardrobe-manual-placeholder-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 20px;
+  text-align: center;
+}
+
+.wardrobe-manual-placeholder-letter {
+  font-family: "Cormorant Garamond", "Playfair Display", serif;
+  font-size: 2.25rem;
+  font-weight: 600;
+  color: #b85c3c;
+  line-height: 1;
+}
+
+.wardrobe-manual-dropzone-hint {
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+
+.wardrobe-manual-details-toggle {
+  margin-top: 6px;
+  padding: 8px 0;
+  width: 100%;
+  text-align: left;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #475569;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: "Inter", sans-serif;
+}
+
+.wardrobe-manual-details-panel {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.35s ease;
+}
+
+.wardrobe-manual-details-panel--open {
+  max-height: 1200px;
+}
+
+.wardrobe-manual-details-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-bottom: 8px;
+}
+
+.wardrobe-manual-pill-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.wardrobe-manual-pill {
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-family: "Inter", sans-serif;
+  font-weight: 500;
+  border: 1px solid rgba(184, 92, 60, 0.45);
+  background: transparent;
+  color: #1a1a1a;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.wardrobe-manual-pill--on {
+  background: #b85c3c;
+  border-color: #b85c3c;
+  color: #faf9f6;
+}
+
+.wardrobe-manual-submit {
+  margin-top: 12px;
+  width: 100%;
+  padding: 14px 20px;
+  border-radius: 999px;
+  border: none;
+  background: #b85c3c;
+  color: #faf9f6;
+  font-size: 0.92rem;
+  font-weight: 600;
+  font-family: "Inter", sans-serif;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.wardrobe-manual-submit:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.wardrobe-card-placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #e8e6e3;
+  font-family: "Cormorant Garamond", "Playfair Display", serif;
+  font-size: 2.5rem;
+  font-weight: 600;
+  color: #b85c3c;
+  letter-spacing: -0.02em;
+}
+
 .wardrobe-card-image-frame {
   overflow: hidden;
 }

@@ -1,6 +1,6 @@
 # Change log (session work)
 
-Summary of refactors and fixes applied to this codebase during the wardrobe extraction and related work, including **link ingestion** (`/api/ingest-link`, local image persistence) and **mood alignment** on link import (chic mood constants, pills in the modal, `mood` on items and cards).
+Summary of refactors and fixes applied to this codebase during the wardrobe extraction and related work, including **manual closet entry** (replacing client-side link scraping), optional **`sourceUrl`** bookmarking, **local image upload** (`/api/upload-image`), and **mood** on items and cards (`CHIC_WARDROBE_MOODS`).
 
 ---
 
@@ -12,7 +12,7 @@ Summary of refactors and fixes applied to this codebase during the wardrobe extr
 
 - `wardrobe` React state.
 - **Mutations:** `addItem`, `updateItem`, `removeItem` (prepend on add, merge patch on update, filter on remove).
-- **Persistence:** `localStorage` key `fos_wardrobe` (`STORAGE_WARDROBE`), using `stripWardrobeForStorage` so the stored JSON shape matches the previous behavior (same fields as before).
+- **Persistence:** `localStorage` key `fos_wardrobe` (`STORAGE_WARDROBE`), using `stripWardrobeForStorage` so the stored JSON shape matches the previous behavior (same fields as before), including **`sourceUrl`** when present.
 - **Server cleanup on remove:** DELETE to the local image API when `imageFilename` is set; `URL.revokeObjectURL` for `blob:` previews.
 
 **Public API**
@@ -29,10 +29,11 @@ Summary of refactors and fixes applied to this codebase during the wardrobe extr
 
 - Imports and uses `useWardrobe` only for wardrobe; no direct `STORAGE_WARDROBE` import or `loadJson` / `setWardrobe` for wardrobe in the profile hydration effect.
 - Upload flow (`addWardrobeFromFile`) uses `addItem(item)` instead of manual `setWardrobe` prepend.
+- **`addManualWardrobeItem`** builds items from the Manual tab: optional **`POST /api/upload-image`**, defaults (`timesWorn: 0`, `lastWorn: null`, `laundryStatus: "clean"`), **`tags: ["manual-entry", …brand]`**, no scraping.
 
 **Intentionally unchanged**
 
-- UI, `localStorage` format, and image upload/delete behavior.
+- UI patterns, `localStorage` format, and image upload/delete behavior aside from the above.
 
 ---
 
@@ -46,31 +47,32 @@ Summary of refactors and fixes applied to this codebase during the wardrobe extr
 
 ---
 
-## 3. Link ingestion API (`server.js`, `src/services/mockProductLink.js`, `src/apiBase.js`)
+## 3. Link ingestion API vs. Manual tab (`server.js`, `WardrobeScreen.js`, `App.js`)
 
-**Goal:** Scrape product pages for Open Graph / structured data, persist images locally, and preview before adding to the wardrobe.
+**Current product behavior**
 
-**Backend**
+- The **Add to closet** modal uses **Photo** (unchanged) and **Manual** (replaces the old **Link** tab).
+- **Manual** is a full form: required name, category, purchase price; optional details (color, brand, season/occasion pills, material, notes, mood); optional image via the same upload path as Photo; optional **Product URL** stored only as **`sourceUrl`** — **no fetch, no scrape, no preview from URL**.
+- Items from Manual use **`tags`** including **`manual-entry`** (and brand when provided).
 
-- **`POST /api/ingest-link`** (formerly `/api/mock-product-link`): `fetch` HTML, **Cheerio** for `og:image`, `twitter:image`, `og:title`, price meta + JSON-LD fallbacks; downloads the image into **`public/wardrobe-images/`** and returns **`imageUrl`**, **`localFilename`**, title, price, branding tags when matched, etc.
-- Upload/delete responses use **`publicBase(req)`** for correct host in URLs.
+**Backend (retained for future use)**
 
-**Client**
+- **`POST /api/ingest-link`** and related routes remain in **`server.js`** for a future flow (e.g. Shopify MCP). They are **not** called by the React client after removal of client-side scraping.
+- Image persistence for user uploads continues to use **`/api/upload-image`** and **`public/wardrobe-images/`** as before.
 
-- **`fetchProductPreviewFromUrl`** posts to **`${REACT_APP_API_URL}`** (default `http://localhost:3001`) **`/api/ingest-link`**.
-- **`WardrobeScreen`:** debounced preview after a valid URL; **Confirm Asset** calls **`confirmStoreImport`** with server payload; **`object-fit: contain`** on gallery and preview frames (`index.css`).
+**Removed client code**
+
+- **`src/services/mockProductLink.js`** removed; no **`fetchProductPreviewFromUrl`** or link-preview/finalize wiring in the app.
 
 ---
 
-## 4. Mood alignment on link import (`src/constants/chicMoods.js`, `WardrobeScreen.js`, `App.js`, `useWardrobe.js`)
-
-**Goal:** Require a psychological “mood” tag before confirming a link import; show it on cards.
+## 4. Mood on wardrobe items (`src/constants/chicMoods.js`, `WardrobeScreen.js`, `App.js`, `useWardrobe.js`)
 
 **Constants:** `CHIC_WARDROBE_MOODS` — Confidence, Calm, Productivity, Focus, Joy.
 
 **Data:** Wardrobe items may include **`mood`**; **`stripWardrobeForStorage`** persists it.
 
-**UI:** After the scraped preview, **Mood alignment** — minimalist horizontal pill buttons (`0.8rem`, `1px` border); **Confirm Asset** disabled until a mood is selected. **`confirmStoreImport`** passes **`mood`** into **`addItem`**.
+**UI:** The Manual tab includes optional **Mood** single-select pills. **`addManualWardrobeItem`** passes **`mood`** into **`addItem`**.
 
 **Cards:** Tiny italic mood label next to the category row when **`it.mood`** is set (`.wardrobe-card-mood`).
 
@@ -83,8 +85,8 @@ Summary of refactors and fixes applied to this codebase during the wardrobe extr
 | Wardrobe hook     | `src/hooks/useWardrobe.js`       |
 | App wiring        | `src/App.js`                     |
 | Agent history ids | `src/hooks/useAgentActivity.js`  |
-| Link ingest API   | `server.js`, `src/services/mockProductLink.js`, `src/apiBase.js` |
-| Mood + link UI    | `src/constants/chicMoods.js`, `src/screens/WardrobeScreen.js`, `src/index.css` |
+| Ingest (server only, future) | `server.js` (routes kept) |
+| Manual tab + mood | `src/constants/chicMoods.js`, `src/screens/WardrobeScreen.js`, `src/index.css` |
 
 ---
 

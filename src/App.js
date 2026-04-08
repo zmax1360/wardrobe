@@ -45,11 +45,10 @@ import { WardrobeEquityScreen } from "./screens/WardrobeEquityScreen";
 import { DashboardScreen } from "./screens/DashboardScreen";
 import { AgentPanel } from "./components/AgentPanel";
 import {
-  getWearCount,
+  getTimesWorn,
   compareCleanItemsByPriorityCPW,
   getPurchasePriceNum,
 } from "./utils/wardrobeFinance";
-import { fetchProductPreviewFromUrl } from "./services/mockProductLink";
 import { API_BASE_URL } from "./apiBase";
 import { placeholderRemoveBackground } from "./services/backgroundRemoval";
 
@@ -184,16 +183,18 @@ const BRANDS = [
 const CATEGORIES = [
   "Tops",
   "Bottoms",
-  "Dresses",
   "Outerwear",
   "Shoes",
   "Accessories",
+  "Dresses",
+  "Activewear",
+  "Formal",
   "Bags",
 ];
 
 const CATALOG_SYSTEM =
   "You are a fashion cataloger for a personal wardrobe app. Analyze the clothing/accessories in the image and return a single JSON object with keys: " +
-  "name, category (one of: Tops, Bottoms, Dresses, Outerwear, Shoes, Accessories, Bags), color, style, season, tags (array of strings), material, description. " +
+  "name, category (one of: Tops, Bottoms, Outerwear, Shoes, Accessories, Dresses, Activewear, Formal, Bags), color, style, season, tags (array of strings), material, description. " +
   "Output rules: respond with ONLY raw JSON — no markdown fences, no code blocks, no explanation, apology, or other prose. Start with { and end with }. " +
   "If the image shows wearable items or bags, always produce your best-effort JSON; do not refuse or say you cannot.";
 
@@ -303,7 +304,7 @@ export default function App() {
     color: "",
     purchasePrice: "",
     purchaseDate: "",
-    wearCount: "",
+    timesWorn: "",
     expectedLifespan: "",
   });
 
@@ -616,9 +617,9 @@ export default function App() {
         description: String(parsed.description || ""),
         laundryStatus: "clean",
         purchasePrice: 0,
-        wearCount: 0,
         timesWorn: 0,
-        cost: "",
+        occasion: [],
+        lastWorn: null,
         purchaseDate: new Date().toISOString().split("T")[0],
         expectedLifespan: 365,
       };
@@ -645,37 +646,50 @@ export default function App() {
     if (f) addWardrobeFromFile(f, opts);
   };
 
-  const previewStoreLink = useCallback(async (url) => {
-    return fetchProductPreviewFromUrl(url);
-  }, []);
+  const addManualWardrobeItem = useCallback(
+    async (payload) => {
+      let imagePreview = null;
+      let imageFilename = null;
+      if (payload.imageFile instanceof File) {
+        const up = await uploadImageToServer(payload.imageFile);
+        imagePreview = up.url;
+        imageFilename = up.filename;
+      }
 
-  const confirmStoreImport = useCallback(
-    (data) => {
-      const mockPrice = data.mockPrice ?? data.price ?? 0;
+      const raw = String(payload.purchasePrice ?? "").trim();
+      const priceNum =
+        raw === "" ? 0 : parseFloat(raw.replace(/[^0-9.-]/g, ""));
+      const purchasePrice = Number.isFinite(priceNum) ? priceNum : 0;
+
+      const tags = ["manual-entry"];
+      if (payload.brand?.trim()) tags.push(payload.brand.trim());
+
       const id = crypto.randomUUID ? crypto.randomUUID() : String(Date.now());
-      const tags =
-        Array.isArray(data.tags) && data.tags.length ? data.tags : ["link-import"];
+
       addItem({
         id,
-        imagePreview: data.imageUrl,
-        imageFilename: data.localFilename ?? null,
-        name: data.title || "Imported piece",
-        category: data.category || "Tops",
-        color: "",
+        name: payload.name.trim(),
+        category: payload.category,
+        color: payload.color?.trim() ?? "",
         style: "",
-        season: "",
-        tags,
-        material: "",
-        description: data.description || `Imported: ${data.sourceUrl}`,
+        season:
+          Array.isArray(payload.season) && payload.season.length
+            ? payload.season.join(", ")
+            : "",
+        occasion: Array.isArray(payload.occasion) ? payload.occasion : [],
+        material: payload.material?.trim() ?? "",
+        description: payload.notes?.trim() ?? "",
         laundryStatus: "clean",
-        mockPrice,
-        purchasePrice: mockPrice,
-        wearCount: 0,
+        purchasePrice,
         timesWorn: 0,
-        cost: String(mockPrice),
+        lastWorn: null,
         purchaseDate: new Date().toISOString().split("T")[0],
         expectedLifespan: 365,
-        mood: data.mood || "",
+        mood: payload.mood?.trim() ?? "",
+        tags,
+        imagePreview,
+        imageFilename,
+        sourceUrl: payload.sourceUrl?.trim() ?? "",
       });
     },
     [addItem]
@@ -687,9 +701,9 @@ export default function App() {
     setEditForm({
       name: it.name,
       color: it.color,
-      purchasePrice: pp > 0 ? String(pp) : it.cost === "" || it.cost == null ? "" : String(it.cost),
+      purchasePrice: pp > 0 ? String(pp) : "",
       purchaseDate: it.purchaseDate ?? new Date().toISOString().split("T")[0],
-      wearCount: String(getWearCount(it)),
+      timesWorn: String(getTimesWorn(it)),
       expectedLifespan: it.expectedLifespan != null ? String(it.expectedLifespan) : "365",
     });
   };
@@ -697,14 +711,12 @@ export default function App() {
   const saveEdit = () => {
     if (!editItem) return;
     const priceStr = editForm.purchasePrice.trim();
-    const wc = Math.max(0, parseInt(String(editForm.wearCount).replace(/\D/g, ""), 10) || 0);
+    const wc = Math.max(0, parseInt(String(editForm.timesWorn).replace(/\D/g, ""), 10) || 0);
     const lifespan = Math.max(0, parseInt(String(editForm.expectedLifespan).replace(/\D/g, ""), 10) || 0);
     updateItem(editItem.id, {
       name: editForm.name.trim() || editItem.name,
       color: editForm.color.trim(),
       purchasePrice: priceStr === "" ? "" : parseFloat(priceStr.replace(/[^0-9.]/g, "")) || priceStr,
-      cost: priceStr,
-      wearCount: wc,
       timesWorn: wc,
       purchaseDate: editForm.purchaseDate || editItem.purchaseDate,
       expectedLifespan: lifespan || 365,
@@ -788,11 +800,11 @@ export default function App() {
     if (wardrobe.length) {
       let maxW = -1;
       for (const it of wardrobe) {
-        const w = getWearCount(it);
+        const w = getTimesWorn(it);
         if (w > maxW) maxW = w;
       }
       if (maxW > 0) {
-        const top = wardrobe.filter((it) => getWearCount(it) === maxW);
+        const top = wardrobe.filter((it) => getTimesWorn(it) === maxW);
         top.sort((a, b) => String(a.name || "").localeCompare(String(b.name || "")));
         mostUsedItem = top[0].name || "Untitled";
       } else {
@@ -1439,8 +1451,7 @@ export default function App() {
                 openEdit,
                 removeItem,
                 categories: CATEGORIES,
-                previewStoreLink,
-                confirmStoreImport,
+                addManualWardrobeItem,
                 addWardrobeFromFile,
               }}
             />
@@ -1584,8 +1595,8 @@ export default function App() {
             <input
               type="number"
               min={0}
-              value={editForm.wearCount}
-              onChange={(e) => setEditForm((f) => ({ ...f, wearCount: e.target.value }))}
+              value={editForm.timesWorn}
+              onChange={(e) => setEditForm((f) => ({ ...f, timesWorn: e.target.value }))}
               onFocus={focusInputVisual}
               onBlur={blurInputVisual}
               style={mergeStyles(ui.input, { marginBottom: 14, background: COLORS.surface2 })}
@@ -2138,7 +2149,7 @@ function buildCleanWardrobeList(items) {
   return clean
     .map((it, i) => {
       const pp = getPurchasePriceNum(it);
-      const wc = getWearCount(it);
+      const wc = getTimesWorn(it);
       const cpw = calculateCPW(pp, wc);
       const cpwHint = pp > 0 ? ` · CPW $${cpw.toFixed(2)} (priority ${i + 1})` : "";
       return `- ${it.name} (${it.category}): ${it.color}, style: ${it.style || "—"}, season: ${it.season || "—"}${cpwHint}`;

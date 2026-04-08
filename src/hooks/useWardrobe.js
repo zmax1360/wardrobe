@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { API_BASE_URL } from "../apiBase";
+import { normalizeWardrobeItems } from "../utils/wardrobeFinance";
 import { db, storage } from "../firebase";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { ref as storageRef, deleteObject } from "firebase/storage";
@@ -11,58 +12,35 @@ function loadWardrobeFromStorage() {
     const raw = localStorage.getItem(STORAGE_WARDROBE);
     if (!raw) return [];
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
+    return Array.isArray(parsed) ? normalizeWardrobeItems(parsed) : [];
   } catch {
     return [];
   }
 }
 
 function stripWardrobeForStorage(items) {
-  return items.map(
-    ({
-      id,
-      name,
-      category,
-      color,
-      style,
-      season,
-      tags,
-      material,
-      description,
-      laundryStatus,
-      purchasePrice,
-      wearCount,
-      purchaseDate,
-      expectedLifespan,
-      timesWorn,
-      cost,
-      mockPrice,
-      imagePreview,
-      imageFilename,
-      mood,
-    }) => ({
-      id,
-      name,
-      category,
-      color,
-      style,
-      season,
-      tags,
-      material,
-      description,
-      laundryStatus,
-      purchasePrice,
-      wearCount,
-      purchaseDate,
-      expectedLifespan,
-      timesWorn,
-      cost,
-      mockPrice,
-      imagePreview,
-      imageFilename,
-      mood,
-    })
-  );
+  return items.map((it) => ({
+    id: it.id,
+    name: it.name,
+    category: it.category,
+    color: it.color,
+    style: it.style,
+    season: it.season,
+    tags: it.tags,
+    material: it.material,
+    description: it.description,
+    laundryStatus: it.laundryStatus,
+    purchasePrice: it.purchasePrice,
+    purchaseDate: it.purchaseDate,
+    expectedLifespan: it.expectedLifespan,
+    timesWorn: it.timesWorn,
+    imagePreview: it.imagePreview,
+    imageFilename: it.imageFilename,
+    mood: it.mood,
+    occasion: Array.isArray(it.occasion) ? it.occasion : [],
+    lastWorn: it.lastWorn ?? null,
+    sourceUrl: it.sourceUrl ?? "",
+  }));
 }
 
 /** Firestore rejects `undefined`; JSON round-trip drops undefined keys on plain data. */
@@ -81,8 +59,9 @@ export function useWardrobe(hydrated, firebaseUser) {
         if (!snap.exists()) return;
         const w = snap.data().wardrobe ?? [];
         if (Array.isArray(w) && w.length > 0) {
-          setWardrobe(w);
-          localStorage.setItem(STORAGE_WARDROBE, JSON.stringify(w));
+          const norm = normalizeWardrobeItems(w);
+          setWardrobe(norm);
+          localStorage.setItem(STORAGE_WARDROBE, JSON.stringify(stripWardrobeForStorage(norm)));
         }
       })
       .catch(() => {});
