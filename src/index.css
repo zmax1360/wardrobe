@@ -131,6 +131,93 @@ h6 {
   line-height: 1.45;
 }
 
+/* Link import preview — matches gallery 3:4 frame + inset padding */
+.wardrobe-link-preview-card {
+  border-radius: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  background: #ffffff;
+  box-sizing: border-box;
+  margin-top: 4px;
+}
+
+.wardrobe-link-preview-inner {
+  /* Match `.wardrobe-card-inner` floating inset */
+  padding: 3rem;
+  box-sizing: border-box;
+}
+
+.wardrobe-link-preview-brand {
+  font-family: "Inter", sans-serif;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  margin-bottom: 10px;
+}
+
+.wardrobe-link-preview-frame {
+  position: relative;
+  aspect-ratio: 3 / 4;
+  width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+}
+
+.wardrobe-link-preview-frame img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: auto;
+  object-fit: contain;
+  object-position: center;
+}
+
+.wardrobe-link-preview-meta {
+  margin-top: 16px;
+}
+
+.wardrobe-link-preview-title {
+  font-family: "Cormorant Garamond", "Playfair Display", serif;
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1.3;
+  color: #1a1a1a;
+  margin: 0 0 8px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.wardrobe-link-preview-price {
+  font-family: "Inter", sans-serif;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin-bottom: 14px;
+}
+
+.wardrobe-link-preview-confirm {
+  width: 100%;
+  padding: 12px 18px;
+  border-radius: 10px;
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: "Inter", sans-serif;
+  font-size: 0.88rem;
+}
+
+.wardrobe-link-preview-confirm:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .wardrobe-card-image-frame {
   overflow: hidden;
 }
@@ -464,9 +551,10 @@ h6 {
   flex: 1 1 200px;
   padding: 20px 22px;
   border-radius: 12px;
-  border: 1px solid rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(0, 0, 0, 0.05);
   background: #ffffff;
   box-sizing: border-box;
+  box-shadow: none;
 }
 
 .dashboard-kpi-label {
@@ -497,9 +585,10 @@ h6 {
 .dashboard-action-card {
   padding: 28px 26px;
   border-radius: 12px;
-  border: 1px solid rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(0, 0, 0, 0.05);
   background: #ffffff;
   box-sizing: border-box;
+  box-shadow: none;
 }
 
 .dashboard-action-eyebrow {
@@ -555,6 +644,106 @@ h6 {
 .dashboard-text-link:hover {
   color: #1a1a1a;
   border-bottom-color: rgba(0, 0, 0, 0.15);
+}
+
+/* Empty collection — high-contrast invitation */
+.dashboard-empty-cta {
+  padding: 36px 32px;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  background: #0f0f0f;
+  color: #fafafa;
+  box-sizing: border-box;
+  box-shadow: none;
+  max-width: 560px;
+}
+
+.dashboard-empty-cta-title {
+  font-family: "Playfair Display", "Cormorant Garamond", Georgia, serif;
+  font-size: 1.5rem;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  margin: 0 0 12px;
+  color: #ffffff;
+}
+
+.dashboard-empty-cta-copy {
+  margin: 0 0 22px;
+  font-size: 0.88rem;
+  line-height: 1.55;
+  color: rgba(255, 255, 255, 0.72);
+  font-family: "Inter", sans-serif;
+}
+
+.dashboard-empty-cta-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 22px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  background: #ffffff;
+  color: #0f0f0f;
+  font-family: "Inter", sans-serif;
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.dashboard-empty-cta-button:hover {
+  opacity: 0.92;
+}
+
+/* Asset spotlight — same hairline as gallery cards */
+.dashboard-spotlight {
+  padding: 28px 26px;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  background: #ffffff;
+  box-sizing: border-box;
+  box-shadow: none;
+  max-width: 640px;
+}
+
+.dashboard-spotlight-eyebrow {
+  font-size: 9px;
+  font-family: "Inter", sans-serif;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: #64748b;
+  margin-bottom: 12px;
+}
+
+.dashboard-spotlight-copy {
+  margin: 0 0 14px;
+  font-size: 0.92rem;
+  line-height: 1.65;
+  color: #475569;
+  font-family: "Inter", sans-serif;
+}
+
+.dashboard-spotlight-copy strong {
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.dashboard-spotlight-muted {
+  color: #94a3b8;
+  font-size: 0.88rem;
+}
+
+.dashboard-spotlight-retry {
+  margin-bottom: 8px;
+}
+
+.dashboard-spotlight-links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
 }
 
 /* Sidebar: hairline only */

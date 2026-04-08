@@ -49,7 +49,8 @@ import {
   compareCleanItemsByPriorityCPW,
   getPurchasePriceNum,
 } from "./utils/wardrobeFinance";
-import { mockScrapeProductFromUrl } from "./services/mockProductLink";
+import { fetchProductPreviewFromUrl } from "./services/mockProductLink";
+import { API_BASE_URL } from "./apiBase";
 import { placeholderRemoveBackground } from "./services/backgroundRemoval";
 
 const STORAGE_PROFILE = "fos_profile";
@@ -238,7 +239,7 @@ async function uploadImageToServer(file) {
   const formData = new FormData();
   formData.append("image", file);
   try {
-    const res = await fetch("http://localhost:3001/api/upload-image", {
+    const res = await fetch(`${API_BASE_URL}/api/upload-image`, {
       method: "POST",
       body: formData,
     });
@@ -284,6 +285,7 @@ export default function App() {
   const [onboardingStep, setOnboardingStep] = useState(1);
   const [draft, setDraft] = useState(defaultProfile);
 
+  /** Default landing: Home / Dashboard (`currentScreen` equivalent). */
   const [activeNav, setActiveNav] = useState("dashboard");
   const { wardrobe, setWardrobe, addItem, updateItem, removeItem } = useWardrobe(hydrated, firebaseUser);
   const [events, setEvents] = useState(() => {
@@ -643,32 +645,40 @@ export default function App() {
     if (f) addWardrobeFromFile(f, opts);
   };
 
-  const ingestFromMockLink = async (url) => {
-    const data = await mockScrapeProductFromUrl(url);
-    const mockPrice = data.mockPrice ?? data.price;
-    const id = crypto.randomUUID ? crypto.randomUUID() : String(Date.now());
-    addItem({
-      id,
-      imagePreview: data.imageUrl,
-      imageFilename: null,
-      name: data.title,
-      category: "Tops",
-      color: "",
-      style: "",
-      season: "",
-      tags: ["link-import"],
-      material: "",
-      description: `Imported from link (mock): ${data.sourceUrl}`,
-      laundryStatus: "clean",
-      mockPrice,
-      purchasePrice: mockPrice,
-      wearCount: 0,
-      timesWorn: 0,
-      cost: String(mockPrice),
-      purchaseDate: new Date().toISOString().split("T")[0],
-      expectedLifespan: 365,
-    });
-  };
+  const previewStoreLink = useCallback(async (url) => {
+    return fetchProductPreviewFromUrl(url);
+  }, []);
+
+  const confirmStoreImport = useCallback(
+    (data) => {
+      const mockPrice = data.mockPrice ?? data.price ?? 0;
+      const id = crypto.randomUUID ? crypto.randomUUID() : String(Date.now());
+      const tags =
+        Array.isArray(data.tags) && data.tags.length ? data.tags : ["link-import"];
+      addItem({
+        id,
+        imagePreview: data.imageUrl,
+        imageFilename: data.localFilename ?? null,
+        name: data.title || "Imported piece",
+        category: data.category || "Tops",
+        color: "",
+        style: "",
+        season: "",
+        tags,
+        material: "",
+        description: data.description || `Imported: ${data.sourceUrl}`,
+        laundryStatus: "clean",
+        mockPrice,
+        purchasePrice: mockPrice,
+        wearCount: 0,
+        timesWorn: 0,
+        cost: String(mockPrice),
+        purchaseDate: new Date().toISOString().split("T")[0],
+        expectedLifespan: 365,
+      });
+    },
+    [addItem]
+  );
 
   const openEdit = (it) => {
     setEditItem(it);
@@ -1428,7 +1438,8 @@ export default function App() {
                 openEdit,
                 removeItem,
                 categories: CATEGORIES,
-                ingestFromMockLink,
+                previewStoreLink,
+                confirmStoreImport,
                 addWardrobeFromFile,
               }}
             />

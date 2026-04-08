@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
 import { FINANCE } from "../styles/financeTheme";
 import { COLORS, baseTransition } from "../styles/theme";
@@ -52,6 +52,8 @@ export function WardrobeScreen({
   const [addTab, setAddTab] = useState("photo");
   const [storeLink, setStoreLink] = useState("");
   const [linkLoading, setLinkLoading] = useState(false);
+  const [linkPreview, setLinkPreview] = useState(null);
+  const [linkPreviewError, setLinkPreviewError] = useState(null);
   const [removeBgNext, setRemoveBgNext] = useState(false);
   const [pulseWearId, setPulseWearId] = useState(null);
   const modalFileRef = React.useRef(null);
@@ -72,9 +74,57 @@ export function WardrobeScreen({
     openEdit,
     removeItem,
     categories,
-    ingestFromMockLink,
+    previewStoreLink,
+    confirmStoreImport,
     addWardrobeFromFile,
   } = handlers;
+
+  useEffect(() => {
+    if (!showAddModal || addTab !== "link") return;
+    const u = storeLink.trim();
+    if (!/^https?:\/\//i.test(u)) {
+      setLinkPreview(null);
+      setLinkPreviewError(null);
+      return;
+    }
+    let cancelled = false;
+    setLinkPreviewError(null);
+    const t = setTimeout(async () => {
+      setLinkLoading(true);
+      try {
+        const data = await previewStoreLink(u);
+        if (!cancelled) {
+          setLinkPreview(data);
+          setLinkPreviewError(null);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setLinkPreview(null);
+          setLinkPreviewError(err?.message || "Could not load preview");
+        }
+      } finally {
+        if (!cancelled) setLinkLoading(false);
+      }
+    }, 280);
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+    };
+  }, [storeLink, showAddModal, addTab, previewStoreLink]);
+
+  useEffect(() => {
+    if (addTab !== "link") {
+      setLinkPreview(null);
+      setLinkPreviewError(null);
+      setLinkLoading(false);
+    }
+  }, [addTab]);
+
+  const resetLinkImportState = () => {
+    setStoreLink("");
+    setLinkPreview(null);
+    setLinkPreviewError(null);
+  };
 
   const handleModalFile = (e) => {
     const f = e.target.files?.[0];
@@ -84,17 +134,17 @@ export function WardrobeScreen({
     setRemoveBgNext(false);
   };
 
-  const submitLink = async () => {
-    setLinkLoading(true);
-    try {
-      await ingestFromMockLink(storeLink);
-      setStoreLink("");
-      setShowAddModal(false);
-    } catch (err) {
-      alert(err?.message || "Could not import link");
-    } finally {
-      setLinkLoading(false);
-    }
+  const confirmLinkAsset = () => {
+    if (!linkPreview) return;
+    confirmStoreImport(linkPreview);
+    resetLinkImportState();
+    setShowAddModal(false);
+  };
+
+  const formatPreviewPrice = (p) => {
+    const n = typeof p === "number" ? p : parseFloat(String(p ?? "").replace(/[^0-9.]/g, ""));
+    if (!Number.isFinite(n)) return "—";
+    return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(n);
   };
 
   return (
@@ -130,7 +180,10 @@ export function WardrobeScreen({
           </div>
           <button
             type="button"
-            onClick={() => setShowAddModal(true)}
+            onClick={() => {
+              resetLinkImportState();
+              setShowAddModal(true);
+            }}
             style={{
               padding: "12px 22px",
               borderRadius: 999,
@@ -479,7 +532,10 @@ export function WardrobeScreen({
       {showAddModal && (
         <div
           role="presentation"
-          onClick={() => setShowAddModal(false)}
+          onClick={() => {
+            resetLinkImportState();
+            setShowAddModal(false);
+          }}
           style={{
             position: "fixed",
             inset: 0,
@@ -497,7 +553,7 @@ export function WardrobeScreen({
             onClick={(e) => e.stopPropagation()}
             style={{
               width: "100%",
-              maxWidth: 440,
+              maxWidth: linkPreview && addTab === "link" ? 520 : 440,
               borderRadius: 20,
               padding: 28,
               background: "#fff",
@@ -507,7 +563,7 @@ export function WardrobeScreen({
           >
             <h2 style={{ fontFamily: "'Playfair Display', serif", margin: "0 0 8px", fontSize: "1.45rem" }}>Add to closet</h2>
             <p style={{ margin: "0 0 20px", fontSize: "0.86rem", color: FINANCE.muted }}>
-              Photo (AI catalog) or paste a store link (mock ingest).
+              Photo (AI catalog) or paste a product link — preview updates automatically before you confirm.
             </p>
             <div style={{ display: "flex", gap: 8, marginBottom: 18 }}>
               {["photo", "link"].map((t) => (
@@ -565,7 +621,7 @@ export function WardrobeScreen({
 
             {addTab === "link" && (
               <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                <label style={{ fontSize: "0.75rem", fontWeight: 600, color: FINANCE.muted }}>Paste store link</label>
+                <label style={{ fontSize: "0.75rem", fontWeight: 600, color: FINANCE.muted }}>Paste product URL</label>
                 <input
                   value={storeLink}
                   onChange={(e) => setStoreLink(e.target.value)}
@@ -577,29 +633,74 @@ export function WardrobeScreen({
                     fontSize: "0.9rem",
                   }}
                 />
-                <button
-                  type="button"
-                  disabled={linkLoading}
-                  onClick={submitLink}
-                  style={{
-                    padding: "12px 18px",
-                    borderRadius: 10,
-                    border: "none",
-                    background: FINANCE.text,
-                    color: "#fff",
-                    fontWeight: 600,
-                    cursor: linkLoading ? "wait" : "pointer",
-                  }}
-                >
-                  {linkLoading ? "Simulating…" : "Simulate import"}
-                </button>
+                <p style={{ margin: 0, fontSize: "0.72rem", color: FINANCE.muted }}>
+                  Preview loads from the page (Open Graph / structured data) and saves a local copy of the image.
+                </p>
+
+                {linkLoading && (
+                  <div style={{ fontSize: "0.82rem", color: FINANCE.muted }}>Loading preview…</div>
+                )}
+
+                {linkPreviewError && !linkLoading && (
+                  <div style={{ fontSize: "0.82rem", color: "#b54a4a", lineHeight: 1.4 }}>{linkPreviewError}</div>
+                )}
+
+                {linkPreview && !linkLoading && (
+                  <div
+                    className="wardrobe-link-preview-card"
+                    style={
+                      linkPreview.brandAccent
+                        ? { borderLeft: `4px solid ${linkPreview.brandAccent}` }
+                        : undefined
+                    }
+                  >
+                    <div className="wardrobe-link-preview-inner">
+                      {linkPreview.brand ? (
+                        <div
+                          className="wardrobe-link-preview-brand"
+                          style={{ color: linkPreview.brandAccent || FINANCE.slate }}
+                        >
+                          {linkPreview.brand}
+                        </div>
+                      ) : null}
+                      <div
+                        className="wardrobe-link-preview-frame"
+                        style={{ background: CARD_BG }}
+                      >
+                        {linkPreview.imageUrl ? (
+                          <img src={linkPreview.imageUrl} alt="" />
+                        ) : null}
+                      </div>
+                      <div className="wardrobe-link-preview-meta">
+                        <div className="wardrobe-link-preview-title">{linkPreview.title || "Product"}</div>
+                        <div className="wardrobe-link-preview-price">
+                          {formatPreviewPrice(linkPreview.mockPrice ?? linkPreview.price)}
+                        </div>
+                        <button
+                          type="button"
+                          className="wardrobe-link-preview-confirm"
+                          onClick={confirmLinkAsset}
+                          style={{
+                            background: linkPreview.brandAccent || FINANCE.text,
+                            color: "#fff",
+                          }}
+                        >
+                          Confirm Asset
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
             <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 22 }}>
               <button
                 type="button"
-                onClick={() => setShowAddModal(false)}
+                onClick={() => {
+                  resetLinkImportState();
+                  setShowAddModal(false);
+                }}
                 style={{
                   padding: "10px 18px",
                   borderRadius: 10,

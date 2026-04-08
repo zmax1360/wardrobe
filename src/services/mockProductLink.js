@@ -1,18 +1,20 @@
+import { API_BASE_URL } from "../apiBase";
+
 /**
- * Mock “scrape” for store URLs — replace with real headless / affiliate API.
+ * Fetches Open Graph / JSON-LD product data and a locally persisted image from the backend.
  */
-export async function mockScrapeProductFromUrl(url) {
+export async function fetchProductPreviewFromUrl(url) {
   if (!url || typeof url !== "string" || !url.trim()) {
     throw new Error("Paste a product URL");
   }
-  await new Promise((r) => setTimeout(r, 700));
-  const hash = Math.abs(url.split("").reduce((a, c) => a + c.charCodeAt(0), 0));
-  const mockPrice = 49 + (hash % 200);
-  return {
-    title: "Imported piece (mock)",
-    price: mockPrice,
-    mockPrice,
-    imageUrl: `https://picsum.photos/seed/fos${hash}/400/520`,
-    sourceUrl: url.trim(),
-  };
+  const res = await fetch(`${API_BASE_URL}/api/mock-product-link`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ url: url.trim() }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(data.error || "Could not load product preview");
+  }
+  return data;
 }

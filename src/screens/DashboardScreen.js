@@ -1,26 +1,30 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 
-import { getCostPerWear, getPurchasePriceNum, getWearCount } from "../utils/wardrobeFinance";
+import { calculateCPW, getPurchasePriceNum, getWearCount } from "../utils/wardrobeFinance";
 
-function dashboardAgentStatusLine(agentActivity) {
-  if (!agentActivity) return "Agent Status: Idle";
-  if (agentActivity.status === "running") return "Agent Status: Running";
-  const n = Array.isArray(agentActivity.history) ? agentActivity.history.length : 0;
-  if (n === 0) return "Agent Status: Idle";
-  if (n === 1) return "Agent Status: 1 task complete";
-  return `Agent Status: ${n} tasks complete`;
+/** Alive copy; when an agent run is active, surface it. */
+function agentCrewStatusLine(agentActivity) {
+  if (agentActivity?.status === "running") {
+    return "Agent Crew: Active — orchestrating your request";
+  }
+  return "Agent Crew: Monitoring Gaps";
 }
 
 function useDashboardKpis(wardrobe) {
   return useMemo(() => {
-    const totalWardrobeValue = wardrobe.reduce((sum, it) => sum + getPurchasePriceNum(it), 0);
+    const totalValue = wardrobe.reduce((sum, it) => sum + getPurchasePriceNum(it), 0);
     const priced = wardrobe.filter((it) => getPurchasePriceNum(it) > 0);
     const avgCPW =
-      priced.length > 0 ? priced.reduce((sum, it) => sum + getCostPerWear(it), 0) / priced.length : 0;
-    const wornPriced = priced.filter((it) => getWearCount(it) > 0).length;
-    const efficiencyPct = priced.length ? Math.round((wornPriced / priced.length) * 100) : null;
+      priced.length > 0
+        ? priced.reduce((sum, it) => sum + calculateCPW(getPurchasePriceNum(it), getWearCount(it)), 0) /
+          priced.length
+        : 0;
 
-    return { totalWardrobeValue, avgCPW, efficiencyPct, pricedCount: priced.length };
+    const wornCount = wardrobe.filter((it) => getWearCount(it) > 0).length;
+    const utilityPct =
+      wardrobe.length > 0 ? Math.round((wornCount / wardrobe.length) * 100) : null;
+
+    return { totalValue, avgCPW, utilityPct, pricedCount: priced.length, wornCount, totalCount: wardrobe.length };
   }, [wardrobe]);
 }
 
@@ -47,6 +51,31 @@ function useLocalWeather() {
       );
       const { latitude, longitude } = pos.coords;
 
+      let city = "Toronto";
+      try {
+        const geoRes = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`,
+          {
+            headers: {
+              Accept: "application/json",
+              "User-Agent": "FashionOS/1.0 (local wardrobe app)",
+            },
+          }
+        );
+        if (geoRes.ok) {
+          const geoData = await geoRes.json();
+          city =
+            geoData.address?.city ||
+            geoData.address?.town ||
+            geoData.address?.village ||
+            geoData.address?.suburb ||
+            geoData.address?.municipality ||
+            city;
+        }
+      } catch {
+        /* CORS / rate limits — keep default Toronto */
+      }
+
       const weatherRes = await fetch(
         `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,weathercode&temperature_unit=celsius`
       );
@@ -70,10 +99,10 @@ function useLocalWeather() {
       };
       const condition = weatherCodes[current.weathercode] || "mixed conditions";
       const temp = Math.round(current.temperature_2m);
-      setWeather({ temp, condition });
+      setWeather({ temp, condition, city });
     } catch (e) {
       const code = e && typeof e.code === "number" ? e.code : null;
-      if (code === 1) setError("Allow location to tailor picks to weather.");
+      if (code === 1) setError("Allow location for weather-aware briefings.");
       else setError("Could not load weather.");
       setWeather(null);
     }
@@ -87,7 +116,7 @@ function useLocalWeather() {
   return { weather, loading, error, refresh };
 }
 
-function pickWearSuggestion(wardrobe, weather) {
+function pickSpotlightItem(wardrobe, weather) {
   if (!wardrobe.length) return null;
   const clean = wardrobe.filter((it) => it.laundryStatus === "clean");
   const pool = clean.length ? clean : wardrobe;
@@ -110,81 +139,94 @@ function pickWearSuggestion(wardrobe, weather) {
 export function DashboardScreen({ wardrobe, setActiveNav, agentActivity }) {
   const kpis = useDashboardKpis(wardrobe);
   const { weather, loading: weatherLoading, error: weatherError, refresh } = useLocalWeather();
-  const suggestion = useMemo(() => pickWearSuggestion(wardrobe, weather), [wardrobe, weather]);
+  const spotlight = useMemo(() => pickSpotlightItem(wardrobe, weather), [wardrobe, weather]);
 
   return (
     <div className="dashboard-page">
-      <h1 className="dashboard-page-title">The Daily Brief.</h1>
-      <p className="dashboard-page-lede">Your wardrobe at a glance — value, efficiency, and one guided move.</p>
+      <h1 className="dashboard-page-title">The Daily Briefing</h1>
+      <p className="dashboard-page-lede">
+        Value, cost-per-wear, and utility — one calm view of your collection.
+      </p>
       <p className="dashboard-agent-status" role="status">
-        {dashboardAgentStatusLine(agentActivity)}
+        {agentCrewStatusLine(agentActivity)}
       </p>
 
       <div className="dashboard-kpi-row">
         <div className="dashboard-kpi">
-          <div className="dashboard-kpi-label">Total wardrobe value</div>
-          <div className="dashboard-kpi-value">${kpis.totalWardrobeValue.toFixed(0)}</div>
+          <div className="dashboard-kpi-label">Total value</div>
+          <div className="dashboard-kpi-value">${kpis.totalValue.toFixed(0)}</div>
+          <div className="dashboard-kpi-hint">Sum of purchase prices (incl. catalog value)</div>
         </div>
         <div className="dashboard-kpi">
-          <div className="dashboard-kpi-label">Avg. CPW</div>
+          <div className="dashboard-kpi-label">Average CPW</div>
           <div className="dashboard-kpi-value">{kpis.pricedCount ? `$${kpis.avgCPW.toFixed(2)}` : "—"}</div>
+          <div className="dashboard-kpi-hint">Priced items only</div>
         </div>
         <div className="dashboard-kpi">
-          <div className="dashboard-kpi-label">Wardrobe efficiency</div>
-          <div className="dashboard-kpi-value">
-            {kpis.efficiencyPct != null ? `${kpis.efficiencyPct}%` : "—"}
+          <div className="dashboard-kpi-label">Utility</div>
+          <div className="dashboard-kpi-value">{kpis.utilityPct != null ? `${kpis.utilityPct}%` : "—"}</div>
+          <div className="dashboard-kpi-hint">
+            {kpis.totalCount ? `${kpis.wornCount} / ${kpis.totalCount} pieces worn ≥1×` : "—"}
           </div>
-          <div className="dashboard-kpi-hint">Priced pieces worn ≥1×</div>
         </div>
       </div>
 
-      <div className="dashboard-action-card">
-        <div className="dashboard-action-eyebrow">Guided action</div>
-        {wardrobe.length === 0 ? (
-          <>
-            <p className="dashboard-action-copy">Step 1: Catalog your first asset.</p>
-            <button type="button" className="dashboard-text-link" onClick={() => setActiveNav("wardrobe")}>
-              Open Asset Gallery →
-            </button>
-          </>
-        ) : (
-          <>
-            <p className="dashboard-action-copy">
-              {weatherLoading && "Checking local weather…"}
-              {!weatherLoading && weather && (
+      {wardrobe.length === 0 ? (
+        <section className="dashboard-empty-cta" aria-labelledby="dashboard-empty-heading">
+          <h2 id="dashboard-empty-heading" className="dashboard-empty-cta-title">
+            Your Collection Begins Here
+          </h2>
+          <p className="dashboard-empty-cta-copy">
+            Catalog one piece to unlock CPW, equity, and planner intelligence — your closet as a balance sheet.
+          </p>
+          <button type="button" className="dashboard-empty-cta-button" onClick={() => setActiveNav("wardrobe")}>
+            Import your first piece
+          </button>
+        </section>
+      ) : (
+        <section className="dashboard-spotlight">
+          <div className="dashboard-spotlight-eyebrow">Asset spotlight</div>
+          {weatherLoading ? (
+            <p className="dashboard-spotlight-copy">Fetching weather…</p>
+          ) : (
+            <p className="dashboard-spotlight-copy">
+              {weather ? (
                 <>
-                  Today is about <strong>{weather.temp}°C</strong> and <strong>{weather.condition}</strong>.
-                  {suggestion && (
-                    <>
-                      {" "}
-                      Consider wearing <strong>{suggestion.name || "this piece"}</strong>
-                      {suggestion.category ? ` (${suggestion.category})` : ""} — it&apos;s clean and due for rotation.
-                    </>
-                  )}
-                  {!suggestion && " Add a clean piece or log wears to refine picks."}
+                  It&apos;s <strong>{weather.temp}°</strong> in <strong>{weather.city || "Toronto"}</strong>.
                 </>
+              ) : (
+                <span className="dashboard-spotlight-muted">Local weather unavailable — </span>
               )}
-              {!weatherLoading && !weather && weatherError && <span> {weatherError}</span>}
+              {spotlight ? (
+                <>
+                  {" "}
+                  Your <strong>{spotlight.name || "piece"}</strong>
+                  {spotlight.category ? ` (${spotlight.category})` : ""} is due for a wear to lower its CPW.
+                </>
+              ) : (
+                <> Add a clean item or log wears to personalize this line.</>
+              )}
+              {weatherError ? <span className="dashboard-spotlight-muted"> {weatherError}</span> : null}
             </p>
-            {weatherError && (
-              <button type="button" className="dashboard-text-link" onClick={() => void refresh()}>
-                Retry location
-              </button>
-            )}
-            <div className="dashboard-action-links">
-              <button type="button" className="dashboard-text-link" onClick={() => setActiveNav("planner")}>
-                Open Planner
-              </button>
-              <span className="dashboard-action-sep" aria-hidden>
-                ·
-              </span>
-              <button type="button" className="dashboard-text-link" onClick={() => setActiveNav("wardrobe")}>
-                Asset Gallery
-              </button>
-            </div>
-          </>
-        )}
-      </div>
+          )}
+          {weatherError ? (
+            <button type="button" className="dashboard-text-link dashboard-spotlight-retry" onClick={() => void refresh()}>
+              Retry location
+            </button>
+          ) : null}
+          <div className="dashboard-spotlight-links">
+            <button type="button" className="dashboard-text-link" onClick={() => setActiveNav("wardrobe")}>
+              Asset Gallery
+            </button>
+            <span className="dashboard-action-sep" aria-hidden>
+              ·
+            </span>
+            <button type="button" className="dashboard-text-link" onClick={() => setActiveNav("planner")}>
+              Planner
+            </button>
+          </div>
+        </section>
+      )}
     </div>
   );
 }
