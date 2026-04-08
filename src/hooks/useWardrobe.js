@@ -39,6 +39,7 @@ function stripWardrobeForStorage(items) {
       mockPrice,
       imagePreview,
       imageFilename,
+      mood,
     }) => ({
       id,
       name,
@@ -59,6 +60,7 @@ function stripWardrobeForStorage(items) {
       mockPrice,
       imagePreview,
       imageFilename,
+      mood,
     })
   );
 }

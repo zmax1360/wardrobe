@@ -675,6 +675,7 @@ export default function App() {
         cost: String(mockPrice),
         purchaseDate: new Date().toISOString().split("T")[0],
         expectedLifespan: 365,
+        mood: data.mood || "",
       });
     },
     [addItem]

@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import { FINANCE } from "../styles/financeTheme";
 import { COLORS, baseTransition } from "../styles/theme";
 import { calculateCPW, getPurchasePriceNum, getWearCount } from "../utils/wardrobeFinance";
+import { CHIC_WARDROBE_MOODS } from "../constants/chicMoods";
 
 const GALLERY_BG = "#FFFFFF";
 const CARD_BG = "#FFFFFF";
@@ -54,6 +55,7 @@ export function WardrobeScreen({
   const [linkLoading, setLinkLoading] = useState(false);
   const [linkPreview, setLinkPreview] = useState(null);
   const [linkPreviewError, setLinkPreviewError] = useState(null);
+  const [linkImportMood, setLinkImportMood] = useState(null);
   const [removeBgNext, setRemoveBgNext] = useState(false);
   const [pulseWearId, setPulseWearId] = useState(null);
   const modalFileRef = React.useRef(null);
@@ -96,6 +98,7 @@ export function WardrobeScreen({
         const data = await previewStoreLink(u);
         if (!cancelled) {
           setLinkPreview(data);
+          setLinkImportMood(null);
           setLinkPreviewError(null);
         }
       } catch (err) {
@@ -118,6 +121,7 @@ export function WardrobeScreen({
       setLinkPreview(null);
       setLinkPreviewError(null);
       setLinkLoading(false);
+      setLinkImportMood(null);
     }
   }, [addTab]);
 
@@ -125,6 +129,7 @@ export function WardrobeScreen({
     setStoreLink("");
     setLinkPreview(null);
     setLinkPreviewError(null);
+    setLinkImportMood(null);
   };
 
   const handleModalFile = (e) => {
@@ -136,8 +141,8 @@ export function WardrobeScreen({
   };
 
   const confirmLinkAsset = () => {
-    if (!linkPreview) return;
-    confirmStoreImport(linkPreview);
+    if (!linkPreview || !linkImportMood) return;
+    confirmStoreImport({ ...linkPreview, mood: linkImportMood });
     resetLinkImportState();
     setShowAddModal(false);
   };
@@ -346,8 +351,22 @@ export function WardrobeScreen({
                         minHeight: 0,
                       }}
                     >
-                      <div className="wardrobe-card-category" style={{ marginBottom: 8 }}>
-                        {it.category || "Uncategorized"}
+                      <div
+                        className="wardrobe-card-category-row"
+                        style={{
+                          marginBottom: 8,
+                          display: "flex",
+                          flexWrap: "wrap",
+                          alignItems: "baseline",
+                          gap: "4px 10px",
+                        }}
+                      >
+                        <span className="wardrobe-card-category">{it.category || "Uncategorized"}</span>
+                        {it.mood ? (
+                          <span className="wardrobe-card-mood" aria-label={`Mood: ${it.mood}`}>
+                            {it.mood}
+                          </span>
+                        ) : null}
                       </div>
 
                       <div className="wardrobe-card-title-row">
@@ -677,10 +696,47 @@ export function WardrobeScreen({
                         <div className="wardrobe-link-preview-price">
                           {formatPreviewPrice(linkPreview.mockPrice ?? linkPreview.price)}
                         </div>
+                        <div className="wardrobe-link-mood-alignment">
+                          <div
+                            style={{
+                              fontSize: "0.72rem",
+                              fontWeight: 600,
+                              color: FINANCE.muted,
+                              marginBottom: 8,
+                              letterSpacing: "0.04em",
+                              textTransform: "uppercase",
+                            }}
+                          >
+                            Mood alignment
+                          </div>
+                          <div
+                            style={{
+                              display: "flex",
+                              flexWrap: "wrap",
+                              gap: 8,
+                              marginBottom: 14,
+                            }}
+                          >
+                            {CHIC_WARDROBE_MOODS.map((m) => {
+                              const on = linkImportMood === m;
+                              return (
+                                <button
+                                  key={m}
+                                  type="button"
+                                  className={`wardrobe-mood-pill${on ? " wardrobe-mood-pill--selected" : ""}`}
+                                  onClick={() => setLinkImportMood(m)}
+                                >
+                                  {m}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
                         <button
                           type="button"
                           className="wardrobe-link-preview-confirm"
                           onClick={confirmLinkAsset}
+                          disabled={!linkImportMood}
                           style={{
                             background: linkPreview.brandAccent || FINANCE.text,
                             color: "#fff",
