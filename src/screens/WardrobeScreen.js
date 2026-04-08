@@ -79,6 +79,7 @@ export function WardrobeScreen({
     addWardrobeFromFile,
   } = handlers;
 
+  /** Debounced fetch to POST /api/ingest-link (preview); confirm uses same payload via confirmStoreImport. */
   useEffect(() => {
     if (!showAddModal || addTab !== "link") return;
     const u = storeLink.trim();

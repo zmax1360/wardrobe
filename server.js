@@ -328,7 +328,13 @@ app.delete("/api/delete-image/:filename", (req, res) => {
   res.json({ ok: true });
 });
 
-app.post("/api/mock-product-link", async (req, res) => {
+/**
+ * Product link ingest: fetch HTML with `fetch`, parse with Cheerio.
+ * Primary image: meta[property="og:image"] or meta[name="twitter:image"], then fallbacks.
+ * Title: og:title; price: product/og meta + JSON-LD when present.
+ * Persists the resolved image to public/wardrobe-images/.
+ */
+app.post("/api/ingest-link", async (req, res) => {
   const url = req.body && typeof req.body.url === "string" ? req.body.url.trim() : "";
   if (!url) return res.status(400).json({ error: "url required" });
 
@@ -387,7 +393,7 @@ app.post("/api/mock-product-link", async (req, res) => {
       description,
     });
   } catch (e) {
-    console.error("mock-product-link:", e.message);
+    console.error("ingest-link:", e.message);
     res.status(500).json({
       error: e.message || "Failed to import product link",
     });

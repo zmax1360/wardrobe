@@ -167,6 +167,7 @@ h6 {
   min-height: 0;
 }
 
+/* Match gallery: full image visible, letterboxed if needed */
 .wardrobe-link-preview-frame img {
   position: absolute;
   inset: 0;
@@ -222,6 +223,7 @@ h6 {
   overflow: hidden;
 }
 
+/* Chic & neat: product photos sit inside the 3:4 frame without cropping */
 .wardrobe-card-image-frame .wardrobe-card-image {
   position: absolute;
   inset: 0;
