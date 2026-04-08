@@ -1,6 +1,6 @@
 # Change log (session work)
 
-Summary of refactors and fixes applied to this codebase during the wardrobe extraction and related work.
+Summary of refactors and fixes applied to this codebase during the wardrobe extraction and related work, including **link ingestion** (`/api/ingest-link`, local image persistence) and **mood alignment** on link import (chic mood constants, pills in the modal, `mood` on items and cards).
 
 ---
 
@@ -46,6 +46,36 @@ Summary of refactors and fixes applied to this codebase during the wardrobe extr
 
 ---
 
+## 3. Link ingestion API (`server.js`, `src/services/mockProductLink.js`, `src/apiBase.js`)
+
+**Goal:** Scrape product pages for Open Graph / structured data, persist images locally, and preview before adding to the wardrobe.
+
+**Backend**
+
+- **`POST /api/ingest-link`** (formerly `/api/mock-product-link`): `fetch` HTML, **Cheerio** for `og:image`, `twitter:image`, `og:title`, price meta + JSON-LD fallbacks; downloads the image into **`public/wardrobe-images/`** and returns **`imageUrl`**, **`localFilename`**, title, price, branding tags when matched, etc.
+- Upload/delete responses use **`publicBase(req)`** for correct host in URLs.
+
+**Client**
+
+- **`fetchProductPreviewFromUrl`** posts to **`${REACT_APP_API_URL}`** (default `http://localhost:3001`) **`/api/ingest-link`**.
+- **`WardrobeScreen`:** debounced preview after a valid URL; **Confirm Asset** calls **`confirmStoreImport`** with server payload; **`object-fit: contain`** on gallery and preview frames (`index.css`).
+
+---
+
+## 4. Mood alignment on link import (`src/constants/chicMoods.js`, `WardrobeScreen.js`, `App.js`, `useWardrobe.js`)
+
+**Goal:** Require a psychological “mood” tag before confirming a link import; show it on cards.
+
+**Constants:** `CHIC_WARDROBE_MOODS` — Confidence, Calm, Productivity, Focus, Joy.
+
+**Data:** Wardrobe items may include **`mood`**; **`stripWardrobeForStorage`** persists it.
+
+**UI:** After the scraped preview, **Mood alignment** — minimalist horizontal pill buttons (`0.8rem`, `1px` border); **Confirm Asset** disabled until a mood is selected. **`confirmStoreImport`** passes **`mood`** into **`addItem`**.
+
+**Cards:** Tiny italic mood label next to the category row when **`it.mood`** is set (`.wardrobe-card-mood`).
+
+---
+
 ## Files touched (high level)
 
 | Area              | File(s)                          |
@@ -53,6 +83,8 @@ Summary of refactors and fixes applied to this codebase during the wardrobe extr
 | Wardrobe hook     | `src/hooks/useWardrobe.js`       |
 | App wiring        | `src/App.js`                     |
 | Agent history ids | `src/hooks/useAgentActivity.js`  |
+| Link ingest API   | `server.js`, `src/services/mockProductLink.js`, `src/apiBase.js` |
+| Mood + link UI    | `src/constants/chicMoods.js`, `src/screens/WardrobeScreen.js`, `src/index.css` |
 
 ---
 
