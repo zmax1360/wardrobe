@@ -133,3 +133,36 @@ The wardrobe quick-add area was drag-and-drop only, which is awkward on phones. 
 Quick add keeps drag-and-drop on desktop; “+ Add Photo” uses a separate hidden file input with `capture="environment"` for camera-first mobile flows. AI-misconfiguration errors show a generic user-facing message instead of env var names.
 
 ---
+
+### [Date: 2026-04-19] - Image upload URL + production gating
+
+**Background:**
+`REACT_APP_API_URL` values that included a path (e.g. under `/api/audit`) produced malformed URLs like `/api/audit/api/upload-image` when concatenated with `/api/upload-image`. Image upload should not run against the local Express server from production hosts.
+
+**Changed:**
+
+- `src/apiBase.js`
+- `src/App.js`
+- `src/hooks/useWardrobe.js`
+
+**Impact:**
+`resolveBackendApiPath` joins absolute `/api/...` paths with the configured base using the URL API so path segments are not doubled. Wardrobe image upload (`uploadImageToServer`) is skipped unless the page is served from **localhost** or **127.0.0.1**, surfacing **Photo upload coming soon** on other hosts. Legacy delete-image requests use the same resolver. Anthropic requests remain unchanged (`https://api.anthropic.com`).
+
+---
+
+### [Date: 2026-04-20] - Mobile photo picker + More sheet
+
+**Background:**
+Mobile wardrobe uploads should work without any local Express server dependency. Navigation needed a mobile-first bottom bar with a “More” menu instead of cramming every destination into tabs.
+
+**Changed:**
+
+- `src/App.js`
+- `src/screens/WardrobeScreen.js`
+- `src/layout/AppLayout.js`
+- `src/index.css`
+
+**Impact:**
+Wardrobe photos are now stored **client-side** as base64 **data URLs** (persisted in localStorage via wardrobe storage), and the app no longer posts image files to `/api/upload-image`. Mobile bottom tabs now expose **Home / Wardrobe / Planner / Shop / More**, with a slide-up sheet for the remaining destinations plus Activity/Logout.
+
+---

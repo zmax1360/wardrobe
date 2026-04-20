@@ -86,8 +86,6 @@ export function WardrobeScreen({
 
   const modalFileRef = useRef(null);
   const manualImageInputRef = useRef(null);
-  const wardrobeQuickCaptureRef = useRef(null);
-  const wardrobeQuickLibraryRef = useRef(null);
 
   const { ask: askWardrobeAgent, response: agentResponse, loading: agentLoading, error: agentError } =
     useWardrobeAgent();
@@ -204,21 +202,7 @@ export function WardrobeScreen({
   return (
     <>
       <input ref={fileRef} type="file" accept="image/*" style={{ display: "none" }} onChange={(e) => onFileChange(e)} />
-      <input
-        ref={wardrobeQuickCaptureRef}
-        type="file"
-        accept="image/*"
-        capture="environment"
-        style={{ display: "none" }}
-        onChange={(e) => onFileChange(e)}
-      />
-      <input
-        ref={wardrobeQuickLibraryRef}
-        type="file"
-        accept="image/*"
-        style={{ display: "none" }}
-        onChange={(e) => onFileChange(e)}
-      />
+      {/* `fileRef` drives the single mobile/desktop picker (+ Add Photo) */}
 
       <div
         className="wardrobe-page"
@@ -926,33 +910,12 @@ export function WardrobeScreen({
         <div className="wardrobe-quickadd-actions" style={{ display: "flex", justifyContent: "center", gap: 10, flexWrap: "wrap" }}>
           <button
             type="button"
-            onClick={() => wardrobeQuickCaptureRef.current?.click()}
-            className="wardrobe-quickadd-btn wardrobe-quickadd-btn--camera"
-            style={{
-              padding: "12px 18px",
-              borderRadius: 999,
-              border: `1px solid ${FINANCE.slate}`,
-              background: "#fff",
-              color: FINANCE.text,
-              fontSize: "0.85rem",
-              fontWeight: 600,
-              cursor: "pointer",
-              fontFamily: "'Inter', sans-serif",
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 10,
-            }}
-          >
-            <span aria-hidden>📷</span> Take Photo
-          </button>
-          <button
-            type="button"
-            onClick={() => wardrobeQuickLibraryRef.current?.click()}
-            className="wardrobe-quickadd-btn wardrobe-quickadd-btn--library"
+            onClick={() => fileRef.current?.click()}
+            className="wardrobe-quickadd-btn"
             onDragOver={(e) => e.preventDefault()}
             onDrop={(e) => onDrop(e, {})}
             style={{
-              padding: "12px 18px",
+              padding: "12px 22px",
               borderRadius: 999,
               border: `1px solid ${FINANCE.slate}`,
               background: "#fff",
@@ -963,10 +926,12 @@ export function WardrobeScreen({
               fontFamily: "'Inter', sans-serif",
               display: "inline-flex",
               alignItems: "center",
+              justifyContent: "center",
               gap: 10,
+              minWidth: 220,
             }}
           >
-            <span aria-hidden>🖼️</span> Choose from Library
+            + Add Photo
           </button>
         </div>
       </div>

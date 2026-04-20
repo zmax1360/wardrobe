@@ -1,4 +1,4 @@
-import React, { createContext, useContext } from "react";
+import React, { createContext, useContext, useState } from "react";
 import { signOut } from "firebase/auth";
 
 import { auth } from "../firebase";
@@ -47,6 +47,17 @@ export function AppLayout({ activeNav, setActiveNav, children, agentPanelOpen, o
     { id: "wardrobe", icon: "👗", label: "Wardrobe" },
     { id: "planner", icon: "✨", label: "Planner" },
     { id: "shopper", icon: "🛍️", label: "Shop" },
+    { id: "__more", icon: "⋯", label: "More" },
+  ];
+
+  const [moreOpen, setMoreOpen] = useState(false);
+
+  const moreItems = [
+    { id: "gaps", icon: "🔍", label: "Gap Analysis" },
+    { id: "designer", icon: "🎨", label: "Designer" },
+    { id: "evaluator", icon: "✅", label: "Evaluator" },
+    { id: "equity", icon: "◈", label: "Equity" },
+    { id: "calendar", icon: "📅", label: "Calendar" },
     { id: "profile", icon: "👤", label: "Profile" },
   ];
 
@@ -233,7 +244,10 @@ export function AppLayout({ activeNav, setActiveNav, children, agentPanelOpen, o
               title={nav.label}
               aria-label={nav.label}
               aria-current={active ? "page" : undefined}
-              onClick={() => setActiveNav(nav.id)}
+              onClick={() => {
+                if (nav.id === "__more") setMoreOpen(true);
+                else setActiveNav(nav.id);
+              }}
               className={`app-layout-bottom-tab ${active ? "app-layout-bottom-tab--active" : ""}`}
             >
               <span className="app-layout-bottom-tab-icon" aria-hidden>
@@ -244,6 +258,68 @@ export function AppLayout({ activeNav, setActiveNav, children, agentPanelOpen, o
           );
         })}
       </nav>
+
+      {moreOpen ? (
+        <div
+          className="app-more-backdrop"
+          role="presentation"
+          onClick={() => setMoreOpen(false)}
+        >
+          <div
+            className="app-more-sheet"
+            role="dialog"
+            aria-modal="true"
+            aria-label="More"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="app-more-grabber" aria-hidden />
+            <div className="app-more-grid">
+              {moreItems.map((it) => (
+                <button
+                  key={it.id}
+                  type="button"
+                  className="app-more-item"
+                  onClick={() => {
+                    setActiveNav(it.id);
+                    setMoreOpen(false);
+                  }}
+                >
+                  <span className="app-more-item-icon" aria-hidden>
+                    {it.icon}
+                  </span>
+                  <span className="app-more-item-label">{it.label}</span>
+                </button>
+              ))}
+              <button
+                type="button"
+                className="app-more-item"
+                onClick={() => {
+                  onToggleAgentPanel?.();
+                  setMoreOpen(false);
+                }}
+              >
+                <span className="app-more-item-icon" aria-hidden>
+                  ◎
+                </span>
+                <span className="app-more-item-label">Activity</span>
+              </button>
+              <button
+                type="button"
+                className="app-more-item app-more-item--danger"
+                onClick={() => {
+                  void signOut(auth).catch(() => {});
+                  setMoreOpen(false);
+                }}
+              >
+                <span className="app-more-item-icon" aria-hidden>
+                  ⎋
+                </span>
+                <span className="app-more-item-label">Logout</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

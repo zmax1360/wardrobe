@@ -49,7 +49,7 @@ import {
   compareCleanItemsByPriorityCPW,
   getPurchasePriceNum,
 } from "./utils/wardrobeFinance";
-import { resolveBackendApiPath } from "./apiBase";
+// (kept minimal) apiBase still used elsewhere in the app
 import { placeholderRemoveBackground } from "./services/backgroundRemoval";
 
 const STORAGE_PROFILE = "fos_profile";
@@ -236,30 +236,13 @@ function fileToBase64(file) {
   });
 }
 
-function isLocalhostImageUploadHost() {
-  if (typeof window === "undefined") return false;
-  const h = window.location.hostname;
-  return h === "localhost" || h === "127.0.0.1";
-}
-
-async function uploadImageToServer(file) {
-  if (!isLocalhostImageUploadHost()) {
-    throw new Error("Photo upload coming soon");
-  }
-  const formData = new FormData();
-  formData.append("image", file);
-  try {
-    const res = await fetch(resolveBackendApiPath("/api/upload-image"), {
-      method: "POST",
-      body: formData,
-    });
-    if (!res.ok) throw new Error("upload failed");
-    const data = await res.json();
-    if (!data.url) throw new Error("no url");
-    return { url: data.url, filename: data.filename ?? null };
-  } catch {
-    return { url: URL.createObjectURL(file), filename: null };
-  }
+function fileToDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(String(r.result || ""));
+    r.onerror = () => reject(r.error);
+    r.readAsDataURL(file);
+  });
 }
 
 function defaultProfile() {
@@ -600,22 +583,20 @@ export default function App() {
     }
     setUploadError("");
     setAnalyzing(true);
-    let uploadResult = { url: "", filename: null };
     try {
       let fileToUse = file;
       if (options.removeBg) {
         fileToUse = await placeholderRemoveBackground(file);
       }
       const mediaType = mediaTypeForFile(fileToUse);
-      const [uploadRes, b64] = await Promise.all([uploadImageToServer(fileToUse), fileToBase64(fileToUse)]);
-      uploadResult = uploadRes;
+      const [dataUrl, b64] = await Promise.all([fileToDataUrl(fileToUse), fileToBase64(fileToUse)]);
       const parsed = await catalogImageWithVision(b64, mediaType);
       const category = CATEGORIES.includes(parsed.category) ? parsed.category : "Accessories";
       const tags = Array.isArray(parsed.tags) ? parsed.tags.map(String).slice(0, 20) : [];
       const item = {
         id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
-        imagePreview: uploadResult.url,
-        imageFilename: uploadResult.filename,
+        imagePreview: dataUrl,
+        imageFilename: null,
         name: String(parsed.name || "Untitled"),
         category,
         color: String(parsed.color || ""),
@@ -634,9 +615,6 @@ export default function App() {
       };
       addItem(item);
     } catch (e) {
-      if (!uploadResult.filename && uploadResult.url && String(uploadResult.url).startsWith("blob:")) {
-        URL.revokeObjectURL(uploadResult.url);
-      }
       setUploadError(e.message || "Could not analyze image.");
     } finally {
       setAnalyzing(false);
@@ -660,9 +638,8 @@ export default function App() {
       let imagePreview = null;
       let imageFilename = null;
       if (payload.imageFile instanceof File) {
-        const up = await uploadImageToServer(payload.imageFile);
-        imagePreview = up.url;
-        imageFilename = up.filename;
+        imagePreview = await fileToDataUrl(payload.imageFile);
+        imageFilename = null;
       }
 
       const raw = String(payload.purchasePrice ?? "").trim();
