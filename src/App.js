@@ -1371,6 +1371,7 @@ export default function App() {
           agentActivity={agentActivity}
         >
         <header
+          className="app-header"
           style={{
             position: "sticky",
             top: 0,
@@ -1399,7 +1400,7 @@ export default function App() {
           </div>
         </header>
 
-        <div style={{ padding: "0 32px 20px", flexShrink: 0 }}>
+        <div className="app-style-intel-wrap" style={{ padding: "0 32px 20px", flexShrink: 0 }}>
           <div
             style={mergeStyles(ui.panel, {
               padding: "22px 24px",
@@ -1407,10 +1408,14 @@ export default function App() {
               gap: 18,
             })}
           >
-            <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "1.4rem", fontWeight: 600, color: COLORS.text }}>
+            <div
+              className="app-style-intel-title"
+              style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "1.4rem", fontWeight: 600, color: COLORS.text }}
+            >
               Your Style Intelligence
             </div>
             <div
+              className="app-style-intel-cards"
               style={{
                 display: "grid",
                 gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",

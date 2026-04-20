@@ -29,6 +29,27 @@ export function AppLayout({ activeNav, setActiveNav, children, agentPanelOpen, o
           ? "🧑"
           : "✦";
 
+  const navItems = [
+    { id: "dashboard", icon: "🏠", label: "Home" },
+    { id: "planner", icon: "✨", label: "Planner" },
+    { id: "evaluator", icon: "✅", label: "Evaluator" },
+    { id: "gaps", icon: "🔍", label: "Gap Analysis" },
+    { id: "shopper", icon: "🛍️", label: "Shop" },
+    { id: "designer", icon: "🎨", label: "Designer" },
+    { id: "wardrobe", icon: "👗", label: "Wardrobe" },
+    { id: "equity", icon: "◈", label: "Equity" },
+    { id: "calendar", icon: "📅", label: "Calendar" },
+    { id: "profile", icon: "👤", label: "Profile" },
+  ];
+
+  const mobileTabItems = [
+    { id: "dashboard", icon: "🏠", label: "Home" },
+    { id: "wardrobe", icon: "👗", label: "Wardrobe" },
+    { id: "planner", icon: "✨", label: "Planner" },
+    { id: "shopper", icon: "🛍️", label: "Shop" },
+    { id: "profile", icon: "👤", label: "Profile" },
+  ];
+
   return (
     <div
       style={mergeStyles(ui.appShell, {
@@ -96,18 +117,7 @@ export function AppLayout({ activeNav, setActiveNav, children, agentPanelOpen, o
             padding: "0 4px",
           }}
         >
-          {[
-            { id: "dashboard", icon: "🏠", label: "Home" },
-            { id: "planner", icon: "✨", label: "Planner" },
-            { id: "evaluator", icon: "✅", label: "Evaluator" },
-            { id: "gaps", icon: "🔍", label: "Gap Analysis" },
-            { id: "shopper", icon: "🛍️", label: "Shop" },
-            { id: "designer", icon: "🎨", label: "Designer" },
-            { id: "wardrobe", icon: "👗", label: "Wardrobe" },
-            { id: "equity", icon: "◈", label: "Equity" },
-            { id: "calendar", icon: "📅", label: "Calendar" },
-            { id: "profile", icon: "👤", label: "Profile" },
-          ].map((nav) => {
+          {navItems.map((nav) => {
             const active = activeNav === nav.id;
             return (
               <button
@@ -206,7 +216,34 @@ export function AppLayout({ activeNav, setActiveNav, children, agentPanelOpen, o
         </div>
       </aside>
 
-      <div style={{ marginLeft: 64, flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>{children}</div>
+      <div
+        className="app-layout-content"
+        style={{ marginLeft: 64, flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}
+      >
+        {children}
+      </div>
+
+      <nav className="app-layout-bottom-tabs" aria-label="Primary">
+        {mobileTabItems.map((nav) => {
+          const active = activeNav === nav.id;
+          return (
+            <button
+              key={nav.id}
+              type="button"
+              title={nav.label}
+              aria-label={nav.label}
+              aria-current={active ? "page" : undefined}
+              onClick={() => setActiveNav(nav.id)}
+              className={`app-layout-bottom-tab ${active ? "app-layout-bottom-tab--active" : ""}`}
+            >
+              <span className="app-layout-bottom-tab-icon" aria-hidden>
+                {nav.icon}
+              </span>
+              <span className="app-layout-bottom-tab-label">{nav.label}</span>
+            </button>
+          );
+        })}
+      </nav>
     </div>
   );
 }

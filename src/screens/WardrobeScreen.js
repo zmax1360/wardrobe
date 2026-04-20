@@ -87,6 +87,7 @@ export function WardrobeScreen({
   const modalFileRef = useRef(null);
   const manualImageInputRef = useRef(null);
   const wardrobeQuickCaptureRef = useRef(null);
+  const wardrobeQuickLibraryRef = useRef(null);
 
   const { ask: askWardrobeAgent, response: agentResponse, loading: agentLoading, error: agentError } =
     useWardrobeAgent();
@@ -208,6 +209,13 @@ export function WardrobeScreen({
         type="file"
         accept="image/*"
         capture="environment"
+        style={{ display: "none" }}
+        onChange={(e) => onFileChange(e)}
+      />
+      <input
+        ref={wardrobeQuickLibraryRef}
+        type="file"
+        accept="image/*"
         style={{ display: "none" }}
         onChange={(e) => onFileChange(e)}
       />
@@ -898,6 +906,7 @@ export function WardrobeScreen({
       )}
 
       <div
+        className="wardrobe-quickadd"
         onDragOver={(e) => e.preventDefault()}
         onDrop={(e) => onDrop(e, {})}
         style={{
@@ -911,28 +920,55 @@ export function WardrobeScreen({
           background: FINANCE.accentSoft,
         }}
       >
-        <p style={{ margin: "0 0 14px", lineHeight: 1.45 }}>
+        <p className="wardrobe-quickadd-hint" style={{ margin: "0 0 14px", lineHeight: 1.45 }}>
           Drop an image here for quick add (same AI catalog flow)
         </p>
-        <button
-          type="button"
-          onClick={() => wardrobeQuickCaptureRef.current?.click()}
-          onDragOver={(e) => e.preventDefault()}
-          onDrop={(e) => onDrop(e, {})}
-          style={{
-            padding: "12px 22px",
-            borderRadius: 999,
-            border: `1px solid ${FINANCE.slate}`,
-            background: "#fff",
-            color: FINANCE.text,
-            fontSize: "0.85rem",
-            fontWeight: 600,
-            cursor: "pointer",
-            fontFamily: "'Inter', sans-serif",
-          }}
-        >
-          + Add Photo
-        </button>
+        <div className="wardrobe-quickadd-actions" style={{ display: "flex", justifyContent: "center", gap: 10, flexWrap: "wrap" }}>
+          <button
+            type="button"
+            onClick={() => wardrobeQuickCaptureRef.current?.click()}
+            className="wardrobe-quickadd-btn wardrobe-quickadd-btn--camera"
+            style={{
+              padding: "12px 18px",
+              borderRadius: 999,
+              border: `1px solid ${FINANCE.slate}`,
+              background: "#fff",
+              color: FINANCE.text,
+              fontSize: "0.85rem",
+              fontWeight: 600,
+              cursor: "pointer",
+              fontFamily: "'Inter', sans-serif",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 10,
+            }}
+          >
+            <span aria-hidden>📷</span> Take Photo
+          </button>
+          <button
+            type="button"
+            onClick={() => wardrobeQuickLibraryRef.current?.click()}
+            className="wardrobe-quickadd-btn wardrobe-quickadd-btn--library"
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={(e) => onDrop(e, {})}
+            style={{
+              padding: "12px 18px",
+              borderRadius: 999,
+              border: `1px solid ${FINANCE.slate}`,
+              background: "#fff",
+              color: FINANCE.text,
+              fontSize: "0.85rem",
+              fontWeight: 600,
+              cursor: "pointer",
+              fontFamily: "'Inter', sans-serif",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 10,
+            }}
+          >
+            <span aria-hidden>🖼️</span> Choose from Library
+          </button>
+        </div>
       </div>
 
       <div className="wardrobe-agent-wrap">
