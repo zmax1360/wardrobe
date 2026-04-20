@@ -86,6 +86,7 @@ export function WardrobeScreen({
 
   const modalFileRef = useRef(null);
   const manualImageInputRef = useRef(null);
+  const wardrobeQuickCaptureRef = useRef(null);
 
   const { ask: askWardrobeAgent, response: agentResponse, loading: agentLoading, error: agentError } =
     useWardrobeAgent();
@@ -202,6 +203,14 @@ export function WardrobeScreen({
   return (
     <>
       <input ref={fileRef} type="file" accept="image/*" style={{ display: "none" }} onChange={(e) => onFileChange(e)} />
+      <input
+        ref={wardrobeQuickCaptureRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        style={{ display: "none" }}
+        onChange={(e) => onFileChange(e)}
+      />
 
       <div
         className="wardrobe-page"
@@ -902,7 +911,28 @@ export function WardrobeScreen({
           background: FINANCE.accentSoft,
         }}
       >
-        Drop an image here for quick add (same AI catalog flow)
+        <p style={{ margin: "0 0 14px", lineHeight: 1.45 }}>
+          Drop an image here for quick add (same AI catalog flow)
+        </p>
+        <button
+          type="button"
+          onClick={() => wardrobeQuickCaptureRef.current?.click()}
+          onDragOver={(e) => e.preventDefault()}
+          onDrop={(e) => onDrop(e, {})}
+          style={{
+            padding: "12px 22px",
+            borderRadius: 999,
+            border: `1px solid ${FINANCE.slate}`,
+            background: "#fff",
+            color: FINANCE.text,
+            fontSize: "0.85rem",
+            fontWeight: 600,
+            cursor: "pointer",
+            fontFamily: "'Inter', sans-serif",
+          }}
+        >
+          + Add Photo
+        </button>
       </div>
 
       <div className="wardrobe-agent-wrap">

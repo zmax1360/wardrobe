@@ -1,6 +1,6 @@
 # Change log (session work)
 
-Summary of refactors and fixes applied to this codebase during the wardrobe extraction and related work, including **manual closet entry** (replacing client-side link scraping), optional **`sourceUrl`** bookmarking, **local image upload** (`/api/upload-image`), and **mood** on items and cards (`CHIC_WARDROBE_MOODS`).
+Summary of refactors and fixes applied to this codebase during the wardrobe extraction and related work, including **manual closet entry** (replacing client-side link scraping), optional **`sourceUrl`** bookmarking, **local image upload** (`/api/upload-image`), **mood** on items and cards (`CHIC_WARDROBE_MOODS`), and a **responsive Add to closet** modal (scroll + compact mobile layout).
 
 ---
 
@@ -78,6 +78,27 @@ Summary of refactors and fixes applied to this codebase during the wardrobe extr
 
 ---
 
+## 5. Add to closet modal: responsive layout (`WardrobeScreen.js`, `src/index.css`)
+
+**Goal:** Keep the Photo and Manual flows usable on small viewports without the dialog feeling oversized or taller than the screen.
+
+**Markup**
+
+- Backdrop: **`wardrobe-add-modal-backdrop`** (replaces inline-only padding).
+- Dialog: **`wardrobe-add-modal-dialog`** — **`max-height`** capped (with **`overflow-y: auto`**) so long Manual forms scroll inside the panel instead of stretching the viewport.
+- Title and lede: **`wardrobe-add-modal-title`**, **`wardrobe-add-modal-lede`** for breakpoint-specific type scale.
+
+**Desktop / tablet**
+
+- Backdrop padding **24px**; dialog padding **28px**, **`max-height: min(88vh, 900px)`**.
+
+**Narrow screens (`max-width: 540px`)**
+
+- Tighter backdrop (**12px**) and dialog padding; dialog **anchors to the bottom** (rounded top corners only), **`max-height: min(85vh, …)`**, bottom padding includes **`env(safe-area-inset-bottom)`** for notched devices.
+- Manual tab: smaller labels/inputs, **shorter image dropzone** and preview height, slightly smaller pills and **Add to Wardrobe** button so the sheet feels denser.
+
+---
+
 ## Files touched (high level)
 
 | Area              | File(s)                          |
@@ -86,7 +107,7 @@ Summary of refactors and fixes applied to this codebase during the wardrobe extr
 | App wiring        | `src/App.js`                     |
 | Agent history ids | `src/hooks/useAgentActivity.js`  |
 | Ingest (server only, future) | `server.js` (routes kept) |
-| Manual tab + mood | `src/constants/chicMoods.js`, `src/screens/WardrobeScreen.js`, `src/index.css` |
+| Manual tab + mood + modal layout | `src/constants/chicMoods.js`, `src/screens/WardrobeScreen.js`, `src/index.css` |
 
 ---
 
@@ -94,3 +115,21 @@ Summary of refactors and fixes applied to this codebase during the wardrobe extr
 
 - Production build (`npm run build`) succeeded after these changes.
 - Wardrobe should still load after refresh, persist after hydration, and add/update/remove should behave as before.
+
+---
+
+### [Date: 2026-04-19] - Wardrobe quick-add mobile + AI error copy
+
+**Background:**
+The wardrobe quick-add area was drag-and-drop only, which is awkward on phones. Missing API keys surfaced a developer-oriented “No AI key” string to end users.
+
+**Changed:**
+
+- `src/screens/WardrobeScreen.js`
+- `src/App.js`
+- `src/services/aiService.js`
+
+**Impact:**
+Quick add keeps drag-and-drop on desktop; “+ Add Photo” uses a separate hidden file input with `capture="environment"` for camera-first mobile flows. AI-misconfiguration errors show a generic user-facing message instead of env var names.
+
+---
