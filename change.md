@@ -183,3 +183,17 @@ Anthropic calls should not ship API keys to the browser, and image labeling/uplo
 All Anthropic `/v1/messages` requests now go through `/api/chat` (Vercel serverless) with `ANTHROPIC_API_KEY` read server-side. Browser code no longer sends `x-api-key` headers. Wardrobe images remain stored client-side as base64 data URLs in localStorage (`fos_wardrobe`).
 
 ---
+
+### [Date: 2026-04-20] - Client image compression before AI + storage
+
+**Background:**
+Raw camera photos are large; we should compress images client-side before sending them to `/api/chat` and before persisting to localStorage.
+
+**Changed:**
+
+- `src/App.js`
+
+**Impact:**
+Every selected wardrobe image is now downscaled to max width 800px and encoded as JPEG at quality 0.6 via a canvas-based `compressImage()` function. The compressed data URL is used for both AI labeling and wardrobe storage.
+
+---

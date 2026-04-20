@@ -245,6 +245,25 @@ function fileToDataUrl(file) {
   });
 }
 
+function compressImage(file, maxWidth = 800, quality = 0.6) {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const scale = Math.min(1, maxWidth / img.width);
+        canvas.width = img.width * scale;
+        canvas.height = img.height * scale;
+        canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL("image/jpeg", quality));
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
 function defaultProfile() {
   return {
     name: "",
@@ -580,9 +599,9 @@ export default function App() {
       if (options.removeBg) {
         fileToUse = await placeholderRemoveBackground(file);
       }
-      const mediaType = mediaTypeForFile(fileToUse);
-      const [dataUrl, b64] = await Promise.all([fileToDataUrl(fileToUse), fileToBase64(fileToUse)]);
-      const parsed = await catalogImageWithVision(b64, mediaType);
+      const dataUrl = await compressImage(fileToUse, 800, 0.6);
+      const b64 = String(dataUrl).includes(",") ? String(dataUrl).split(",")[1] : String(dataUrl);
+      const parsed = await catalogImageWithVision(b64, "image/jpeg");
       const category = CATEGORIES.includes(parsed.category) ? parsed.category : "Accessories";
       const tags = Array.isArray(parsed.tags) ? parsed.tags.map(String).slice(0, 20) : [];
       const item = {
@@ -630,7 +649,7 @@ export default function App() {
       let imagePreview = null;
       let imageFilename = null;
       if (payload.imageFile instanceof File) {
-        imagePreview = await fileToDataUrl(payload.imageFile);
+        imagePreview = await compressImage(payload.imageFile, 800, 0.6);
         imageFilename = null;
       }
 
