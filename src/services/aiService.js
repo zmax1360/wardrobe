@@ -1,21 +1,17 @@
-export const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
+export const ANTHROPIC_URL = "/api/chat";
 export const CLAUDE_MODEL = "claude-sonnet-4-20250514";
 export const OPENAI_VISION_URL = "https://api.openai.com/v1/chat/completions";
 export const OPENAI_VISION_MODEL = "gpt-4o";
 
 /** Prefer Anthropic if present; else first OpenAI key found (CRA: use REACT_APP_*). */
 export function resolveVisionCredentials() {
-  const anthropic =
-    trimEnv(process.env.REACT_APP_ANTHROPIC_API_KEY) ||
-    trimEnv(process.env.ANTHROPIC_API_KEY) ||
-    trimEnv(process.env.ANTHROPIC_API_KEK);
-  if (anthropic) return { provider: "anthropic", key: anthropic };
   const openai =
     trimEnv(process.env.REACT_APP_OPENAI_API_KEY) ||
     trimEnv(process.env.OPENAI_API_KEY) ||
     trimEnv(process.env.OPEN_AI_KEY);
   if (openai) return { provider: "openai", key: openai };
-  return null;
+  // Anthropic runs through `/api/chat` (server-side key), so the client does not need a key to proceed.
+  return { provider: "anthropic", key: "" };
 }
 
 export function trimEnv(v) {
@@ -112,9 +108,7 @@ export async function callTextCompletion(system, user, explicitTaskLabel) {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "x-api-key": creds.key,
           "anthropic-version": "2023-06-01",
-          "anthropic-dangerous-direct-browser-calls": "true",
         },
         body: JSON.stringify(body),
       });

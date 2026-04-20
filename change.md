@@ -166,3 +166,20 @@ Mobile wardrobe uploads should work without any local Express server dependency.
 Wardrobe photos are now stored **client-side** as base64 **data URLs** (persisted in localStorage via wardrobe storage), and the app no longer posts image files to `/api/upload-image`. Mobile bottom tabs now expose **Home / Wardrobe / Planner / Shop / More**, with a slide-up sheet for the remaining destinations plus Activity/Logout.
 
 ---
+
+### [Date: 2026-04-20] - Anthropic proxy + client-only images
+
+**Background:**
+Anthropic calls should not ship API keys to the browser, and image labeling/upload should work without any dependency on `server.js` or a localhost upload endpoint.
+
+**Changed:**
+
+- `api/chat.js`
+- `src/App.js`
+- `src/services/aiService.js`
+- `src/hooks/useWardrobeAgent.js`
+
+**Impact:**
+All Anthropic `/v1/messages` requests now go through `/api/chat` (Vercel serverless) with `ANTHROPIC_API_KEY` read server-side. Browser code no longer sends `x-api-key` headers. Wardrobe images remain stored client-side as base64 data URLs in localStorage (`fos_wardrobe`).
+
+---

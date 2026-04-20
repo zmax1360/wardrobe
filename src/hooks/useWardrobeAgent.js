@@ -60,14 +60,6 @@ export function useWardrobeAgent() {
       return;
     }
 
-    const key =
-      trimEnv(process.env.REACT_APP_ANTHROPIC_API_KEY) || trimEnv(process.env.ANTHROPIC_API_KEY);
-    if (!key) {
-      setError("Set REACT_APP_ANTHROPIC_API_KEY to use the wardrobe agent.");
-      setResponse("");
-      return;
-    }
-
     setLoading(true);
     setError(null);
     setResponse("");
@@ -81,9 +73,7 @@ export function useWardrobeAgent() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "x-api-key": key,
           "anthropic-version": "2023-06-01",
-          "anthropic-dangerous-direct-browser-calls": "true",
         },
         body: JSON.stringify({
           model: CLAUDE_MODEL,

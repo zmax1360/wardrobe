@@ -479,13 +479,7 @@ export default function App() {
     const agentRunStartedAt = startAgentRun("Wardrobe Agent", "Image analysis");
     try {
       const creds = resolveVisionCredentials();
-      if (!creds) {
-        throw new Error(
-          "No AI key: set REACT_APP_ANTHROPIC_API_KEY or REACT_APP_OPENAI_API_KEY (or OPENAI_API_KEY / OPEN_AI_KEY)."
-        );
-      }
-
-      if (creds.provider === "anthropic") {
+      if (!creds || creds.provider === "anthropic") {
       const body = {
         model: CLAUDE_MODEL,
         max_tokens: 1024,
@@ -511,9 +505,7 @@ export default function App() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "x-api-key": creds.key,
           "anthropic-version": "2023-06-01",
-          "anthropic-dangerous-direct-browser-calls": "true",
         },
         body: JSON.stringify(body),
       });
@@ -2365,9 +2357,7 @@ async function callAnthropicWithWebSearch(system, userText) {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "x-api-key": creds.key,
         "anthropic-version": "2023-06-01",
-        "anthropic-dangerous-direct-browser-calls": "true",
       },
       body: JSON.stringify(body),
     });
@@ -2390,9 +2380,7 @@ async function callAnthropicWithWebSearch(system, userText) {
 async function callShoppingAssistant(system, userText) {
   const creds = resolveVisionCredentials();
   if (!creds) {
-    throw new Error(
-      "No AI key: set REACT_APP_ANTHROPIC_API_KEY or REACT_APP_OPENAI_API_KEY (or OPENAI_API_KEY / OPEN_AI_KEY)."
-    );
+    throw new Error("This feature isn’t available right now. Please try again later.");
   }
   if (creds.provider === "anthropic") {
     return callAnthropicWithWebSearch(system, userText);
@@ -2466,9 +2454,7 @@ All score values must be numbers from 0 to 10.`;
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "x-api-key": creds.key,
         "anthropic-version": "2023-06-01",
-        "anthropic-dangerous-direct-browser-calls": "true",
       },
       body: JSON.stringify(body),
     });
