@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { API_BASE_URL } from "../apiBase";
+import { resolveBackendApiPath } from "../apiBase";
 import { normalizeWardrobeItems } from "../utils/wardrobeFinance";
 import { db, storage } from "../firebase";
 import { doc, getDoc, setDoc } from "firebase/firestore";
@@ -102,7 +102,7 @@ export function useWardrobe(hydrated, firebaseUser) {
         } else {
           // Legacy: local Express server
           fetch(
-            `${API_BASE_URL}/api/delete-image/${encodeURIComponent(it.imageFilename)}`,
+            resolveBackendApiPath(`/api/delete-image/${encodeURIComponent(it.imageFilename)}`),
             { method: "DELETE" }
           ).catch(() => {});
         }

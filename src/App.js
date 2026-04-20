@@ -49,7 +49,7 @@ import {
   compareCleanItemsByPriorityCPW,
   getPurchasePriceNum,
 } from "./utils/wardrobeFinance";
-import { API_BASE_URL } from "./apiBase";
+import { resolveBackendApiPath } from "./apiBase";
 import { placeholderRemoveBackground } from "./services/backgroundRemoval";
 
 const STORAGE_PROFILE = "fos_profile";
@@ -236,11 +236,20 @@ function fileToBase64(file) {
   });
 }
 
+function isLocalhostImageUploadHost() {
+  if (typeof window === "undefined") return false;
+  const h = window.location.hostname;
+  return h === "localhost" || h === "127.0.0.1";
+}
+
 async function uploadImageToServer(file) {
+  if (!isLocalhostImageUploadHost()) {
+    throw new Error("Photo upload coming soon");
+  }
   const formData = new FormData();
   formData.append("image", file);
   try {
-    const res = await fetch(`${API_BASE_URL}/api/upload-image`, {
+    const res = await fetch(resolveBackendApiPath("/api/upload-image"), {
       method: "POST",
       body: formData,
     });
