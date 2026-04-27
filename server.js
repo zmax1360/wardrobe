@@ -10,6 +10,30 @@ const fs = require("fs");
 const crypto = require("crypto");
 const cheerio = require("cheerio");
 
+function loadLocalEnv() {
+  const envPath = path.join(__dirname, ".env");
+  if (!fs.existsSync(envPath)) return;
+  const lines = fs.readFileSync(envPath, "utf8").split(/\r?\n/);
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) continue;
+    const eq = trimmed.indexOf("=");
+    if (eq === -1) continue;
+    const key = trimmed.slice(0, eq).trim();
+    let value = trimmed.slice(eq + 1).trim();
+    if (!key || process.env[key] != null) continue;
+    if (
+      (value.startsWith('"') && value.endsWith('"')) ||
+      (value.startsWith("'") && value.endsWith("'"))
+    ) {
+      value = value.slice(1, -1);
+    }
+    process.env[key] = value;
+  }
+}
+
+loadLocalEnv();
+
 const app = express();
 const PORT = process.env.PORT || 3001;
 
@@ -370,6 +394,122 @@ app.delete("/api/delete-image/:filename", (req, res) => {
   const filePath = path.join(uploadDir, safe);
   if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
   res.json({ ok: true });
+});
+
+const https = require("https");
+
+function getShopifyCredentials(res) {
+  const clientId = process.env.SHOPIFY_CLIENT_ID;
+  const clientSecret = process.env.SHOPIFY_CLIENT_SECRET;
+  if (!clientId || !clientSecret) {
+    res.status(500).json({
+      error: "Shopify Catalog not configured. Add SHOPIFY_CLIENT_ID and SHOPIFY_CLIENT_SECRET to .env.",
+    });
+    return null;
+  }
+  return { clientId, clientSecret };
+}
+
+// Shopify Catalog token endpoint
+app.post("/api/shopify/token", async (req, res) => {
+  try {
+    const creds = getShopifyCredentials(res);
+    if (!creds) return;
+    const response = await fetch("https://api.shopify.com/auth/access_token", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        client_id: creds.clientId,
+        client_secret: creds.clientSecret,
+        grant_type: "client_credentials",
+      }),
+    });
+    if (!response.ok) {
+      const err = await response.text();
+      return res.status(response.status).json({ error: err });
+    }
+    const data = await response.json();
+    res.json({ access_token: data.access_token });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Shopify Catalog search proxy
+app.get("/api/shopify/search", async (req, res) => {
+  try {
+    const creds = getShopifyCredentials(res);
+    if (!creds) return;
+    // Get fresh token
+    const tokenRes = await fetch("https://api.shopify.com/auth/access_token", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        client_id: creds.clientId,
+        client_secret: creds.clientSecret,
+        grant_type: "client_credentials",
+      }),
+    });
+    if (!tokenRes.ok) throw new Error("Shopify auth failed");
+    const { access_token } = await tokenRes.json();
+
+    // Forward search to Shopify Catalog
+    const searchQuery = req.query.query || req.query.q || "";
+    const params = new URLSearchParams();
+    if (searchQuery) params.append("query", searchQuery);
+    if (req.query.limit) params.append("limit", req.query.limit);
+    else params.append("limit", "10");
+    if (req.query.max_price || req.query.price_max) params.append("max_price", req.query.max_price || req.query.price_max);
+    if (req.query.min_price || req.query.price_min) params.append("min_price", req.query.min_price || req.query.price_min);
+
+    // Always request CAD pricing and Canada shipping
+    params.append("ships_to", "CA");
+    params.append("buyer_country_code", "CA");
+    params.append("currency", "CAD");
+    const catalogUrl = `https://discover.shopifyapps.com/global/v2/search?${params}`;
+    console.log("[shopify/search] incoming:", req.query);
+    console.log("[shopify/search] forwarding:", catalogUrl);
+    const catalogRes = await fetch(catalogUrl, {
+      headers: { Authorization: `Bearer ${access_token}` },
+    });
+    const text = await catalogRes.text();
+    console.log("[shopify/search] status:", catalogRes.status);
+    console.log("[shopify/search] response:", text);
+    if (!catalogRes.ok) throw new Error(`Catalog error ${catalogRes.status}: ${text}`);
+    const data = text ? JSON.parse(text) : null;
+    res.json(data);
+  } catch (e) {
+    console.error("[shopify/search] error:", e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Shopify product detail proxy
+app.get("/api/shopify/product/:upid", async (req, res) => {
+  try {
+    const creds = getShopifyCredentials(res);
+    if (!creds) return;
+    const tokenRes = await fetch("https://api.shopify.com/auth/access_token", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        client_id: creds.clientId,
+        client_secret: creds.clientSecret,
+        grant_type: "client_credentials",
+      }),
+    });
+    if (!tokenRes.ok) throw new Error("Shopify auth failed");
+    const { access_token } = await tokenRes.json();
+
+    const productRes = await fetch(`https://discover.shopifyapps.com/global/v2/p/${req.params.upid}`, {
+      headers: { Authorization: `Bearer ${access_token}` },
+    });
+    if (!productRes.ok) throw new Error(`Product error ${productRes.status}`);
+    const data = await productRes.json();
+    res.json(data);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
 /**

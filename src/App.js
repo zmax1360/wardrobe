@@ -39,7 +39,6 @@ import { WardrobeScreen } from "./screens/WardrobeScreen";
 import { PlannerScreen } from "./screens/PlannerScreen";
 import { DesignerScreen } from "./screens/DesignerScreen";
 import { EvaluatorScreen } from "./screens/EvaluatorScreen";
-import { ShopperScreen } from "./screens/ShopperScreen";
 import { GapAnalysisScreen } from "./screens/GapAnalysisScreen";
 import { WardrobeEquityScreen } from "./screens/WardrobeEquityScreen";
 import { DashboardScreen } from "./screens/DashboardScreen";
@@ -1479,6 +1478,13 @@ export default function App() {
               }}
             />
           )}
+          {activeNav === "shopper" && (
+            <ShopperAgent
+              profile={profile}
+              wardrobe={wardrobe}
+              baseTransition={baseTransition}
+            />
+          )}
           {activeNav === "designer" && (
             <DesignerScreen
               profile={profile}
@@ -1495,15 +1501,6 @@ export default function App() {
               agentActivity={agentActivity}
               agentInsights={agentInsights}
               handlers={{ EvaluatorAgent, baseTransition, setAgentInsights }}
-            />
-          )}
-          {activeNav === "shopper" && (
-            <ShopperScreen
-              profile={profile}
-              wardrobe={wardrobe}
-              agentActivity={agentActivity}
-              agentInsights={agentInsights}
-              handlers={{ ShopperAgent, baseTransition }}
             />
           )}
           {activeNav === "gaps" && (
@@ -4092,7 +4089,7 @@ function extractWishlistSuggestions(text) {
   return out;
 }
 
-function ShopperAgent({ profile, wardrobe, baseTransition, agentInsights }) {
+function ShopperAgentOld({ profile, wardrobe, baseTransition, agentInsights }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -4584,6 +4581,1766 @@ Include as many recommendations as appropriate for the user's question (typicall
               }}
             >
               Add to wishlist
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+async function searchShopifyCatalog(query, filters = {}) {
+  const params = new URLSearchParams({
+    query,
+    limit: filters.limit || 10,
+    ...(filters.max_price && { max_price: filters.max_price }),
+    ...(filters.min_price && { min_price: filters.min_price }),
+    ...(filters.ships_to && { ships_to: filters.ships_to }),
+  });
+  const res = await fetch(`http://localhost:3001/api/shopify/search?${params}`);
+  if (!res.ok) throw new Error(`Search failed: ${res.status}`);
+  return res.json();
+}
+
+async function getShopifyProductDetails(upid) {
+  const res = await fetch(`http://localhost:3001/api/shopify/product/${upid}`);
+  if (!res.ok) throw new Error(`Product lookup failed: ${res.status}`);
+  return res.json();
+}
+
+function ShopperAgent({ profile, wardrobe, baseTransition }) {
+  const [view, setView] = useState("chat"); // "chat" | "wishlist"
+  const [messages, setMessages] = useState([]); // { id, role, content, products }
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [wishlist, setWishlist] = useState([]);
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [error, setError] = useState("");
+  const [lastQuery, setLastQuery] = useState("");
+  const [addedId, setAddedId] = useState(null);
+  const [showShopLookModal, setShowShopLookModal] = useState(false);
+  const [shopLookItems, setShopLookItems] = useState([]);
+  const [shoppingMode, setShoppingMode] = useState(() => {
+    try {
+      return localStorage.getItem("fos_shopping_mode") || "both";
+    } catch {
+      return "both";
+    }
+  });
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(STORAGE_WISHLIST);
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) setWishlist(parsed);
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_WISHLIST, JSON.stringify(wishlist));
+    } catch {
+      // ignore
+    }
+  }, [wishlist]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("fos_shopping_mode", shoppingMode);
+    } catch {
+      // ignore
+    }
+  }, [shoppingMode]);
+
+  const quickPrompts = [
+    "White sneakers under $100",
+    "Casual summer shirt",
+    "Black cargo pants",
+    "Minimalist blazer",
+    "Running shoes",
+  ];
+
+  const normalizeProducts = (json) => {
+    const root = json && typeof json === "object" ? json : {};
+    const list = Array.isArray(json)
+      ? json
+      : Array.isArray(root.products)
+        ? root.products
+        : Array.isArray(root.results)
+          ? root.results
+          : Array.isArray(root.items)
+            ? root.items
+            : Array.isArray(root.hits)
+              ? root.hits
+              : [];
+    return list
+      .filter(filterQualityProducts)
+      .map((p) => {
+        const obj = p && typeof p === "object" ? p : {};
+        const product = obj.product && typeof obj.product === "object" ? obj.product : obj;
+        const upid = product.upid || product.id || obj.upid || obj.id || "";
+        const title = product.title || product.name || obj.title || "";
+        const productUrl =
+          product.url ||
+          product.product_url ||
+          product.productUrl ||
+          product.onlineStoreUrl ||
+          product.online_store_url ||
+          product.variants?.[0]?.variantUrl ||
+          product.variants?.[0]?.checkoutUrl ||
+          product.variants?.[0]?.checkout_url ||
+          product.variants?.[0]?.shop?.onlineStoreUrl ||
+          obj.url ||
+          "";
+        const storeName =
+          product.store?.name ||
+          product.store_name ||
+          product.merchant?.name ||
+          product.shop?.name ||
+          product.shopName ||
+          product.vendor ||
+          obj.store?.name ||
+          obj.store_name ||
+          "";
+        const media = Array.isArray(product.media) ? product.media : Array.isArray(product.images) ? product.images : [];
+        const first = media[0] || null;
+        const imageUrl =
+          (first && (first.url || first.src || first.image_url)) ||
+          product.featuredImage?.url ||
+          product.image?.url ||
+          product.image_url ||
+          product.imageUrl ||
+          "";
+        const minPrice =
+          product.price_min ??
+          product.min_price ??
+          product.priceMin ??
+          product.price_range?.min ??
+          product.priceRange?.min ??
+          product.priceRange?.minVariantPrice?.amount ??
+          null;
+        const maxPrice =
+          product.price_max ??
+          product.max_price ??
+          product.priceMax ??
+          product.price_range?.max ??
+          product.priceRange?.max ??
+          product.priceRange?.maxVariantPrice?.amount ??
+          null;
+        const options = Array.isArray(product.options)
+          ? product.options
+          : Array.isArray(product.attributes)
+            ? product.attributes
+            : [];
+        return { upid, title, productUrl, storeName, imageUrl, minPrice, maxPrice, options, raw: product };
+      })
+      .filter((p) => p.upid || p.title);
+  };
+
+  function filterQualityProducts(product) {
+    const allowedCurrencies = ["USD", "CAD", "usd", "cad"];
+
+    if (!product.title || product.title.length < 5) return false;
+
+    const minPrice =
+      product.price_range?.min?.amount ??
+      product.priceRange?.min?.amount ??
+      product.offers?.[0]?.price?.amount ??
+      product.variants?.[0]?.price?.amount ??
+      null;
+    if (minPrice && parseFloat(minPrice) < 5) return false;
+
+    const hasImage =
+      product.media?.[0]?.url ||
+      product.images?.[0]?.url ||
+      product.image?.url;
+    if (!hasImage) return false;
+
+    // Filter out non USD/CAD currencies
+    const currency =
+      product.price_range?.min?.currency ||
+      product.price_range?.max?.currency ||
+      product.priceRange?.min?.currency ||
+      product.priceRange?.max?.currency ||
+      product.offers?.[0]?.price?.currency ||
+      product.variants?.[0]?.price?.currency ||
+      null;
+
+    if (currency && !allowedCurrencies.includes(currency)) {
+      return false;
+    }
+
+    return true;
+  }
+
+  function formatShopifyPrice(priceObj) {
+    if (!priceObj) return "";
+    if (typeof priceObj === "string") return priceObj;
+    if (typeof priceObj === "number") return `$${priceObj.toFixed(2)}`;
+    if (typeof priceObj === "object" && priceObj.amount != null) {
+      const amount = parseFloat(priceObj.amount);
+      const formatted = amount.toFixed(2);
+      const currency = priceObj.currency || "USD";
+      return `${currency === "USD" ? "$" : currency + " "}${formatted}`;
+    }
+    return "";
+  }
+
+  const formatPriceRange = (p) => {
+    if (!p) return "—";
+    const min = formatShopifyPrice(p.minPrice);
+    const max = formatShopifyPrice(p.maxPrice);
+    if (min && max) return `${min}–${max}`;
+    if (min) return min;
+    if (max) return max;
+    return "—";
+  };
+
+  const productUrlFromShopify = (product) =>
+    product?.url ||
+    product?.offers?.[0]?.url ||
+    product?.variants?.[0]?.variantUrl ||
+    product?.variants?.[0]?.checkoutUrl ||
+    product?.variants?.[0]?.checkout_url ||
+    product?.variants?.[0]?.shop?.onlineStoreUrl ||
+    product?.shops?.[0]?.url ||
+    null;
+
+  const shoppingModeKeywords = () => {
+    if (shoppingMode === "secondhand") return "secondhand used resale";
+    return "";
+  };
+
+  const productPriceCents = (p) => {
+    const price = p?.minPrice ?? p?.raw?.priceRange?.min ?? p?.raw?.price_range?.min ?? p?.raw?.variants?.[0]?.price;
+    if (typeof price === "number") return price;
+    if (typeof price === "object" && price?.amount != null) return parseFloat(price.amount);
+    return null;
+  };
+
+  const isSecondhandProduct = (p) => {
+    const product = p?.raw || p;
+    if (product?.secondhand === true) return true;
+    if (Array.isArray(product?.variants) && product.variants.some((v) => v?.secondhand === true)) return true;
+    const cents = productPriceCents(p);
+    return cents != null && cents < 500;
+  };
+
+  const shoppingBadgeText = (p) => {
+    if (shoppingMode === "secondhand") return "♻️ Secondhand";
+    if (shoppingMode === "both") return isSecondhandProduct(p) ? "♻️ Secondhand" : "✨ New";
+    return "";
+  };
+
+  const optionSummary = (p) => {
+    const opts = Array.isArray(p?.options) ? p.options : [];
+    if (!opts.length) return "";
+    const pick = (needle) => opts.find((o) => String(o?.name || "").toLowerCase().includes(needle)) || null;
+    const sizeOpt = pick("size");
+    const colorOpt = pick("color");
+    const parts = [];
+    const fmt = (o) => {
+      const name = String(o?.name || "").trim();
+      const vals = Array.isArray(o?.values) ? o.values : Array.isArray(o?.options) ? o.options : [];
+      const preview = vals
+        .slice(0, 3)
+        .map((v) => (typeof v === "string" ? v : v?.value || v?.name || ""))
+        .filter(Boolean)
+        .join(", ");
+      if (!preview) return "";
+      return name ? `${name}: ${preview}` : preview;
+    };
+    if (sizeOpt) parts.push(fmt(sizeOpt));
+    if (colorOpt) parts.push(fmt(colorOpt));
+    if (!parts.filter(Boolean).length) {
+      parts.push(fmt(opts[0]));
+      if (opts[1]) parts.push(fmt(opts[1]));
+    }
+    return parts.filter(Boolean).slice(0, 2).join(" • ");
+  };
+
+  const addToWishlist = (p) => {
+    if (!p) return;
+    const item = {
+      id: p.upid || Date.now(),
+      title: String(p.title || "").trim(),
+      price: formatPriceRange(p),
+      store: p.storeName || "—",
+      imageUrl: p.imageUrl || "",
+      productUrl: p.productUrl || "",
+      addedAt: new Date().toISOString(),
+    };
+    setWishlist((w) => {
+      const exists = w.some((x) => x.productUrl && item.productUrl && x.productUrl === item.productUrl);
+      if (exists) return w;
+      return [item, ...w];
+    });
+  };
+
+  const removeFromWishlist = (id) => {
+    setWishlist((w) => w.filter((x) => x.id !== id));
+  };
+
+  const top3Line = (products) =>
+    (Array.isArray(products) ? products.slice(0, 3) : [])
+      .map((p) => `${p.title}${formatPriceRange(p) !== "—" ? ` (${formatPriceRange(p)})` : ""}`)
+      .filter(Boolean)
+      .join("; ");
+
+  const budgetMaxPrice = () => {
+    const budgetFilters = {
+      budget: { min_price: 5, max_price: 50 },
+      "mid-range": { min_price: 10, max_price: 150 },
+      premium: { min_price: 50, max_price: 400 },
+      luxury: { min_price: 100, max_price: null },
+      mixed: { min_price: 5, max_price: null },
+    };
+    const b = String(profile?.budget || "").toLowerCase();
+    if (b === "midrange") return budgetFilters["mid-range"].max_price;
+    if (budgetFilters[b]) return budgetFilters[b].max_price || undefined;
+    return undefined;
+  };
+
+  const budgetMinPrice = () => {
+    const budgetFilters = {
+      budget: { min_price: 5, max_price: 50 },
+      "mid-range": { min_price: 10, max_price: 150 },
+      premium: { min_price: 50, max_price: 400 },
+      luxury: { min_price: 100, max_price: null },
+      mixed: { min_price: 5, max_price: null },
+    };
+    const b = String(profile?.budget || "").toLowerCase();
+    if (b === "midrange") return budgetFilters["mid-range"].min_price;
+    if (budgetFilters[b]) return budgetFilters[b].min_price;
+    return undefined;
+  };
+
+  function detectOutfitIntent(query) {
+    const outfitKeywords = [
+      "outfit", "set", "look", "combination", "complete",
+      "full", "head to toe", "head-to-toe", "put together",
+    ];
+    const multiItemPatterns = [
+      /pants?.+shirt/i, /shirt.+pants/i,
+      /shoes?.+shirt/i, /shirt.+shoes/i,
+      /pants?.+shoes/i, /shoes?.+pants/i,
+      /top.+bottom/i, /jacket.+shirt/i,
+      /outfit/i, /set of cloth/i, /set of clothes/i,
+    ];
+    const lowerQuery = query.toLowerCase();
+    return (
+      outfitKeywords.some((k) => lowerQuery.includes(k)) ||
+      multiItemPatterns.some((p) => p.test(query))
+    );
+  }
+
+  function getStyleKeywords(profileForSearch) {
+    const styleMap = {
+      Minimalist: ["minimalist", "clean", "simple", "slim fit"],
+      "Casual chic": ["casual", "smart casual", "everyday", "relaxed"],
+      Streetwear: ["streetwear", "urban", "graphic", "oversized"],
+      "Business formal": ["formal", "business", "dress", "tailored", "slim fit"],
+      Bohemian: ["boho", "bohemian", "flowy", "relaxed"],
+      Sporty: ["athletic", "sport", "activewear", "performance"],
+      Romantic: ["soft", "floral", "feminine", "elegant"],
+      Edgy: ["edgy", "bold", "moto", "leather", "dark"],
+      Classic: ["classic", "timeless", "traditional", "polo"],
+      Eclectic: ["unique", "colorful", "pattern", "mixed"],
+    };
+
+    const keywords = [];
+    (profileForSearch?.styles || []).forEach((style) => {
+      const mapped = styleMap[style];
+      if (mapped) keywords.push(mapped[0]); // take primary keyword
+    });
+    return keywords.slice(0, 2).join(" "); // max 2 style keywords
+  }
+
+  function getBrandKeywords(profileForSearch) {
+    const preferred = profileForSearch?.brands || [];
+
+    // Return first preferred brand if set
+    if (preferred.length > 0) return preferred[0];
+
+    // Otherwise infer from style
+    const styles = profileForSearch?.styles || [];
+    if (styles.includes("Sporty")) return "Nike OR Adidas OR Uniqlo";
+    if (styles.includes("Minimalist")) return "Uniqlo OR COS OR Zara";
+    if (styles.includes("Streetwear")) return "Nike OR ASOS";
+    if (styles.includes("Business formal")) return "Zara OR Mango OR COS";
+    return "";
+  }
+
+  function extractOutfitItems(query, profileForSearch) {
+    const gender = profileForSearch?.gender === "female" ? "womens" : "mens";
+    const styleKw = getStyleKeywords(profileForSearch);
+    const brandKw = getBrandKeywords(profileForSearch);
+    const modeKw = shoppingModeKeywords();
+    const q = query.toLowerCase();
+    const items = [];
+
+    if (q.includes("shirt") || q.includes("top") ||
+        q.includes("blouse") || q.includes("tee")) {
+      items.push({
+        category: "Tops", label: "👕 Shirt / Top",
+        query: `${gender} ${styleKw} ${modeKw} shirt top size ${profileForSearch?.topSize || ""}
+              ${brandKw}`.trim(),
+      });
+    }
+    if (q.includes("pant") || q.includes("trouser") ||
+        q.includes("jean") || q.includes("bottom")) {
+      items.push({
+        category: "Bottoms", label: "👖 Pants / Bottoms",
+        query: `${gender} ${styleKw} ${modeKw} pants size ${profileForSearch?.bottomSize || ""}
+              ${brandKw}`.trim(),
+      });
+    }
+    if (q.includes("shoe") || q.includes("sneaker") ||
+        q.includes("boot") || q.includes("footwear")) {
+      items.push({
+        category: "Shoes", label: "👟 Shoes",
+        query: `${gender} ${styleKw} ${modeKw} shoes sneakers size ${profileForSearch?.shoeSize || ""}
+              ${brandKw}`.trim(),
+      });
+    }
+    if (q.includes("jacket") || q.includes("coat") ||
+        q.includes("outerwear") || q.includes("blazer")) {
+      items.push({
+        category: "Outerwear", label: "🧥 Jacket",
+        query: `${gender} ${styleKw} ${modeKw} jacket blazer
+              ${brandKw}`.trim(),
+      });
+    }
+
+    // Default: shirt + pants + shoes if no specific items detected
+    if (items.length === 0) {
+      items.push(
+        {
+          category: "Tops", label: "👕 Shirt / Top",
+          query: `${gender} ${styleKw} ${modeKw} shirt top size ${profileForSearch?.topSize || ""}
+                ${brandKw}`.trim(),
+        },
+        {
+          category: "Bottoms", label: "👖 Pants / Bottoms",
+          query: `${gender} ${styleKw} ${modeKw} pants size ${profileForSearch?.bottomSize || ""}
+                ${brandKw}`.trim(),
+        },
+        {
+          category: "Shoes", label: "👟 Shoes",
+          query: `${gender} ${styleKw} ${modeKw} shoes size ${profileForSearch?.shoeSize || ""}
+                ${brandKw}`.trim(),
+        }
+      );
+    }
+    return items;
+  }
+
+  async function pickBestOutfit(outfitGroups, profileForPick) {
+    // Build a description of available items per category
+    const itemDescriptions = outfitGroups.map((group) => {
+      const items = group.products.slice(0, 4).map((p, i) =>
+        `${i + 1}. ${p.title} - ${formatShopifyPrice(p.minPrice || p.raw?.priceRange?.min || p.raw?.price_range?.min)}`
+      ).join("\n");
+      return `${group.label}:\n${items}`;
+    }).join("\n\n");
+
+    const profileSummary = buildProfileSummary(profileForPick);
+
+    const system = `You are a fashion stylist AI. 
+Given a list of clothing items per category, 
+pick ONE item from each category that best 
+matches together as a cohesive outfit.
+Consider color harmony, style consistency, 
+and occasion appropriateness.
+User profile: ${profileSummary}
+
+Return ONLY valid JSON (no markdown):
+{
+  "picks": [
+    { "category": "Tops", "index": 0, "reason": "why this works" },
+    { "category": "Bottoms", "index": 1, "reason": "why this works" },
+    { "category": "Shoes", "index": 0, "reason": "why this works" }
+  ],
+  "outfitName": "Creative outfit name",
+  "styleNote": "One sentence on why these work together"
+}
+index is 0-based position in the category list.`;
+
+    const user = `Pick the best matching outfit from these options:\n\n${itemDescriptions}`;
+
+    try {
+      const response = await callShoppingAssistant(system, user);
+      const clean = response.replace(/```json|```/g, "").trim();
+      return JSON.parse(clean);
+    } catch {
+      return null;
+    }
+  }
+
+  const sendMessage = async (text) => {
+    const trimmed = String(text || "").trim();
+    if (!trimmed || loading) return;
+
+    setError("");
+    setSelectedProduct(null);
+    setLastQuery(trimmed);
+
+    const id = crypto.randomUUID ? crypto.randomUUID() : String(Date.now());
+    setMessages((m) => [...m, { id, role: "user", content: trimmed, products: [] }]);
+    setInput("");
+    setLoading(true);
+
+    const userQuery = trimmed;
+    const styleKw = getStyleKeywords(profile);
+    const brandKw = getBrandKeywords(profile);
+    const modeKw = shoppingModeKeywords();
+    const min_price = shoppingMode === "new" ? 5 : budgetMinPrice();
+    const enrichedQuery = [
+      userQuery,
+      styleKw,
+      brandKw,
+      modeKw,
+      profile?.gender === "female" ? "womens" : "mens",
+      profile?.shoeSize ? `size ${profile.shoeSize}` : "",
+    ].filter(Boolean).join(" ").trim();
+    const max_price = budgetMaxPrice();
+
+    try {
+      const isOutfit = detectOutfitIntent(userQuery);
+
+      if (isOutfit) {
+        const outfitItems = extractOutfitItems(userQuery, profile);
+        const budgetMap = {
+          budget: 50,
+          "mid-range": 150,
+          premium: 400,
+          luxury: null,
+          mixed: null,
+        };
+        const maxPrice = budgetMap[profile?.budget] || null;
+
+        const results = await Promise.all(
+          outfitItems.map((item) =>
+            searchShopifyCatalog(item.query, {
+              max_price: maxPrice,
+              min_price,
+              ships_to: "CA",
+              limit: 4,
+            })
+              .then((data) => ({
+                ...item,
+                products: normalizeProducts(data),
+              }))
+              .catch(() => ({ ...item, products: [] }))
+          )
+        );
+
+        // Ask Claude to pick the best matching combination
+        const aiPick = await pickBestOutfit(results, profile);
+
+        // Attach picked item to each group
+        const resultsWithPick = results.map((group) => {
+          if (!aiPick) return group;
+          const pick = aiPick.picks?.find((p) => p.category === group.category);
+          return {
+            ...group,
+            pickedIndex: pick?.index ?? 0,
+            pickReason: pick?.reason ?? "",
+          };
+        });
+
+        const outfitMessage = {
+          id: Date.now(),
+          role: "assistant",
+          content: aiPick?.styleNote ||
+            `Here's a complete outfit matched to your profile!`,
+          outfitGroups: resultsWithPick,
+          outfitName: aiPick?.outfitName || "Your Complete Look",
+          products: [],
+        };
+
+        setMessages((prev) => [...prev, outfitMessage]);
+        return;
+      }
+
+      const json = await searchShopifyCatalog(enrichedQuery, {
+        max_price,
+        min_price,
+        ships_to: "CA",
+        limit: 10,
+      });
+      const products = normalizeProducts(json);
+
+      if (!products.length) {
+        const aid = crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + "a";
+        setMessages((m) => [
+          ...m,
+          { id: aid, role: "assistant", content: "No products found. Try a different search term.", products: [] },
+        ]);
+        return;
+      }
+
+      const profileSummary = buildProfileSummary(profile);
+      const system = `You are ARLO, a personal fashion shopping assistant.
+User profile: ${profileSummary}.
+Shoe size: ${profile?.shoeSize || "not set"}, 
+Gender: ${profile?.gender || "not set"},
+Style: ${Array.isArray(profile?.styles) ? profile.styles.join(", ") : "not set"},
+Budget: ${profile?.budget || "not set"}.
+Budget price filters use Shopify Catalog dollar-based price filters.
+The user searched for: ${userQuery}
+Shopify Catalog returned ${products.length} products matching their
+profile (size, gender, style already filtered).
+Top results: ${top3Line(products)}.
+Write a helpful 2-3 sentence response. 
+Mention the size and style match. Be concise.`;
+
+      let assistantText = "";
+      try {
+        assistantText = await callShoppingAssistant(system, userQuery);
+      } catch {
+        assistantText = "Here are a few great matches from the Shopify Catalog.";
+      }
+
+      const aid = crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + "a";
+      setMessages((m) => [...m, { id: aid, role: "assistant", content: assistantText, products }]);
+    } catch (e) {
+      const msg = String(e?.message || e || "");
+      if (msg.includes("credentials missing")) {
+        setError(
+          "Shopify Catalog not configured. Add SHOPIFY_CLIENT_ID and SHOPIFY_CLIENT_SECRET to your server .env file."
+        );
+      } else {
+        setError(msg || "Something went wrong.");
+      }
+      const eid = crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + "e";
+      setMessages((m) => [...m, { id: eid, role: "assistant", content: "I hit an error fetching products.", products: [] }]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const openDetails = async (p) => {
+    if (!p?.upid) return;
+    setSelectedProduct({ ...p, loading: true });
+    try {
+      const details = await getShopifyProductDetails(p.upid);
+      setSelectedProduct({ ...p, details, loading: false });
+    } catch (e) {
+      setSelectedProduct({ ...p, loading: false, error: e?.message || "Product lookup failed." });
+    }
+  };
+
+  return (
+    <div style={{ maxWidth: 900 }}>
+      <div style={{ marginBottom: 12 }}>
+        <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "1.75rem", fontWeight: 600, margin: "0 0 6px" }}>
+          Shopping Agent
+        </div>
+        <div style={{ color: COLORS.textMuted, fontSize: "0.9rem", fontFamily: "'DM Sans', sans-serif" }}>
+          Real products from millions of Shopify stores
+        </div>
+      </div>
+
+      <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
+        <button
+          type="button"
+          onClick={() => setView("chat")}
+          style={{
+            padding: "8px 16px",
+            borderRadius: 999,
+            border: `1px solid ${view === "chat" ? COLORS.primary : COLORS.border}`,
+            background: view === "chat" ? COLORS.primarySoft : COLORS.surface2,
+            color: view === "chat" ? COLORS.text : COLORS.textMuted,
+            cursor: "pointer",
+            fontSize: "0.85rem",
+            transition: baseTransition,
+          }}
+        >
+          Chat
+        </button>
+        <button
+          type="button"
+          onClick={() => setView("wishlist")}
+          style={{
+            padding: "8px 16px",
+            borderRadius: 999,
+            border: `1px solid ${view === "wishlist" ? COLORS.primary : COLORS.border}`,
+            background: view === "wishlist" ? COLORS.primarySoft : COLORS.surface2,
+            color: view === "wishlist" ? COLORS.text : COLORS.textMuted,
+            cursor: "pointer",
+            fontSize: "0.85rem",
+            transition: baseTransition,
+          }}
+        >
+          Wishlist
+        </button>
+      </div>
+
+      <div style={{ display: "flex", gap: 8, marginBottom: 14, overflowX: "auto", paddingBottom: 4 }}>
+        {[
+          { id: "new", label: "New only" },
+          { id: "secondhand", label: "Secondhand / Resale" },
+          { id: "both", label: "Both" },
+        ].map((mode) => {
+          const active = shoppingMode === mode.id;
+          return (
+            <button
+              key={mode.id}
+              type="button"
+              onClick={() => setShoppingMode(mode.id)}
+              style={{
+                padding: "7px 12px",
+                borderRadius: 999,
+                border: `1px solid ${active ? COLORS.primary : COLORS.border}`,
+                background: active ? COLORS.primarySoft : COLORS.surface2,
+                color: active ? COLORS.text : COLORS.textMuted,
+                cursor: "pointer",
+                fontSize: "0.78rem",
+                transition: baseTransition,
+                whiteSpace: "nowrap",
+                flexShrink: 0,
+              }}
+            >
+              {mode.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {error ? (
+        <div style={mergeStyles(ui.softPanel, { padding: "14px 16px", marginBottom: 14, border: `1px solid ${COLORS.border}` })}>
+          <div style={{ fontWeight: 800, marginBottom: 6, color: COLORS.text }}>Error</div>
+          <div style={{ color: COLORS.textMuted, fontSize: "0.9rem", lineHeight: 1.5, marginBottom: 12 }}>{error}</div>
+          <button
+            type="button"
+            disabled={!lastQuery || loading}
+            onClick={() => {
+              if (lastQuery) void sendMessage(lastQuery);
+            }}
+            style={{
+              padding: "10px 12px",
+              borderRadius: 12,
+              border: `1px solid ${COLORS.border}`,
+              background: COLORS.surface2,
+              color: COLORS.text,
+              cursor: !lastQuery || loading ? "default" : "pointer",
+              transition: baseTransition,
+              fontWeight: 800,
+            }}
+          >
+            Retry
+          </button>
+        </div>
+      ) : null}
+
+      {view === "chat" ? (
+        <>
+          <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 8, marginBottom: 14 }}>
+            {quickPrompts.map((q) => (
+              <button
+                key={q}
+                type="button"
+                onClick={() => void sendMessage(q)}
+                disabled={loading}
+                style={{
+                  padding: "6px 12px",
+                  borderRadius: 999,
+                  border: `1px solid ${COLORS.border}`,
+                  background: COLORS.surface2,
+                  color: COLORS.textMuted,
+                  cursor: loading ? "default" : "pointer",
+                  fontSize: "0.78rem",
+                  transition: baseTransition,
+                  whiteSpace: "nowrap",
+                  flexShrink: 0,
+                }}
+              >
+                {q}
+              </button>
+            ))}
+          </div>
+
+          <div
+            style={{
+              background: COLORS.surface,
+              borderRadius: 12,
+              border: `1px solid ${COLORS.border}`,
+              padding: 16,
+              minHeight: 320,
+              maxHeight: 520,
+              overflowY: "auto",
+              marginBottom: 12,
+              display: "flex",
+              flexDirection: "column",
+              gap: 12,
+            }}
+          >
+            {messages.length === 0 ? (
+              <p style={{ color: COLORS.textMuted, margin: 0, fontSize: "0.9rem" }}>
+                Ask for an item and I’ll fetch real products from the Shopify Catalog.
+              </p>
+            ) : null}
+
+            {messages.map((msg) => {
+              const isUser = msg.role === "user";
+              return (
+                <div key={msg.id} style={{ display: "flex", flexDirection: "column", alignItems: isUser ? "flex-end" : "flex-start", gap: 10 }}>
+                  <div
+                    style={{
+                      maxWidth: "92%",
+                      padding: "10px 14px",
+                      borderRadius: isUser ? "12px 12px 4px 12px" : "12px 12px 12px 4px",
+                      background: isUser ? COLORS.primary : COLORS.surface2,
+                      color: isUser ? "#FFFFFF" : COLORS.text,
+                      fontSize: "0.9rem",
+                      lineHeight: 1.55,
+                      whiteSpace: "pre-wrap",
+                      fontFamily: "'DM Sans', sans-serif",
+                    }}
+                  >
+                    {msg.content}
+                  </div>
+
+                  {!isUser && Array.isArray(msg.outfitGroups) && msg.outfitGroups.length ? (
+                    <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: 14 }}>
+                      {(() => {
+                        // Get the AI-picked item from each group
+                        const pickedItems = msg.outfitGroups.map((group) => ({
+                          ...group,
+                          picked: group.products[group.pickedIndex ?? 0],
+                        })).filter((g) => g.picked);
+                        const accent = COLORS.accent || COLORS.primary;
+                        const muted = COLORS.muted || COLORS.textMuted;
+
+                        return (
+                          <div style={{
+                            background: COLORS.surface,
+                            border: `2px solid ${accent}`,
+                            borderRadius: 16,
+                            padding: 20,
+                            marginBottom: 24,
+                          }}>
+                            {/* Header */}
+                            <div style={{
+                              display: "flex",
+                              justifyContent: "space-between",
+                              alignItems: "center",
+                              marginBottom: 16,
+                            }}>
+                              <div>
+                                <div style={{
+                                  fontSize: "0.7rem",
+                                  letterSpacing: "0.15em",
+                                  color: accent,
+                                  textTransform: "uppercase",
+                                  fontFamily: "'DM Sans', sans-serif",
+                                  marginBottom: 4,
+                                }}>✦ Complete This Look</div>
+                                <div style={{
+                                  fontFamily: "'Cormorant Garamond', serif",
+                                  fontSize: "1.2rem",
+                                  fontWeight: 600,
+                                  color: COLORS.text,
+                                }}>{msg.outfitName}</div>
+                              </div>
+                            </div>
+
+                            {/* Picked items side by side */}
+                            <div style={{
+                              display: "flex",
+                              gap: 12,
+                              marginBottom: 16,
+                              flexWrap: "wrap",
+                            }}>
+                              {pickedItems.map((group) => {
+                                const product = group.picked.raw || group.picked;
+                                const imgUrl =
+                                  group.picked.imageUrl ||
+                                  product.media?.[0]?.url ||
+                                  product.images?.[0]?.url ||
+                                  product.image?.url;
+                                return (
+                                  <div key={group.category} style={{
+                                    flex: 1,
+                                    minWidth: 100,
+                                    maxWidth: 140,
+                                  }}>
+                                    {/* Image */}
+                                    <div style={{
+                                      width: "100%",
+                                      aspectRatio: "3/4",
+                                      borderRadius: 10,
+                                      overflow: "hidden",
+                                      background: COLORS.card,
+                                      border: `1px solid ${COLORS.border}`,
+                                      marginBottom: 8,
+                                    }}>
+                                      {imgUrl ? (
+                                        <img
+                                          src={imgUrl}
+                                          alt={group.picked.title}
+                                          style={{
+                                            width: "100%",
+                                            height: "100%",
+                                            objectFit: "cover",
+                                          }}
+                                        />
+                                      ) : (
+                                        <div style={{
+                                          width: "100%",
+                                          height: "100%",
+                                          display: "flex",
+                                          alignItems: "center",
+                                          justifyContent: "center",
+                                          fontSize: "1.5rem",
+                                        }}>
+                                          {group.label.split(" ")[0]}
+                                        </div>
+                                      )}
+                                    </div>
+                                    {/* Label */}
+                                    <div style={{
+                                      fontSize: "0.7rem",
+                                      color: accent,
+                                      letterSpacing: "0.1em",
+                                      textTransform: "uppercase",
+                                      marginBottom: 2,
+                                      fontFamily: "'DM Sans', sans-serif",
+                                    }}>{group.label}</div>
+                                    {/* Name */}
+                                    <div style={{
+                                      fontSize: "0.78rem",
+                                      color: COLORS.text,
+                                      lineHeight: 1.3,
+                                      marginBottom: 4,
+                                      display: "-webkit-box",
+                                      WebkitLineClamp: 2,
+                                      WebkitBoxOrient: "vertical",
+                                      overflow: "hidden",
+                                    }}>{group.picked.title}</div>
+                                    {/* Price */}
+                                    <div style={{
+                                      fontSize: "0.78rem",
+                                      color: accent,
+                                      fontWeight: 600,
+                                    }}>
+                                      {formatShopifyPrice(group.picked.minPrice || product.priceRange?.min || product.price_range?.min)}
+                                    </div>
+                                    {/* Pick reason */}
+                                    {group.pickReason && (
+                                      <div style={{
+                                        fontSize: "0.68rem",
+                                        color: muted,
+                                        fontStyle: "italic",
+                                        marginTop: 4,
+                                        lineHeight: 1.4,
+                                      }}>{group.pickReason}</div>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+
+                            {/* Total estimate */}
+                            {(() => {
+                              const total = pickedItems.reduce((sum, group) => {
+                                const product = group.picked.raw || group.picked;
+                                const priceObj =
+                                  product.price_range?.min ||
+                                  product.priceRange?.min ||
+                                  group.picked.minPrice;
+                                if (!priceObj) return sum;
+
+                                // Skip non USD/CAD currencies
+                                const currency = priceObj.currency || "";
+                                if (currency && !["USD", "CAD", "usd", "cad"].includes(currency)) {
+                                  return sum;
+                                }
+
+                                const amount = parseFloat(priceObj.amount || priceObj || 0);
+                                return sum + amount;
+                              }, 0);
+                              return total > 0 ? (
+                                <div style={{
+                                  fontSize: "0.82rem",
+                                  color: muted,
+                                  marginBottom: 16,
+                                }}>
+                                  Estimated total:
+                                  <strong style={{ color: COLORS.text, marginLeft: 6 }}>
+                                    ~${total.toFixed(2)}
+                                  </strong>
+                                  <span style={{
+                                    color: muted,
+                                    fontSize: "0.72rem",
+                                    marginLeft: 4,
+                                  }}>
+                                    CAD/USD
+                                  </span>
+                                </div>
+                              ) : null;
+                            })()}
+
+                            {/* Action buttons */}
+                            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                              {/* Add full outfit to wishlist */}
+                              <button
+                                onClick={() => {
+                                  pickedItems.forEach((group) => {
+                                    const product = group.picked.raw || group.picked;
+                                    const url = productUrlFromShopify(product);
+                                    const imageUrl =
+                                      group.picked.imageUrl ||
+                                      product.media?.[0]?.url ||
+                                      product.images?.[0]?.url ||
+                                      product.image?.url ||
+                                      null;
+                                    const price = formatShopifyPrice(group.picked.minPrice || product.priceRange?.min || product.price_range?.min);
+                                    const store =
+                                      group.picked.storeName ||
+                                      product.offers?.[0]?.store_name ||
+                                      product.shops?.[0]?.name ||
+                                      product.vendor || "Shopify Store";
+                                    const newItem = {
+                                      id: product.id || product.upid || String(Date.now() + Math.random()),
+                                      title: product.title || "Unknown product",
+                                      price,
+                                      store,
+                                      imageUrl,
+                                      productUrl: url,
+                                      addedAt: new Date().toISOString(),
+                                      outfitName: msg.outfitName,
+                                    };
+                                    setWishlist((prev) => {
+                                      const exists = prev.some((i) => i.id === newItem.id);
+                                      if (exists) return prev;
+                                      const updated = [...prev, newItem];
+                                      localStorage.setItem(
+                                        STORAGE_WISHLIST,
+                                        JSON.stringify(updated)
+                                      );
+                                      return updated;
+                                    });
+                                  });
+                                }}
+                                style={{
+                                  flex: 1,
+                                  padding: "11px 16px",
+                                  borderRadius: 8,
+                                  border: "none",
+                                  background: accent,
+                                  color: "#FAF7F4",
+                                  fontWeight: 600,
+                                  cursor: "pointer",
+                                  fontSize: "0.85rem",
+                                  fontFamily: "'DM Sans', sans-serif",
+                                }}
+                              >
+                                + Add Full Outfit to Wishlist
+                              </button>
+
+                              {/* Shop this look — opens modal */}
+                              <button
+                                onClick={() => {
+                                  // Build a simple modal with all product links
+                                  const links = pickedItems.map((group) => {
+                                    const product = group.picked.raw || group.picked;
+                                    return {
+                                      label: group.label,
+                                      title: group.picked.title,
+                                      price: formatShopifyPrice(group.picked.minPrice || product.priceRange?.min || product.price_range?.min),
+                                      url: productUrlFromShopify(product),
+                                    };
+                                  });
+                                  setShopLookItems(links);
+                                  setShowShopLookModal(true);
+                                }}
+                                style={{
+                                  flex: 1,
+                                  padding: "11px 16px",
+                                  borderRadius: 8,
+                                  border: `1px solid ${accent}`,
+                                  background: "transparent",
+                                  color: accent,
+                                  fontWeight: 600,
+                                  cursor: "pointer",
+                                  fontSize: "0.85rem",
+                                  fontFamily: "'DM Sans', sans-serif",
+                                }}
+                              >
+                                Shop This Look →
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })()}
+                      {msg.outfitGroups.map((group) => (
+                        <div key={`${msg.id}-${group.category}`} style={{ width: "100%" }}>
+                          <div
+                            style={{
+                              fontFamily: "'Cormorant Garamond', serif",
+                              fontSize: "1.1rem",
+                              fontWeight: 700,
+                              color: COLORS.text,
+                              marginBottom: 8,
+                            }}
+                          >
+                            {group.label}
+                          </div>
+                          {group.products.length ? (
+                            <div style={{ width: "100%", overflowX: "auto", paddingBottom: 4 }}>
+                              <div style={{ display: "flex", gap: 10, width: "max-content" }}>
+                                {group.products.map((p, productIndex) => (
+                                  <div
+                                    key={p.upid || `${group.category}-${p.title}`}
+                                    style={{
+                                      position: "relative",
+                                      width: 140,
+                                      background: COLORS.card,
+                                      border: `1px solid ${COLORS.border}`,
+                                      borderRadius: 12,
+                                      padding: 10,
+                                      display: "flex",
+                                      flexDirection: "column",
+                                      gap: 8,
+                                      flexShrink: 0,
+                                    }}
+                                  >
+                                    {group.pickedIndex === productIndex && (
+                                      <div style={{
+                                        position: "absolute",
+                                        top: 6,
+                                        left: 6,
+                                        background: COLORS.accent || COLORS.primary,
+                                        color: "#FAF7F4",
+                                        fontSize: "0.65rem",
+                                        fontWeight: 700,
+                                        padding: "3px 7px",
+                                        borderRadius: 6,
+                                        letterSpacing: "0.05em",
+                                        zIndex: 1,
+                                      }}>✓ PICK</div>
+                                    )}
+                                    <div
+                                      style={{
+                                        width: 140,
+                                        height: 160,
+                                        borderRadius: 8,
+                                        overflow: "hidden",
+                                        background: COLORS.surface2,
+                                        border: `1px solid ${COLORS.border}`,
+                                        alignSelf: "center",
+                                      }}
+                                    >
+                                      {p.imageUrl ? (
+                                        <img
+                                          src={p.imageUrl}
+                                          alt={p.title || "Product image"}
+                                          style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+                                        />
+                                      ) : null}
+                                    </div>
+                                    <div
+                                      style={{
+                                        fontWeight: 700,
+                                        fontSize: "0.85rem",
+                                        color: COLORS.text,
+                                        lineHeight: 1.25,
+                                        display: "-webkit-box",
+                                        WebkitLineClamp: 2,
+                                        WebkitBoxOrient: "vertical",
+                                        overflow: "hidden",
+                                        minHeight: 36,
+                                      }}
+                                      title={p.title}
+                                    >
+                                      {p.title || "Untitled"}
+                                    </div>
+                                    <div style={{ color: COLORS.primary, fontWeight: 800, fontSize: "0.9rem", fontFamily: "'DM Sans', sans-serif" }}>
+                                      {formatPriceRange(p)}
+                                    </div>
+                                    {shoppingBadgeText(p) ? (
+                                      <div
+                                        style={{
+                                          alignSelf: "flex-start",
+                                          padding: "3px 7px",
+                                          borderRadius: 999,
+                                          background: COLORS.surface2,
+                                          color: COLORS.textMuted,
+                                          fontSize: "0.7rem",
+                                          fontWeight: 800,
+                                        }}
+                                      >
+                                        {shoppingBadgeText(p)}
+                                      </div>
+                                    ) : null}
+                                    {p.storeName && p.storeName !== "—" && p.storeName !== "" && (
+                                      <div style={{ color: COLORS.muted, fontSize: "0.78rem" }}>
+                                        {p.storeName}
+                                      </div>
+                                    )}
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        const product = p.raw || p;
+                                        const url = productUrlFromShopify(product);
+                                        if (url) window.open(url, "_blank", "noopener,noreferrer");
+                                        else alert("Product URL not available");
+                                      }}
+                                      style={{
+                                        padding: "8px 10px",
+                                        borderRadius: 10,
+                                        border: `1px solid ${COLORS.border}`,
+                                        background: COLORS.surface2,
+                                        color: COLORS.text,
+                                        cursor: "pointer",
+                                        transition: baseTransition,
+                                        fontWeight: 700,
+                                        fontSize: "0.82rem",
+                                      }}
+                                    >
+                                      View product
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => addToWishlist(p)}
+                                      style={{
+                                        padding: "8px 10px",
+                                        borderRadius: 10,
+                                        border: `1px solid ${COLORS.border}`,
+                                        background: COLORS.card,
+                                        color: COLORS.text,
+                                        cursor: "pointer",
+                                        transition: baseTransition,
+                                        fontWeight: 800,
+                                        fontSize: "0.82rem",
+                                      }}
+                                    >
+                                      Add to wishlist
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          ) : (
+                            <div style={mergeStyles(ui.softPanel, { padding: 12, color: COLORS.textMuted, fontSize: "0.85rem" })}>
+                              No products found for this category.
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : null}
+
+                  {!isUser && Array.isArray(msg.products) && msg.products.length ? (
+                    <div style={{ width: "100%", overflowX: "auto", paddingBottom: 4 }}>
+                      <div style={{ display: "flex", gap: 10, width: "max-content" }}>
+                        {msg.products.map((p) => (
+                          <div
+                            key={p.upid || `${msg.id}-${p.title}`}
+                            style={{
+                              width: 140,
+                              background: COLORS.card,
+                              border: `1px solid ${COLORS.border}`,
+                              borderRadius: 12,
+                              padding: 10,
+                              display: "flex",
+                              flexDirection: "column",
+                              gap: 8,
+                              flexShrink: 0,
+                            }}
+                          >
+                            <div
+                              style={{
+                                width: 140,
+                                height: 160,
+                                borderRadius: 8,
+                                overflow: "hidden",
+                                background: COLORS.surface2,
+                                border: `1px solid ${COLORS.border}`,
+                                alignSelf: "center",
+                              }}
+                            >
+                              {p.imageUrl ? (
+                                <img
+                                  src={p.imageUrl}
+                                  alt={p.title || "Product image"}
+                                  style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+                                />
+                              ) : null}
+                            </div>
+
+                            <div
+                              style={{
+                                fontWeight: 700,
+                                fontSize: "0.85rem",
+                                color: COLORS.text,
+                                lineHeight: 1.25,
+                                display: "-webkit-box",
+                                WebkitLineClamp: 2,
+                                WebkitBoxOrient: "vertical",
+                                overflow: "hidden",
+                                minHeight: 36,
+                              }}
+                              title={p.title}
+                            >
+                              {p.title || "Untitled"}
+                            </div>
+
+                            <div style={{ color: COLORS.primary, fontWeight: 800, fontSize: "0.9rem", fontFamily: "'DM Sans', sans-serif" }}>
+                              {formatPriceRange(p)}
+                            </div>
+
+                            {shoppingBadgeText(p) ? (
+                              <div
+                                style={{
+                                  alignSelf: "flex-start",
+                                  padding: "3px 7px",
+                                  borderRadius: 999,
+                                  background: COLORS.surface2,
+                                  color: COLORS.textMuted,
+                                  fontSize: "0.7rem",
+                                  fontWeight: 800,
+                                }}
+                              >
+                                {shoppingBadgeText(p)}
+                              </div>
+                            ) : null}
+
+                            {p.storeName && p.storeName !== "—" && p.storeName !== "" && (
+                              <div style={{ color: COLORS.muted, fontSize: "0.78rem" }}>
+                                {p.storeName}
+                              </div>
+                            )}
+
+                            {optionSummary(p) ? (
+                              <div style={{ fontSize: "0.72rem", color: COLORS.textMuted, lineHeight: 1.35 }}>
+                                {optionSummary(p)}
+                              </div>
+                            ) : null}
+
+                            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const product = p.raw || p;
+                                  const url = productUrlFromShopify(product);
+                                  if (url) {
+                                    window.open(url, "_blank", "noopener,noreferrer");
+                                  } else {
+                                    alert("Product URL not available");
+                                  }
+                                }}
+                                style={{
+                                  padding: "8px 10px",
+                                  borderRadius: 10,
+                                  border: `1px solid ${COLORS.border}`,
+                                  background: COLORS.surface2,
+                                  color: COLORS.text,
+                                  cursor: "pointer",
+                                  transition: baseTransition,
+                                  fontWeight: 700,
+                                  fontSize: "0.82rem",
+                                }}
+                              >
+                                View product
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const product = p.raw || p;
+                                  const url = productUrlFromShopify(product);
+
+                                  const imageUrl =
+                                    product.media?.[0]?.url ||
+                                    product.images?.[0]?.url ||
+                                    product.image?.url ||
+                                    null;
+
+                                  const priceMin = formatShopifyPrice(product.price_range?.min);
+                                  const priceMax = formatShopifyPrice(product.price_range?.max);
+                                  const priceDisplay = priceMin === priceMax
+                                    ? priceMin
+                                    : `${priceMin}–${priceMax}`;
+
+                                  const store =
+                                    product.offers?.[0]?.store_name ||
+                                    product.shops?.[0]?.name ||
+                                    product.vendor ||
+                                    "Shopify Store";
+
+                                  const newItem = {
+                                    id: product.id || product.upid || String(Date.now()),
+                                    title: product.title || "Unknown product",
+                                    price: priceDisplay,
+                                    store,
+                                    imageUrl,
+                                    productUrl: url,
+                                    addedAt: new Date().toISOString(),
+                                  };
+
+                                  setWishlist((prev) => {
+                                    // Avoid duplicates
+                                    const exists = prev.some((i) => i.id === newItem.id);
+                                    if (exists) return prev;
+                                    const updated = [...prev, newItem];
+                                    localStorage.setItem(STORAGE_WISHLIST, JSON.stringify(updated));
+                                    return updated;
+                                  });
+                                  setAddedId(newItem.id);
+                                  setTimeout(() => setAddedId(null), 2000);
+                                }}
+                                style={{
+                                  padding: "8px 10px",
+                                  borderRadius: 10,
+                                  border: `1px solid ${COLORS.border}`,
+                                  background:
+                                    addedId === ((p.raw || p).id || (p.raw || p).upid || p.upid)
+                                      ? COLORS.green || "#27ae60"
+                                      : COLORS.card,
+                                  color: COLORS.text,
+                                  cursor: "pointer",
+                                  transition: baseTransition,
+                                  fontWeight: 800,
+                                  fontSize: "0.82rem",
+                                }}
+                              >
+                                {addedId === ((p.raw || p).id || (p.raw || p).upid || p.upid) ? "✓ Added!" : "Add to wishlist"}
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
+              );
+            })}
+
+            {loading ? <span style={{ color: COLORS.textMuted, fontSize: "0.85rem" }}>Searching…</span> : null}
+          </div>
+
+          {selectedProduct ? (
+            <div style={mergeStyles(ui.panel, { padding: 16, marginBottom: 12 })}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+                <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "1.2rem", fontWeight: 600 }}>
+                  {selectedProduct.title || "Product details"}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSelectedProduct(null)}
+                  style={{
+                    padding: "8px 12px",
+                    borderRadius: 10,
+                    border: `1px solid ${COLORS.border}`,
+                    background: COLORS.surface2,
+                    color: COLORS.text,
+                    cursor: "pointer",
+                    transition: baseTransition,
+                    fontWeight: 700,
+                  }}
+                >
+                  Close
+                </button>
+              </div>
+              <div style={{ marginTop: 10, color: COLORS.textMuted, fontSize: "0.9rem", lineHeight: 1.5 }}>
+                {selectedProduct.loading
+                  ? "Loading…"
+                  : selectedProduct.error
+                    ? selectedProduct.error
+                    : selectedProduct.details
+                      ? "Loaded."
+                      : "—"}
+              </div>
+            </div>
+          ) : null}
+
+          <div style={{ display: "flex", gap: 8 }}>
+            <input
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  void sendMessage(input);
+                }
+              }}
+              placeholder="Search for an item…"
+              style={{
+                flex: 1,
+                padding: "12px 14px",
+                borderRadius: 12,
+                border: `1px solid ${COLORS.border}`,
+                background: COLORS.surface,
+                color: COLORS.text,
+                outline: "none",
+                fontFamily: "'DM Sans', sans-serif",
+                transition: baseTransition,
+              }}
+            />
+            <button
+              type="button"
+              onClick={() => void sendMessage(input)}
+              disabled={loading || !input.trim()}
+              style={mergeStyles(ui.primaryButton, { padding: "12px 16px", minWidth: 110 })}
+            >
+              Send
+            </button>
+          </div>
+        </>
+      ) : (
+        <>
+          <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12, marginBottom: 10 }}>
+            <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "1.25rem", fontWeight: 600, margin: 0 }}>
+              My Wishlist
+            </div>
+            <div style={{ color: COLORS.textMuted, fontSize: "0.85rem" }}>{wishlist.length} item(s)</div>
+          </div>
+
+          {wishlist.length === 0 ? (
+            <div style={mergeStyles(ui.softPanel, { padding: 16, color: COLORS.textMuted })}>
+              Your wishlist is empty. Start chatting to discover products.
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {wishlist.map((it) => (
+                <div
+                  key={it.id}
+                  style={mergeStyles(ui.panel, {
+                    padding: "12px 12px",
+                    display: "grid",
+                    gridTemplateColumns: "56px 1fr auto",
+                    gap: 12,
+                    alignItems: "center",
+                  })}
+                >
+                  <div
+                    style={{
+                      width: 56,
+                      height: 56,
+                      borderRadius: 10,
+                      overflow: "hidden",
+                      background: COLORS.surface2,
+                      border: `1px solid ${COLORS.border}`,
+                    }}
+                  >
+                    {it.imageUrl ? (
+                      <img
+                        src={it.imageUrl}
+                        alt={it.title}
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          objectFit: "cover",
+                        }}
+                      />
+                    ) : (
+                      <div style={{
+                        width: "100%",
+                        height: "100%",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: "1.5rem",
+                      }}>
+                        👟
+                      </div>
+                    )}
+                  </div>
+
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontWeight: 800, marginBottom: 4, color: COLORS.text }}>{it.title || "Untitled"}</div>
+                    <div style={{ fontSize: "0.85rem", color: COLORS.textMuted }}>
+                      {it.price || "—"} {it.store ? ` • ${it.store}` : ""}
+                    </div>
+                  </div>
+
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (it.productUrl) window.open(it.productUrl, "_blank", "noopener,noreferrer");
+                      }}
+                      disabled={!it.productUrl}
+                      style={{
+                        padding: "10px 12px",
+                        borderRadius: 12,
+                        border: `1px solid ${COLORS.border}`,
+                        background: COLORS.surface2,
+                        color: COLORS.text,
+                        cursor: it.productUrl ? "pointer" : "default",
+                        transition: baseTransition,
+                        whiteSpace: "nowrap",
+                        fontWeight: 700,
+                      }}
+                    >
+                      View
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => removeFromWishlist(it.id)}
+                      style={{
+                        padding: "10px 12px",
+                        borderRadius: 12,
+                        border: `1px solid ${COLORS.border}`,
+                        background: "transparent",
+                        color: COLORS.textMuted,
+                        cursor: "pointer",
+                        transition: baseTransition,
+                        whiteSpace: "nowrap",
+                        fontWeight: 700,
+                      }}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
+      )}
+
+      {showShopLookModal && (
+        <div
+          onClick={() => setShowShopLookModal(false)}
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.5)",
+            zIndex: 200,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 24,
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: COLORS.bg,
+              border: `1px solid ${COLORS.border}`,
+              borderRadius: 16,
+              padding: 28,
+              width: "100%",
+              maxWidth: 400,
+            }}
+          >
+            <div style={{
+              fontFamily: "'Cormorant Garamond', serif",
+              fontSize: "1.4rem",
+              fontWeight: 600,
+              marginBottom: 6,
+              color: COLORS.text,
+            }}>Shop This Look</div>
+            <div style={{
+              color: COLORS.muted || COLORS.textMuted,
+              fontSize: "0.85rem",
+              marginBottom: 20,
+            }}>
+              Click each item to open in the store
+            </div>
+
+            <div style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: 12,
+              marginBottom: 24,
+            }}>
+              {shopLookItems.map((item, i) => (
+                <div key={i} style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  background: COLORS.card,
+                  borderRadius: 10,
+                  padding: "12px 14px",
+                  border: `1px solid ${COLORS.border}`,
+                }}>
+                  <div>
+                    <div style={{
+                      fontSize: "0.7rem",
+                      color: COLORS.accent || COLORS.primary,
+                      letterSpacing: "0.1em",
+                      textTransform: "uppercase",
+                      marginBottom: 2,
+                    }}>{item.label}</div>
+                    <div style={{
+                      fontSize: "0.82rem",
+                      color: COLORS.text,
+                      marginBottom: 2,
+                      maxWidth: 220,
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}>{item.title}</div>
+                    <div style={{
+                      fontSize: "0.78rem",
+                      color: COLORS.accent || COLORS.primary,
+                      fontWeight: 600,
+                    }}>{item.price}</div>
+                  </div>
+                  <button
+                    onClick={() => item.url &&
+                      window.open(item.url, "_blank", "noopener,noreferrer")}
+                    disabled={!item.url}
+                    style={{
+                      padding: "8px 14px",
+                      borderRadius: 8,
+                      border: `1px solid ${COLORS.accent || COLORS.primary}`,
+                      background: "transparent",
+                      color: COLORS.accent || COLORS.primary,
+                      cursor: item.url ? "pointer" : "not-allowed",
+                      fontSize: "0.78rem",
+                      fontFamily: "'DM Sans', sans-serif",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    Open →
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            {/* Total */}
+            <div style={{
+              display: "flex",
+              justifyContent: "space-between",
+              padding: "12px 0",
+              borderTop: `1px solid ${COLORS.border}`,
+              marginBottom: 16,
+            }}>
+              <span style={{ color: COLORS.muted || COLORS.textMuted, fontSize: "0.85rem" }}>
+                Estimated total
+              </span>
+              <strong style={{ color: COLORS.text, fontSize: "0.85rem" }}>
+                {shopLookItems.reduce((sum, item) => {
+                  const n = parseFloat(
+                    String(item.price).replace(/[^0-9.]/g, "")
+                  );
+                  return sum + (isNaN(n) ? 0 : n);
+                }, 0).toFixed(2)} {shopLookItems[0]?.price?.match(/[A-Z]{3}/)?.[0] || ""}
+              </strong>
+            </div>
+
+            <button
+              onClick={() => setShowShopLookModal(false)}
+              style={{
+                width: "100%",
+                padding: "12px",
+                borderRadius: 8,
+                border: `1px solid ${COLORS.border}`,
+                background: "transparent",
+                color: COLORS.muted || COLORS.textMuted,
+                cursor: "pointer",
+                fontFamily: "'DM Sans', sans-serif",
+              }}
+            >
+              Close
             </button>
           </div>
         </div>
