@@ -4591,13 +4591,20 @@ Include as many recommendations as appropriate for the user's question (typicall
 
 async function searchShopifyCatalog(query, filters = {}) {
   const params = new URLSearchParams({
-    query,
-    limit: filters.limit || 10,
-    ...(filters.max_price && { max_price: filters.max_price }),
-    ...(filters.min_price && { min_price: filters.min_price }),
-    ...(filters.ships_to && { ships_to: filters.ships_to }),
+    q: query,
+    limit: String(filters.limit || 10),
   });
-  const res = await fetch(`http://localhost:3001/api/shopify/search?${params}`);
+  if (filters.max_price) params.append("price_max", filters.max_price);
+  if (filters.min_price) params.append("price_min", filters.min_price);
+  if (filters.country_code) params.append("country_code", filters.country_code);
+  if (filters.currency) params.append("currency", filters.currency);
+  if (filters.allow_secondhand !== undefined) {
+    params.append("allow_secondhand", String(filters.allow_secondhand));
+  }
+
+  const res = await fetch(
+    `http://localhost:3001/api/shopify/search?${params}`
+  );
   if (!res.ok) throw new Error(`Search failed: ${res.status}`);
   return res.json();
 }
@@ -4620,6 +4627,7 @@ function ShopperAgent({ profile, wardrobe, baseTransition }) {
   const [addedId, setAddedId] = useState(null);
   const [showShopLookModal, setShowShopLookModal] = useState(false);
   const [shopLookItems, setShopLookItems] = useState([]);
+  const [allowSecondhand, setAllowSecondhand] = useState(false);
   const [shoppingMode, setShoppingMode] = useState(() => {
     try {
       return localStorage.getItem("fos_shopping_mode") || "both";
@@ -4627,6 +4635,62 @@ function ShopperAgent({ profile, wardrobe, baseTransition }) {
       return "both";
     }
   });
+  const [buyerLocation, setBuyerLocation] = useState({
+    country_code: "US",
+    currency: "USD",
+    country: "United States",
+    detected: false,
+  });
+
+  const COUNTRY_CURRENCY_MAP = {
+    CA: "CAD", US: "USD", GB: "GBP",
+    AU: "AUD", NZ: "NZD", JP: "JPY",
+    DE: "EUR", FR: "EUR", ES: "EUR",
+    IT: "EUR", NL: "EUR", BE: "EUR",
+    PT: "EUR", AT: "EUR", IE: "EUR",
+    CH: "CHF", SE: "SEK", NO: "NOK",
+    DK: "DKK", SG: "SGD", HK: "HKD",
+    AE: "AED", SA: "SAR", IN: "INR",
+    BR: "BRL", MX: "MXN", ZA: "ZAR",
+  };
+
+  const detectBuyerLocation = useCallback(async () => {
+    try {
+      if (!navigator.geolocation) return;
+
+      const pos = await new Promise((res, rej) =>
+        navigator.geolocation.getCurrentPosition(res, rej, {
+          timeout: 8000,
+          maximumAge: 600000,
+          enableHighAccuracy: false,
+        })
+      );
+
+      const { latitude, longitude } = pos.coords;
+
+      // Reverse geocode to get country
+      const geoRes = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`,
+        { headers: { Accept: "application/json" } }
+      );
+
+      if (!geoRes.ok) return;
+      const geoData = await geoRes.json();
+
+      const countryCode = geoData.address?.country_code?.toUpperCase() || "US";
+      const currency = COUNTRY_CURRENCY_MAP[countryCode] || "USD";
+      const country = geoData.address?.country || "Unknown";
+
+      setBuyerLocation({
+        country_code: countryCode,
+        currency,
+        country,
+        detected: true,
+      });
+    } catch {
+      // Keep defaults (US/USD) if detection fails
+    }
+  }, []);
 
   useEffect(() => {
     try {
@@ -4655,6 +4719,10 @@ function ShopperAgent({ profile, wardrobe, baseTransition }) {
     }
   }, [shoppingMode]);
 
+  useEffect(() => {
+    void detectBuyerLocation();
+  }, [detectBuyerLocation]);
+
   const quickPrompts = [
     "White sneakers under $100",
     "Casual summer shirt",
@@ -4676,123 +4744,95 @@ function ShopperAgent({ profile, wardrobe, baseTransition }) {
             : Array.isArray(root.hits)
               ? root.hits
               : [];
-    return list
-      .filter(filterQualityProducts)
+    return filterQualityProducts(list)
       .map((p) => {
         const obj = p && typeof p === "object" ? p : {};
         const product = obj.product && typeof obj.product === "object" ? obj.product : obj;
+        const variant = product.variants?.[0];
         const upid = product.upid || product.id || obj.upid || obj.id || "";
         const title = product.title || product.name || obj.title || "";
         const productUrl =
+          variant?.variantUrl ||
+          variant?.checkoutUrl ||
           product.url ||
-          product.product_url ||
-          product.productUrl ||
-          product.onlineStoreUrl ||
-          product.online_store_url ||
-          product.variants?.[0]?.variantUrl ||
-          product.variants?.[0]?.checkoutUrl ||
-          product.variants?.[0]?.checkout_url ||
-          product.variants?.[0]?.shop?.onlineStoreUrl ||
-          obj.url ||
-          "";
+          null;
         const storeName =
-          product.store?.name ||
-          product.store_name ||
-          product.merchant?.name ||
-          product.shop?.name ||
-          product.shopName ||
+          variant?.shop?.name ||
           product.vendor ||
-          obj.store?.name ||
-          obj.store_name ||
-          "";
-        const media = Array.isArray(product.media) ? product.media : Array.isArray(product.images) ? product.images : [];
-        const first = media[0] || null;
+          "Shopify Store";
+        const storeUrl = variant?.shop?.onlineStoreUrl || null;
         const imageUrl =
-          (first && (first.url || first.src || first.image_url)) ||
-          product.featuredImage?.url ||
-          product.image?.url ||
-          product.image_url ||
-          product.imageUrl ||
-          "";
+          variant?.media?.[0]?.url ||
+          product.media?.[0]?.url ||
+          null;
         const minPrice =
+          variant?.price ??
           product.price_min ??
           product.min_price ??
           product.priceMin ??
-          product.price_range?.min ??
           product.priceRange?.min ??
-          product.priceRange?.minVariantPrice?.amount ??
           null;
         const maxPrice =
-          product.price_max ??
-          product.max_price ??
-          product.priceMax ??
-          product.price_range?.max ??
-          product.priceRange?.max ??
-          product.priceRange?.maxVariantPrice?.amount ??
-          null;
+          minPrice;
         const options = Array.isArray(product.options)
           ? product.options
           : Array.isArray(product.attributes)
             ? product.attributes
             : [];
-        return { upid, title, productUrl, storeName, imageUrl, minPrice, maxPrice, options, raw: product };
+        return { upid, title, productUrl, storeName, storeUrl, imageUrl, minPrice, maxPrice, options, raw: product };
       })
       .filter((p) => p.upid || p.title);
   };
 
-  function filterQualityProducts(product) {
-    const allowedCurrencies = ["USD", "CAD", "usd", "cad"];
+  function filterQualityProducts(products) {
+    return products.filter((product) => {
+      if (!product.title || product.title.length < 5) return false;
 
-    if (!product.title || product.title.length < 5) return false;
+      const variant = product.variants?.[0];
+      const hasImage =
+        variant?.media?.[0]?.url ||
+        product.media?.[0]?.url;
+      if (!hasImage) return false;
 
-    const minPrice =
-      product.price_range?.min?.amount ??
-      product.priceRange?.min?.amount ??
-      product.offers?.[0]?.price?.amount ??
-      product.variants?.[0]?.price?.amount ??
-      null;
-    if (minPrice && parseFloat(minPrice) < 5) return false;
+      // Min price $5 (500 cents)
+      const amount = parseFloat(
+        variant?.price?.amount ||
+        product.priceRange?.min?.amount ||
+        0
+      );
+      if (amount < 500) return false;
 
-    const hasImage =
-      product.media?.[0]?.url ||
-      product.images?.[0]?.url ||
-      product.image?.url;
-    if (!hasImage) return false;
-
-    // Filter out non USD/CAD currencies
-    const currency =
-      product.price_range?.min?.currency ||
-      product.price_range?.max?.currency ||
-      product.priceRange?.min?.currency ||
-      product.priceRange?.max?.currency ||
-      product.offers?.[0]?.price?.currency ||
-      product.variants?.[0]?.price?.currency ||
-      null;
-
-    if (currency && !allowedCurrencies.includes(currency)) {
-      return false;
-    }
-
-    return true;
+      return true;
+    });
   }
 
   function formatShopifyPrice(priceObj) {
     if (!priceObj) return "";
-    if (typeof priceObj === "string") return priceObj;
-    if (typeof priceObj === "number") return `$${priceObj.toFixed(2)}`;
-    if (typeof priceObj === "object" && priceObj.amount != null) {
-      const amount = parseFloat(priceObj.amount);
-      const formatted = amount.toFixed(2);
-      const currency = priceObj.currency || "USD";
-      return `${currency === "USD" ? "$" : currency + " "}${formatted}`;
+
+    let amount = 0;
+    let currency = "USD";
+
+    if (typeof priceObj === "number") {
+      amount = priceObj;
+    } else if (typeof priceObj === "string") {
+      amount = parseFloat(priceObj) || 0;
+    } else if (typeof priceObj === "object") {
+      amount = parseFloat(priceObj.amount || 0);
+      currency = (priceObj.currency || "USD").toUpperCase();
     }
-    return "";
+
+    // USD and CAD use cents (divide by 100)
+    // Only handle USD/CAD since server filters everything else
+    const dollars = amount / 100;
+    const symbol = currency === "CAD" ? "CAD " : "$";
+    return `${symbol}${dollars.toFixed(2)}`;
   }
 
   const formatPriceRange = (p) => {
     if (!p) return "—";
     const min = formatShopifyPrice(p.minPrice);
     const max = formatShopifyPrice(p.maxPrice);
+    if (min && max && min === max) return min;
     if (min && max) return `${min}–${max}`;
     if (min) return min;
     if (max) return max;
@@ -4800,13 +4840,9 @@ function ShopperAgent({ profile, wardrobe, baseTransition }) {
   };
 
   const productUrlFromShopify = (product) =>
-    product?.url ||
-    product?.offers?.[0]?.url ||
     product?.variants?.[0]?.variantUrl ||
     product?.variants?.[0]?.checkoutUrl ||
-    product?.variants?.[0]?.checkout_url ||
-    product?.variants?.[0]?.shop?.onlineStoreUrl ||
-    product?.shops?.[0]?.url ||
+    product?.url ||
     null;
 
   const shoppingModeKeywords = () => {
@@ -4814,24 +4850,13 @@ function ShopperAgent({ profile, wardrobe, baseTransition }) {
     return "";
   };
 
-  const productPriceCents = (p) => {
-    const price = p?.minPrice ?? p?.raw?.priceRange?.min ?? p?.raw?.price_range?.min ?? p?.raw?.variants?.[0]?.price;
-    if (typeof price === "number") return price;
-    if (typeof price === "object" && price?.amount != null) return parseFloat(price.amount);
-    return null;
-  };
-
   const isSecondhandProduct = (p) => {
     const product = p?.raw || p;
-    if (product?.secondhand === true) return true;
-    if (Array.isArray(product?.variants) && product.variants.some((v) => v?.secondhand === true)) return true;
-    const cents = productPriceCents(p);
-    return cents != null && cents < 500;
+    return product?.variants?.[0]?.secondhand === true;
   };
 
   const shoppingBadgeText = (p) => {
-    if (shoppingMode === "secondhand") return "♻️ Secondhand";
-    if (shoppingMode === "both") return isSecondhandProduct(p) ? "♻️ Secondhand" : "✨ New";
+    if (allowSecondhand && isSecondhandProduct(p)) return "♻️ Secondhand";
     return "";
   };
 
@@ -5038,11 +5063,131 @@ function ShopperAgent({ profile, wardrobe, baseTransition }) {
     return items;
   }
 
+  function findWardrobeMatches(category, query, wardrobeItems) {
+    if (!category || !wardrobeItems || wardrobeItems.length === 0) return [];
+    void query;
+    const categoryLower = category.toLowerCase();
+
+    return wardrobeItems.filter((item) => {
+      const itemCategory = item.category?.toLowerCase();
+      // Match by category first
+      const categoryMatch =
+        itemCategory === categoryLower ||
+        (category === "Tops" &&
+          ["tops", "shirt", "tshirt", "blouse", "sweater"]
+            .includes(itemCategory)) ||
+        (category === "Bottoms" &&
+          ["bottoms", "pants", "jeans", "shorts", "trousers"]
+            .includes(itemCategory)) ||
+        (category === "Shoes" &&
+          ["shoe", "shoes", "sneakers", "boots"].includes(itemCategory)) ||
+        (category === "Outerwear" &&
+          ["outerwear", "jacket", "coat", "blazer"].includes(itemCategory)) ||
+        (category === "Dresses" &&
+          ["dress", "dresses"].includes(itemCategory)) ||
+        (category === "Bags" &&
+          ["bag", "bags", "purse", "backpack"].includes(itemCategory));
+
+      if (!categoryMatch) return false;
+
+      // Also check laundry status — skip dirty items
+      if (item.laundryStatus === "dirty" ||
+          item.laundryStatus === "wash") return false;
+
+      return true;
+    });
+  }
+
+  async function evaluateWardrobeForOutfit(
+    wardrobeMatches,
+    outfitGroups,
+    profileForEval
+  ) {
+    if (!wardrobeMatches || wardrobeMatches.length === 0) return null;
+
+    const profileSummary = buildProfileSummary(profileForEval);
+
+    // Describe owned items per category
+    const ownedDesc = wardrobeMatches.map((match) =>
+      `Category: ${match.forCategory || match.category}
+     Name: ${match.name}
+     Color: ${match.color}
+     Style: ${match.style}
+     Season: ${match.season}
+     Description: ${match.description || "N/A"}`
+    ).join("\n\n");
+
+    // Describe what Shopify found
+    const newDesc = outfitGroups.map((group) => {
+      const top3 = group.products.slice(0, 3).map((p) =>
+        `${p.title} - ${formatShopifyPrice(p.raw?.variants?.[0]?.price || p.minPrice || p.raw?.priceRange?.min)}`
+      ).join(", ");
+      return `${group.label}: ${top3}`;
+    }).join("\n");
+
+    const system = `You are a personal fashion stylist AI.
+The user already owns these clothing items:
+${ownedDesc}
+
+These new items are available to purchase:
+${newDesc}
+
+User profile: ${profileSummary}
+
+Your job:
+1. Decide which owned items can be used in the outfit
+2. Identify which categories still need a new purchase
+3. Pick the best new item for missing categories
+4. Create a cohesive outfit mixing owned + new items
+
+Return ONLY valid JSON (no markdown):
+{
+  "usedOwned": [
+    {
+      "category": "Tops",
+      "wardrobeItemName": "exact name from wardrobe",
+      "reason": "why this works"
+    }
+  ],
+  "stillNeed": [
+    {
+      "category": "Shoes",
+      "pickedIndex": 0,
+      "reason": "why this new item works with owned pieces"
+    }
+  ],
+  "outfitName": "Creative outfit name",
+  "styleNote": "One sentence on the complete look",
+  "savingsNote": "e.g. You already own 2 of 3 pieces!"
+}`;
+
+    const user = "Build the best outfit mixing owned and new items.";
+
+    try {
+      const response = await callShoppingAssistant(system, user);
+      const clean = response.replace(/```json|```/g, "").trim();
+      return JSON.parse(clean);
+    } catch {
+      return null;
+    }
+  }
+
+  function detectCategory(query) {
+    const q = query.toLowerCase();
+    if (q.match(/shirt|top|tee|blouse|sweater|hoodie/)) return "Tops";
+    if (q.match(/pant|jean|trouser|short|bottom/)) return "Bottoms";
+    if (q.match(/shoe|sneaker|boot|loafer/)) return "Shoes";
+    if (q.match(/jacket|coat|blazer|outerwear/)) return "Outerwear";
+    if (q.match(/dress/)) return "Dresses";
+    if (q.match(/bag|purse|backpack/)) return "Bags";
+    return null;
+  }
+
   async function pickBestOutfit(outfitGroups, profileForPick) {
     // Build a description of available items per category
     const itemDescriptions = outfitGroups.map((group) => {
       const items = group.products.slice(0, 4).map((p, i) =>
-        `${i + 1}. ${p.title} - ${formatShopifyPrice(p.minPrice || p.raw?.priceRange?.min || p.raw?.price_range?.min)}`
+        `${i + 1}. ${p.title} - ${formatShopifyPrice(p.raw?.variants?.[0]?.price || p.minPrice || p.raw?.priceRange?.min)}`
       ).join("\n");
       return `${group.label}:\n${items}`;
     }).join("\n\n");
@@ -5127,7 +5272,9 @@ index is 0-based position in the category list.`;
             searchShopifyCatalog(item.query, {
               max_price: maxPrice,
               min_price,
-              ships_to: "CA",
+              country_code: buyerLocation.country_code,
+              currency: buyerLocation.currency,
+              allow_secondhand: allowSecondhand,
               limit: 4,
             })
               .then((data) => ({
@@ -5138,38 +5285,100 @@ index is 0-based position in the category list.`;
           )
         );
 
-        // Ask Claude to pick the best matching combination
-        const aiPick = await pickBestOutfit(results, profile);
+        // Step 1: Find matching wardrobe items per category
+        const allWardrobeMatches = [];
+        results.forEach((group) => {
+          const matches = findWardrobeMatches(
+            group.category,
+            group.query || "",
+            wardrobe
+          );
+          matches.forEach((m) => allWardrobeMatches.push({
+            ...m,
+            forCategory: group.category,
+          }));
+        });
 
-        // Attach picked item to each group
-        const resultsWithPick = results.map((group) => {
-          if (!aiPick) return group;
-          const pick = aiPick.picks?.find((p) => p.category === group.category);
+        // Step 2: Ask Claude to mix owned + new
+        const aiMix = await evaluateWardrobeForOutfit(
+          allWardrobeMatches,
+          results,
+          profile
+        );
+
+        // Step 3: Build enriched results with owned items flagged
+        const resultsWithOwned = results.map((group) => {
+          // Check if Claude said to use an owned item for this category
+          const usedOwned = aiMix?.usedOwned?.find(
+            (u) => u.category === group.category
+          );
+          const stillNeed = aiMix?.stillNeed?.find(
+            (s) => s.category === group.category
+          );
+
+          // Find the actual wardrobe item
+          const ownedItem = usedOwned
+            ? allWardrobeMatches.find(
+                (m) => m.forCategory === group.category &&
+                     m.name === usedOwned.wardrobeItemName
+              ) || allWardrobeMatches.find(
+                (m) => m.forCategory === group.category
+              )
+            : null;
+
           return {
             ...group,
-            pickedIndex: pick?.index ?? 0,
-            pickReason: pick?.reason ?? "",
+            ownedItem,          // wardrobe item if Claude chose to use it
+            ownedReason: usedOwned?.reason || "",
+            pickedIndex: stillNeed?.pickedIndex ?? 0,
+            pickReason: stillNeed?.reason ?? "",
+            useOwned: !!usedOwned && !!ownedItem,
           };
         });
 
         const outfitMessage = {
           id: Date.now(),
           role: "assistant",
-          content: aiPick?.styleNote ||
-            `Here's a complete outfit matched to your profile!`,
-          outfitGroups: resultsWithPick,
-          outfitName: aiPick?.outfitName || "Your Complete Look",
+          content: aiMix?.styleNote ||
+            "Here's your outfit mixing what you own with new picks!",
+          outfitGroups: resultsWithOwned,
+          outfitName: aiMix?.outfitName || "Your Complete Look",
+          savingsNote: aiMix?.savingsNote || "",
           products: [],
         };
 
         setMessages((prev) => [...prev, outfitMessage]);
+        setLoading(false);
         return;
+      }
+
+      // Check if user already owns something similar
+      const category = detectCategory(userQuery);
+      const existingItems = category
+        ? findWardrobeMatches(category, userQuery, wardrobe)
+        : [];
+
+      if (existingItems.length > 0) {
+        setMessages((m) => [
+          ...m,
+          {
+            id: Date.now() - 1,
+            role: "assistant",
+            content: `By the way, you already own ${existingItems.length} ${category?.toLowerCase() || "item"}(s) that might work:
+${existingItems.map((i) => `• ${i.name} (${i.color || "color not set"})`).join("\n")}
+
+Here's what else is available if you want something new:`,
+            products: [],
+          },
+        ]);
       }
 
       const json = await searchShopifyCatalog(enrichedQuery, {
         max_price,
         min_price,
-        ships_to: "CA",
+        country_code: buyerLocation.country_code,
+        currency: buyerLocation.currency,
+        allow_secondhand: allowSecondhand,
         limit: 10,
       });
       const products = normalizeProducts(json);
@@ -5311,6 +5520,62 @@ Mention the size and style match. Be concise.`;
         })}
       </div>
 
+      <div style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 6,
+        marginBottom: 12,
+        fontSize: "0.75rem",
+        color: COLORS.muted || COLORS.textMuted,
+      }}>
+        <span>📍</span>
+        <span>
+          {buyerLocation.detected
+            ? `Showing prices in ${buyerLocation.currency} · ${buyerLocation.country}`
+            : "Detecting your location…"}
+        </span>
+        <button
+          type="button"
+          onClick={() => void detectBuyerLocation()}
+          style={{
+            background: "transparent",
+            border: "none",
+            color: COLORS.accent || COLORS.primary,
+            cursor: "pointer",
+            fontSize: "0.72rem",
+            padding: 0,
+            fontFamily: "'DM Sans', sans-serif",
+            textDecoration: "underline",
+          }}
+        >
+          refresh
+        </button>
+      </div>
+
+      <div style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 8,
+        marginBottom: 12,
+      }}>
+        <button
+          type="button"
+          onClick={() => setAllowSecondhand((v) => !v)}
+          style={{
+            padding: "5px 14px",
+            borderRadius: 20,
+            border: `1px solid ${allowSecondhand ? (COLORS.accent || COLORS.primary) : COLORS.border}`,
+            background: allowSecondhand ? (COLORS.accentLight || COLORS.primarySoft) : "transparent",
+            color: allowSecondhand ? (COLORS.accent || COLORS.primary) : (COLORS.muted || COLORS.textMuted),
+            cursor: "pointer",
+            fontSize: "0.75rem",
+            fontFamily: "'DM Sans', sans-serif",
+          }}
+        >
+          ♻️ {allowSecondhand ? "Secondhand ON" : "New items only"}
+        </button>
+      </div>
+
       {error ? (
         <div style={mergeStyles(ui.softPanel, { padding: "14px 16px", marginBottom: 14, border: `1px solid ${COLORS.border}` })}>
           <div style={{ fontWeight: 800, marginBottom: 6, color: COLORS.text }}>Error</div>
@@ -5411,8 +5676,8 @@ Mention the size and style match. Be concise.`;
                         // Get the AI-picked item from each group
                         const pickedItems = msg.outfitGroups.map((group) => ({
                           ...group,
-                          picked: group.products[group.pickedIndex ?? 0],
-                        })).filter((g) => g.picked);
+                          picked: group.useOwned ? group.ownedItem : group.products[group.pickedIndex ?? 0],
+                        })).filter((g) => g.useOwned ? g.ownedItem : g.picked);
                         const accent = COLORS.accent || COLORS.primary;
                         const muted = COLORS.muted || COLORS.textMuted;
 
@@ -5446,6 +5711,21 @@ Mention the size and style match. Be concise.`;
                                   fontWeight: 600,
                                   color: COLORS.text,
                                 }}>{msg.outfitName}</div>
+                                {msg.savingsNote && (
+                                  <div style={{
+                                    display: "inline-block",
+                                    background: `${COLORS.green || "#27ae60"}22`,
+                                    border: `1px solid ${COLORS.green || "#27ae60"}`,
+                                    borderRadius: 20,
+                                    padding: "4px 12px",
+                                    fontSize: "0.75rem",
+                                    color: COLORS.green || "#27ae60",
+                                    fontWeight: 600,
+                                    marginTop: 6,
+                                  }}>
+                                    💚 {msg.savingsNote}
+                                  </div>
+                                )}
                               </div>
                             </div>
 
@@ -5457,12 +5737,105 @@ Mention the size and style match. Be concise.`;
                               flexWrap: "wrap",
                             }}>
                               {pickedItems.map((group) => {
+                                if (group.useOwned && group.ownedItem) {
+                                  const ownedImg = group.ownedItem.imagePreview || group.ownedItem.imageUrl || group.ownedItem.photoUrl;
+                                  return (
+                                    // OWNED ITEM display
+                                    <div key={group.category} style={{
+                                      flex: 1,
+                                      minWidth: 100,
+                                      maxWidth: 140,
+                                      position: "relative",
+                                    }}>
+                                      {/* "OWNED" badge */}
+                                      <div style={{
+                                        position: "absolute",
+                                        top: -8,
+                                        left: "50%",
+                                        transform: "translateX(-50%)",
+                                        background: COLORS.green || "#27ae60",
+                                        color: "#fff",
+                                        fontSize: "0.6rem",
+                                        fontWeight: 700,
+                                        padding: "2px 8px",
+                                        borderRadius: 20,
+                                        letterSpacing: "0.1em",
+                                        whiteSpace: "nowrap",
+                                        zIndex: 1,
+                                      }}>✓ YOU OWN THIS</div>
+
+                                      {/* Image from wardrobe */}
+                                      <div style={{
+                                        width: "100%",
+                                        aspectRatio: "3/4",
+                                        borderRadius: 10,
+                                        overflow: "hidden",
+                                        background: COLORS.card,
+                                        border: `2px solid ${COLORS.green || "#27ae60"}`,
+                                        marginBottom: 8,
+                                        marginTop: 8,
+                                      }}>
+                                        {ownedImg ? (
+                                          <img
+                                            src={ownedImg}
+                                            alt={group.ownedItem.name}
+                                            style={{
+                                              width: "100%",
+                                              height: "100%",
+                                              objectFit: "cover",
+                                            }}
+                                          />
+                                        ) : (
+                                          <div style={{
+                                            width: "100%",
+                                            height: "100%",
+                                            display: "flex",
+                                            alignItems: "center",
+                                            justifyContent: "center",
+                                            fontSize: "2rem",
+                                          }}>👗</div>
+                                        )}
+                                      </div>
+
+                                      <div style={{
+                                        fontSize: "0.7rem",
+                                        color: COLORS.green || "#27ae60",
+                                        letterSpacing: "0.1em",
+                                        textTransform: "uppercase",
+                                        marginBottom: 2,
+                                        fontFamily: "'DM Sans', sans-serif",
+                                      }}>{group.label}</div>
+                                      <div style={{
+                                        fontSize: "0.78rem",
+                                        color: COLORS.text,
+                                        lineHeight: 1.3,
+                                        marginBottom: 4,
+                                      }}>{group.ownedItem.name}</div>
+                                      <div style={{
+                                        fontSize: "0.72rem",
+                                        color: COLORS.green || "#27ae60",
+                                        fontWeight: 600,
+                                      }}>Already owned ✓</div>
+                                      {group.ownedReason && (
+                                        <div style={{
+                                          fontSize: "0.68rem",
+                                          color: muted,
+                                          fontStyle: "italic",
+                                          marginTop: 4,
+                                          lineHeight: 1.4,
+                                        }}>{group.ownedReason}</div>
+                                      )}
+                                    </div>
+                                  );
+                                }
+
                                 const product = group.picked.raw || group.picked;
+                                const variant = product.variants?.[0];
                                 const imgUrl =
-                                  group.picked.imageUrl ||
+                                  variant?.media?.[0]?.url ||
                                   product.media?.[0]?.url ||
-                                  product.images?.[0]?.url ||
-                                  product.image?.url;
+                                  group.picked.imageUrl ||
+                                  null;
                                 return (
                                   <div key={group.category} style={{
                                     flex: 1,
@@ -5478,6 +5851,7 @@ Mention the size and style match. Be concise.`;
                                       background: COLORS.card,
                                       border: `1px solid ${COLORS.border}`,
                                       marginBottom: 8,
+                                      position: "relative",
                                     }}>
                                       {imgUrl ? (
                                         <img
@@ -5500,6 +5874,19 @@ Mention the size and style match. Be concise.`;
                                         }}>
                                           {group.label.split(" ")[0]}
                                         </div>
+                                      )}
+                                      {allowSecondhand && variant?.secondhand && (
+                                        <div style={{
+                                          position: "absolute",
+                                          bottom: 6,
+                                          left: 6,
+                                          background: "rgba(39,174,96,0.9)",
+                                          color: "#fff",
+                                          fontSize: "0.6rem",
+                                          fontWeight: 700,
+                                          padding: "2px 6px",
+                                          borderRadius: 4,
+                                        }}>♻️ Secondhand</div>
                                       )}
                                     </div>
                                     {/* Label */}
@@ -5528,7 +5915,7 @@ Mention the size and style match. Be concise.`;
                                       color: accent,
                                       fontWeight: 600,
                                     }}>
-                                      {formatShopifyPrice(group.picked.minPrice || product.priceRange?.min || product.price_range?.min)}
+                                      {formatShopifyPrice(variant?.price || group.picked.minPrice || product.priceRange?.min)}
                                     </div>
                                     {/* Pick reason */}
                                     {group.pickReason && (
@@ -5548,20 +5935,21 @@ Mention the size and style match. Be concise.`;
                             {/* Total estimate */}
                             {(() => {
                               const total = pickedItems.reduce((sum, group) => {
+                                if (group.useOwned) return sum; // skip owned items
                                 const product = group.picked.raw || group.picked;
+                                const variant = product.variants?.[0];
                                 const priceObj =
-                                  product.price_range?.min ||
-                                  product.priceRange?.min ||
-                                  group.picked.minPrice;
+                                  variant?.price ||
+                                  group.picked?.minPrice ||
+                                  product.priceRange?.min;
                                 if (!priceObj) return sum;
 
-                                // Skip non USD/CAD currencies
                                 const currency = priceObj.currency || "";
-                                if (currency && !["USD", "CAD", "usd", "cad"].includes(currency)) {
-                                  return sum;
-                                }
+                                if (currency && !["USD", "CAD", "usd", "cad"]
+                                  .includes(currency)) return sum;
 
-                                const amount = parseFloat(priceObj.amount || priceObj || 0);
+                                // Divide by 100 — Shopify prices are in cents
+                                const amount = parseFloat(priceObj.amount || 0) / 100;
                                 return sum + amount;
                               }, 0);
                               return total > 0 ? (
@@ -5579,7 +5967,7 @@ Mention the size and style match. Be concise.`;
                                     fontSize: "0.72rem",
                                     marginLeft: 4,
                                   }}>
-                                    CAD/USD
+                                    {buyerLocation.currency}/USD
                                   </span>
                                 </div>
                               ) : null;
@@ -5591,20 +5979,22 @@ Mention the size and style match. Be concise.`;
                               <button
                                 onClick={() => {
                                   pickedItems.forEach((group) => {
+                                    // Skip owned items — already in wardrobe
+                                    if (group.useOwned) return;
+
                                     const product = group.picked.raw || group.picked;
+                                    const variant = product.variants?.[0];
                                     const url = productUrlFromShopify(product);
                                     const imageUrl =
-                                      group.picked.imageUrl ||
+                                      variant?.media?.[0]?.url ||
                                       product.media?.[0]?.url ||
-                                      product.images?.[0]?.url ||
-                                      product.image?.url ||
+                                      group.picked.imageUrl ||
                                       null;
-                                    const price = formatShopifyPrice(group.picked.minPrice || product.priceRange?.min || product.price_range?.min);
+                                    const price = formatShopifyPrice(variant?.price || group.picked.minPrice || product.priceRange?.min);
                                     const store =
-                                      group.picked.storeName ||
-                                      product.offers?.[0]?.store_name ||
-                                      product.shops?.[0]?.name ||
-                                      product.vendor || "Shopify Store";
+                                      variant?.shop?.name ||
+                                      product.vendor ||
+                                      "Shopify Store";
                                     const newItem = {
                                       id: product.id || product.upid || String(Date.now() + Math.random()),
                                       title: product.title || "Unknown product",
@@ -5647,12 +6037,13 @@ Mention the size and style match. Be concise.`;
                               <button
                                 onClick={() => {
                                   // Build a simple modal with all product links
-                                  const links = pickedItems.map((group) => {
+                                  const links = pickedItems.filter((group) => !group.useOwned).map((group) => {
                                     const product = group.picked.raw || group.picked;
+                                    const variant = product.variants?.[0];
                                     return {
                                       label: group.label,
                                       title: group.picked.title,
-                                      price: formatShopifyPrice(group.picked.minPrice || product.priceRange?.min || product.price_range?.min),
+                                      price: formatShopifyPrice(variant?.price || group.picked.minPrice || product.priceRange?.min),
                                       url: productUrlFromShopify(product),
                                     };
                                   });
@@ -5734,6 +6125,7 @@ Mention the size and style match. Be concise.`;
                                         background: COLORS.surface2,
                                         border: `1px solid ${COLORS.border}`,
                                         alignSelf: "center",
+                                        position: "relative",
                                       }}
                                     >
                                       {p.imageUrl ? (
@@ -5743,6 +6135,19 @@ Mention the size and style match. Be concise.`;
                                           style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
                                         />
                                       ) : null}
+                                      {allowSecondhand && (p.raw || p)?.variants?.[0]?.secondhand && (
+                                        <div style={{
+                                          position: "absolute",
+                                          bottom: 6,
+                                          left: 6,
+                                          background: "rgba(39,174,96,0.9)",
+                                          color: "#fff",
+                                          fontSize: "0.6rem",
+                                          fontWeight: 700,
+                                          padding: "2px 6px",
+                                          borderRadius: 4,
+                                        }}>♻️ Secondhand</div>
+                                      )}
                                     </div>
                                     <div
                                       style={{
@@ -5863,6 +6268,7 @@ Mention the size and style match. Be concise.`;
                                 background: COLORS.surface2,
                                 border: `1px solid ${COLORS.border}`,
                                 alignSelf: "center",
+                                position: "relative",
                               }}
                             >
                               {p.imageUrl ? (
@@ -5872,6 +6278,19 @@ Mention the size and style match. Be concise.`;
                                   style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
                                 />
                               ) : null}
+                              {allowSecondhand && (p.raw || p)?.variants?.[0]?.secondhand && (
+                                <div style={{
+                                  position: "absolute",
+                                  bottom: 6,
+                                  left: 6,
+                                  background: "rgba(39,174,96,0.9)",
+                                  color: "#fff",
+                                  fontSize: "0.6rem",
+                                  fontWeight: 700,
+                                  padding: "2px 6px",
+                                  borderRadius: 4,
+                                }}>♻️ Secondhand</div>
+                              )}
                             </div>
 
                             <div
@@ -5953,23 +6372,21 @@ Mention the size and style match. Be concise.`;
                                 type="button"
                                 onClick={() => {
                                   const product = p.raw || p;
+                                  const variant = product.variants?.[0];
                                   const url = productUrlFromShopify(product);
 
                                   const imageUrl =
+                                    variant?.media?.[0]?.url ||
                                     product.media?.[0]?.url ||
-                                    product.images?.[0]?.url ||
-                                    product.image?.url ||
                                     null;
 
-                                  const priceMin = formatShopifyPrice(product.price_range?.min);
-                                  const priceMax = formatShopifyPrice(product.price_range?.max);
-                                  const priceDisplay = priceMin === priceMax
-                                    ? priceMin
-                                    : `${priceMin}–${priceMax}`;
+                                  const priceDisplay = formatShopifyPrice(
+                                    variant?.price ||
+                                    product.priceRange?.min
+                                  );
 
                                   const store =
-                                    product.offers?.[0]?.store_name ||
-                                    product.shops?.[0]?.name ||
+                                    variant?.shop?.name ||
                                     product.vendor ||
                                     "Shopify Store";
 

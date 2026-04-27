@@ -462,10 +462,13 @@ app.get("/api/shopify/search", async (req, res) => {
     if (req.query.max_price || req.query.price_max) params.append("max_price", req.query.max_price || req.query.price_max);
     if (req.query.min_price || req.query.price_min) params.append("min_price", req.query.min_price || req.query.price_min);
 
-    // Always request CAD pricing and Canada shipping
-    params.append("ships_to", "CA");
-    params.append("buyer_country_code", "CA");
-    params.append("currency", "CAD");
+    // Use values from frontend, fallback to US/USD
+    const shipsTo = req.query.country_code || "US";
+    const currency = req.query.currency || "USD";
+
+    params.append("ships_to", shipsTo);
+    params.append("buyer_country_code", shipsTo);
+    params.append("currency", currency);
     const catalogUrl = `https://discover.shopifyapps.com/global/v2/search?${params}`;
     console.log("[shopify/search] incoming:", req.query);
     console.log("[shopify/search] forwarding:", catalogUrl);
@@ -477,7 +480,49 @@ app.get("/api/shopify/search", async (req, res) => {
     console.log("[shopify/search] response:", text);
     if (!catalogRes.ok) throw new Error(`Catalog error ${catalogRes.status}: ${text}`);
     const data = text ? JSON.parse(text) : null;
-    res.json(data);
+
+    const preferredCurrency = req.query.currency || "USD";
+    const allowSecondhand = req.query.allow_secondhand === "true";
+    const allowed = new Set([
+      preferredCurrency.toUpperCase(),
+      "USD",
+    ]);
+
+    const sourceProducts = Array.isArray(data)
+      ? data
+      : (data?.products || data?.results || []);
+    const filtered = sourceProducts.filter((product) => {
+      // Must have variants
+      if (!product.variants || product.variants.length === 0) {
+        return false;
+      }
+
+      const variant = product.variants[0];
+
+      // Filter secondhand unless explicitly allowed
+      if (!allowSecondhand && variant.secondhand === true) {
+        return false;
+      }
+
+      // Filter by currency
+      const productCurrency = (
+        variant.price?.currency ||
+        product.priceRange?.min?.currency ||
+        ""
+      ).toUpperCase();
+
+      if (productCurrency && !allowed.has(productCurrency)) return false;
+
+      // Must have image
+      const hasImage =
+        variant.media?.[0]?.url ||
+        product.media?.[0]?.url;
+      if (!hasImage) return false;
+
+      return true;
+    });
+
+    res.json({ ...data, products: filtered, results: filtered });
   } catch (e) {
     console.error("[shopify/search] error:", e.message);
     res.status(500).json({ error: e.message });
