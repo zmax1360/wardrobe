@@ -217,3 +217,18 @@ Every selected wardrobe image is now downscaled to max width 800px and encoded a
 Theme color and transition values are now available from `src/constants`. TypeScript dev dependencies and `tsconfig.json` were added because this branch did not yet resolve `.ts` modules. Runtime behavior is unchanged.
 
 ---
+
+### [Date: 2026-04-27] - Extract Planner Screen
+
+**Background:**
+`src/App.js` was too large, and the planner agent needed to be moved out without changing its behavior.
+
+**Changed:**
+
+- `src/App.js`
+- `src/screens/PlannerScreen.js`
+
+**Impact:**
+Planner UI and planning logic now live in `PlannerScreen`. `App.js` renders `PlannerScreen` directly and passes the same data/helper dependencies as props. No behavior changes intended.
+
+---
