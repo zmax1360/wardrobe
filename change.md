@@ -247,3 +247,18 @@ Planner UI and planning logic now live in `PlannerScreen`. `App.js` renders `Pla
 Designer UI and outfit-generation logic now live in `DesignerScreen`. `App.js` renders `DesignerScreen` directly and passes the same data/helper dependencies as props. No behavior changes intended.
 
 ---
+
+### [Date: 2026-04-27] - Extract Evaluator Screen
+
+**Background:**
+`src/App.js` was too large, and the evaluator agent needed to be moved out without changing its behavior.
+
+**Changed:**
+
+- `src/App.js`
+- `src/screens/EvaluatorScreen.js`
+
+**Impact:**
+Evaluator UI and outfit-review logic now live in `EvaluatorScreen`. `App.js` renders `EvaluatorScreen` directly and passes the same data/helper dependencies as props. No behavior changes intended.
+
+---
