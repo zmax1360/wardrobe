@@ -197,3 +197,23 @@ Raw camera photos are large; we should compress images client-side before sendin
 Every selected wardrobe image is now downscaled to max width 800px and encoded as JPEG at quality 0.6 via a canvas-based `compressImage()` function. The compressed data URL is used for both AI labeling and wardrobe storage.
 
 ---
+
+### [Date: 2026-04-27] - Extract Theme Constants
+
+**Background:**
+`src/App.js` should stop importing shared theme primitives from the style module directly as part of the staged TypeScript extraction.
+
+**Changed:**
+
+- `src/App.js`
+- `src/constants/colors.ts`
+- `src/constants/theme.ts`
+- `src/constants/index.ts`
+- `tsconfig.json`
+- `package.json`
+- `package-lock.json`
+
+**Impact:**
+Theme color and transition values are now available from `src/constants`. TypeScript dev dependencies and `tsconfig.json` were added because this branch did not yet resolve `.ts` modules. Runtime behavior is unchanged.
+
+---

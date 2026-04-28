@@ -1,3 +1,5 @@
+import { COLORS } from "./constants/colors";
+import { baseTransition } from "./constants/theme";
 import React, {
   useState,
   useEffect,
@@ -16,7 +18,7 @@ import {
   signInWithPopup,
 } from "firebase/auth";
 
-import { COLORS, baseTransition, radius } from "./styles/theme";
+import { radius } from "./styles/theme";
 import { type } from "./styles/typography";
 import { ui } from "./styles/ui";
 import { mergeStyles, focusInputVisual, blurInputVisual } from "./utils/styleUtils";
