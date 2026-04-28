@@ -292,3 +292,49 @@ Calendar UI and event management logic now live in `CalendarScreen`. `App.js` re
 Shopper UI, Shopify search, wishlist, and outfit-shopping logic now live in `ShopperScreen`. `App.js` renders `ShopperScreen` directly and passes the same data/helper dependencies as props. No behavior changes intended.
 
 ---
+
+### [Date: 2026-04-27] - Extract Profile and Onboarding Screens
+
+**Background:**
+`src/App.js` still contained large profile and onboarding UI blocks that needed to be moved out without changing behavior.
+
+**Changed:**
+
+- `src/App.js`
+- `src/screens/ProfileScreen.js`
+- `src/components/Onboarding.js`
+
+**Impact:**
+Profile editing and onboarding UI now live in dedicated components. `WardrobeScreen` was already extracted and remains imported from `src/screens/WardrobeScreen.js`. No behavior changes intended.
+
+---
+
+### [Date: 2026-04-28] - Fix Evaluator Prop Reference
+
+**Background:**
+The app crashed at runtime because `App.js` still passed a removed `buildOutfitDescription` helper into `EvaluatorScreen`.
+
+**Changed:**
+
+- `src/App.js`
+- `src/screens/EvaluatorScreen.js`
+
+**Impact:**
+Removed the unused evaluator prop reference. No behavior changes intended.
+
+---
+
+### [Date: 2026-04-28] - Fix Evaluator Wardrobe Helper Reference
+
+**Background:**
+The app crashed at runtime because `App.js` still passed a removed `buildSelectedWardrobeList` helper into `EvaluatorScreen`.
+
+**Changed:**
+
+- `src/App.js`
+- `src/screens/EvaluatorScreen.js`
+
+**Impact:**
+Removed unused evaluator helper props and passed the existing `mediaTypeForFile` helper required by photo evaluation. No behavior changes intended.
+
+---

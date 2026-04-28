@@ -13,10 +13,8 @@ export function EvaluatorScreen({
   buildProfileSummary,
   parseEvaluatorJson,
   normalizeEvaluatorResult,
-  buildOutfitDescription,
-  buildFullWardrobeList,
-  buildSelectedWardrobeList,
   mergeFrequentIssuesFromImprovements,
+  mediaTypeForFile,
   fileToBase64,
   evaluateOutfitWithVision,
 }) {
