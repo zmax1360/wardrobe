@@ -262,3 +262,18 @@ Designer UI and outfit-generation logic now live in `DesignerScreen`. `App.js` r
 Evaluator UI and outfit-review logic now live in `EvaluatorScreen`. `App.js` renders `EvaluatorScreen` directly and passes the same data/helper dependencies as props. No behavior changes intended.
 
 ---
+
+### [Date: 2026-04-27] - Extract Calendar Screen
+
+**Background:**
+`src/App.js` was too large, and the calendar agent needed to be moved out without changing its behavior.
+
+**Changed:**
+
+- `src/App.js`
+- `src/screens/CalendarScreen.js`
+
+**Impact:**
+Calendar UI and event management logic now live in `CalendarScreen`. `App.js` renders `CalendarScreen` directly and passes the same data/helper dependencies as props. No behavior changes intended.
+
+---
