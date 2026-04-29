@@ -338,3 +338,21 @@ The app crashed at runtime because `App.js` still passed a removed `buildSelecte
 Removed unused evaluator helper props and passed the existing `mediaTypeForFile` helper required by photo evaluation. No behavior changes intended.
 
 ---
+
+### [Date: 2026-04-28] - Extract App Utility Functions
+
+**Background:**
+`src/App.js` still contained shared helper, date, parser, and AI service functions that needed to be moved out without changing behavior.
+
+**Changed:**
+
+- `src/App.js`
+- `src/utils/helpers.js`
+- `src/utils/dateHelpers.js`
+- `src/services/parsers.js`
+- `src/services/anthropicExtended.js`
+
+**Impact:**
+Shared functions now live in utility and service modules and are imported back into `App.js`. Build passes with no behavior changes intended.
+
+---

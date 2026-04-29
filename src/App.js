@@ -23,14 +23,47 @@ import { type } from "./styles/typography";
 import { ui } from "./styles/ui";
 import { mergeStyles, focusInputVisual, blurInputVisual } from "./utils/styleUtils";
 import {
+  bodyTypesForGender,
+  topSizesForGender,
+  bottomSizesForGender,
+  shoeSizesForGender,
+  loadJson,
+  todayYmdLocal,
+  mediaTypeForFile,
+  fileToBase64,
+  fileToDataUrl,
+  compressImage,
+  defaultProfile,
+} from "./utils/helpers";
+import {
+  CAL_OCCASION_TYPES,
+  CAL_DRESS_CODES,
+  formatDisplayDate,
+  daysRelativeLabel,
+  emptyEventForm,
+} from "./utils/dateHelpers";
+import {
+  buildProfileSummary,
+  buildCleanWardrobeList,
+  buildFullWardrobeList,
+  parseDesignerOutfitsJson,
+  parseEvaluatorJson,
+  parseGapAnalysisGaps,
+  parsePlannerResponse,
+  parseShopperRecommendations,
+  normalizeEvaluatorResult,
+} from "./services/parsers";
+import {
+  callShoppingAssistant,
+  evaluateOutfitWithVision,
+} from "./services/anthropicExtended";
+import {
   ANTHROPIC_URL,
   CLAUDE_MODEL,
   OPENAI_VISION_URL,
   OPENAI_VISION_MODEL,
-  agentTraceHooks,
   resolveVisionCredentials,
   parseCatalogJson,
-  extractJsonObjectSlice,
 } from "./services/aiService";
 import { runAgent } from "./agents/agentOrchestrator";
 import { useAgentActivity } from "./hooks/useAgentActivity";
@@ -51,7 +84,6 @@ import { AgentPanel } from "./components/AgentPanel";
 import { Onboarding } from "./components/Onboarding";
 import {
   getTimesWorn,
-  compareCleanItemsByPriorityCPW,
   getPurchasePriceNum,
 } from "./utils/wardrobeFinance";
 // (kept minimal) apiBase still used elsewhere in the app
@@ -61,88 +93,6 @@ const STORAGE_PROFILE = "fos_profile";
 const STORAGE_EVENTS = "fos_events";
 const STORAGE_WISHLIST = "fos_wishlist";
 const STORAGE_GAP_ANALYSIS_LAST = "fos_gap_analysis_last";
-
-function dedupeStrings(ordered) {
-  const seen = new Set();
-  const out = [];
-  for (const x of ordered) {
-    if (!seen.has(x)) {
-      seen.add(x);
-      out.push(x);
-    }
-  }
-  return out;
-}
-
-const BODY_TYPES_MALE = [
-  "Athletic / V-shape",
-  "Rectangle",
-  "Oval / Round",
-  "Triangle",
-  "Tall & Slim",
-  "Stocky / Broad",
-];
-
-const BODY_TYPES_FEMALE = [
-  "Hourglass",
-  "Pear",
-  "Apple",
-  "Rectangle",
-  "Inverted Triangle",
-  "Petite",
-  "Tall",
-  "Plus size",
-];
-
-const BODY_TYPES_NONBINARY = dedupeStrings([
-  "Hourglass",
-  "Pear",
-  "Apple",
-  "Rectangle",
-  "Inverted Triangle",
-  "Petite",
-  "Tall",
-  "Plus size",
-  "Athletic / V-shape",
-  "Oval / Round",
-  "Triangle",
-  "Tall & Slim",
-  "Stocky / Broad",
-]);
-
-function bodyTypesForGender(g) {
-  if (g === "male") return BODY_TYPES_MALE;
-  if (g === "female") return BODY_TYPES_FEMALE;
-  if (g === "nonbinary" || g === "undisclosed") return BODY_TYPES_NONBINARY;
-  return [];
-}
-
-const TOP_SIZES_FEMALE = ["XXS", "XS", "S", "M", "L", "XL", "XXL", "3XL"];
-const TOP_SIZES_MALE = ["XS", "S", "M", "L", "XL", "XXL", "3XL", "4XL"];
-
-function topSizesForGender(g) {
-  if (g === "male") return TOP_SIZES_MALE;
-  if (g === "female") return TOP_SIZES_FEMALE;
-  return dedupeStrings([...TOP_SIZES_FEMALE, ...TOP_SIZES_MALE]);
-}
-
-const BOTTOM_SIZES_FEMALE = ["24", "25", "26", "27", "28", "29", "30", "31", "32", "33", "34", "36"];
-const BOTTOM_SIZES_MALE = ["28", "29", "30", "31", "32", "33", "34", "36", "38", "40"];
-
-function bottomSizesForGender(g) {
-  if (g === "male") return BOTTOM_SIZES_MALE;
-  if (g === "female") return BOTTOM_SIZES_FEMALE;
-  return dedupeStrings([...BOTTOM_SIZES_FEMALE, ...BOTTOM_SIZES_MALE]);
-}
-
-const SHOE_SIZES_FEMALE = ["5", "5.5", "6", "6.5", "7", "7.5", "8", "8.5", "9", "9.5", "10", "10.5", "11"];
-const SHOE_SIZES_MALE = ["7", "7.5", "8", "8.5", "9", "9.5", "10", "10.5", "11", "11.5", "12", "13", "14", "15"];
-
-function shoeSizesForGender(g) {
-  if (g === "male") return SHOE_SIZES_MALE;
-  if (g === "female") return SHOE_SIZES_FEMALE;
-  return dedupeStrings([...SHOE_SIZES_FEMALE, ...SHOE_SIZES_MALE]);
-}
 
 const GENDER_OPTIONS = [
   { value: "male", icon: "👨", label: "Male" },
@@ -202,93 +152,6 @@ const CATALOG_SYSTEM =
   "name, category (one of: Tops, Bottoms, Outerwear, Shoes, Accessories, Dresses, Activewear, Formal, Bags), color, style, season, tags (array of strings), material, description. " +
   "Output rules: respond with ONLY raw JSON — no markdown fences, no code blocks, no explanation, apology, or other prose. Start with { and end with }. " +
   "If the image shows wearable items or bags, always produce your best-effort JSON; do not refuse or say you cannot.";
-
-function loadJson(key, fallback) {
-  try {
-    const raw = localStorage.getItem(key);
-    if (!raw) return fallback;
-    return JSON.parse(raw);
-  } catch {
-    return fallback;
-  }
-}
-
-function todayYmdLocal() {
-  const d = new Date();
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
-}
-
-function mediaTypeForFile(file) {
-  const t = file.type;
-  if (t === "image/jpeg" || t === "image/png" || t === "image/gif" || t === "image/webp")
-    return t;
-  return "image/jpeg";
-}
-
-function fileToBase64(file) {
-  return new Promise((resolve, reject) => {
-    const r = new FileReader();
-    r.onload = () => {
-      const res = r.result;
-      const comma = String(res).indexOf(",");
-      resolve(comma >= 0 ? String(res).slice(comma + 1) : String(res));
-    };
-    r.onerror = () => reject(r.error);
-    r.readAsDataURL(file);
-  });
-}
-
-function fileToDataUrl(file) {
-  return new Promise((resolve, reject) => {
-    const r = new FileReader();
-    r.onload = () => resolve(String(r.result || ""));
-    r.onerror = () => reject(r.error);
-    r.readAsDataURL(file);
-  });
-}
-
-function compressImage(file, maxWidth = 800, quality = 0.6) {
-  return new Promise((resolve) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement("canvas");
-        const scale = Math.min(1, maxWidth / img.width);
-        canvas.width = img.width * scale;
-        canvas.height = img.height * scale;
-        canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
-        resolve(canvas.toDataURL("image/jpeg", quality));
-      };
-      img.src = e.target.result;
-    };
-    reader.readAsDataURL(file);
-  });
-}
-
-function defaultProfile() {
-  return {
-    name: "",
-    gender: "",
-    bodyType: [],
-    budget: "",
-    styles: [],
-    brands: [],
-    topSize: "",
-    bottomSize: "",
-    shoeSize: "",
-  };
-}
-
-/** Cost per wear for wardrobe financials — mirrors `utils/calculateCPW.js`. */
-function calculateCPW(price, wears) {
-  const p = typeof price === "number" && Number.isFinite(price) ? price : parseFloat(String(price ?? 0).replace(/[^0-9.-]/g, "")) || 0;
-  const w = typeof wears === "number" && Number.isFinite(wears) ? wears : parseInt(String(wears ?? 0), 10) || 0;
-  return p / Math.max(w, 1);
-}
 
 export default function App() {
   const [hydrated, setHydrated] = useState(false);
@@ -1313,465 +1176,6 @@ export default function App() {
     </>
   );
 }
-
-const CAL_OCCASION_TYPES = [
-  "Casual",
-  "Work",
-  "Wedding",
-  "Gala",
-  "Party",
-  "Interview",
-  "Travel",
-  "Sport",
-  "Other",
-];
-
-const CAL_DRESS_CODES = [
-  "No dress code",
-  "Smart casual",
-  "Business casual",
-  "Business formal",
-  "Black tie",
-  "Cocktail",
-  "Themed",
-  "Sporty",
-];
-
-function formatDisplayDate(ymd) {
-  if (!ymd || typeof ymd !== "string") return "";
-  const parts = ymd.split("-").map(Number);
-  if (parts.length !== 3 || parts.some((n) => Number.isNaN(n))) return ymd;
-  const dt = new Date(parts[0], parts[1] - 1, parts[2]);
-  return dt.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric", year: "numeric" });
-}
-
-function daysRelativeLabel(ymd) {
-  if (!ymd || typeof ymd !== "string") return "";
-  const today = new Date(`${todayYmdLocal()}T12:00:00`);
-  const t = new Date(`${ymd}T12:00:00`);
-  if (Number.isNaN(t.getTime())) return "";
-  const diff = Math.round((t - today) / 86400000);
-  if (diff === 0) return "today";
-  if (diff === 1) return "tomorrow";
-  if (diff === -1) return "yesterday";
-  if (diff > 1) return `in ${diff} days`;
-  return `${Math.abs(diff)} days ago`;
-}
-
-function emptyEventForm() {
-  return {
-    title: "",
-    date: "",
-    occasionType: CAL_OCCASION_TYPES[0],
-    dressCode: CAL_DRESS_CODES[0],
-    location: "",
-    notes: "",
-  };
-}
-
-
-
-function buildProfileSummary(p) {
-  if (!p) return "Not provided.";
-  const lines = [
-    `Name: ${p.name || "—"}`,
-    `Gender: ${p.gender || "—"}`,
-    `Body type: ${
-      Array.isArray(p.bodyType)
-        ? p.bodyType.length
-          ? p.bodyType.join(", ")
-          : "—"
-        : p.bodyType || "—"
-    }`,
-    `Budget: ${p.budget || "—"}`,
-    `Styles: ${Array.isArray(p.styles) && p.styles.length ? p.styles.join(", ") : "—"}`,
-    `Brands: ${Array.isArray(p.brands) && p.brands.length ? p.brands.join(", ") : "—"}`,
-    `Sizes: top ${p.topSize || "—"}, bottom ${p.bottomSize || "—"}, shoe ${p.shoeSize || "—"}`,
-  ];
-  return lines.join("\n");
-}
-
-function buildCleanWardrobeList(items) {
-  const clean = [...items.filter((it) => it.laundryStatus === "clean")].sort(compareCleanItemsByPriorityCPW);
-  if (clean.length === 0) return "";
-  return clean
-    .map((it, i) => {
-      const pp = getPurchasePriceNum(it);
-      const wc = getTimesWorn(it);
-      const cpw = calculateCPW(pp, wc);
-      const cpwHint = pp > 0 ? ` · CPW $${cpw.toFixed(2)} (priority ${i + 1})` : "";
-      return `- ${it.name} (${it.category}): ${it.color}, style: ${it.style || "—"}, season: ${it.season || "—"}${cpwHint}`;
-    })
-    .join("\n");
-}
-
-function buildFullWardrobeList(items) {
-  if (!items || items.length === 0) return "(empty)";
-  return items
-    .map((it) => {
-      const laundry =
-        it.laundryStatus === "dirty" ? "dirty" : it.laundryStatus === "wash" ? "in wash" : "clean";
-      return `- ${it.name} (${it.category}): ${it.color}, style: ${it.style || "—"}, laundry: ${laundry}`;
-    })
-    .join("\n");
-}
-
-function extractJsonArraySlice(s) {
-  const start = s.indexOf("[");
-  if (start === -1) return null;
-  let depth = 0;
-  let inString = false;
-  let escape = false;
-  let q = "";
-  for (let i = start; i < s.length; i++) {
-    const c = s[i];
-    if (inString) {
-      if (escape) {
-        escape = false;
-        continue;
-      }
-      if (c === "\\") {
-        escape = true;
-        continue;
-      }
-      if (c === q) inString = false;
-      continue;
-    }
-    if (c === '"' || c === "'") {
-      inString = true;
-      q = c;
-      continue;
-    }
-    if (c === "[") depth++;
-    else if (c === "]") {
-      depth--;
-      if (depth === 0) return s.slice(start, i + 1);
-    }
-  }
-  return null;
-}
-
-function parseDesignerOutfitsJson(text) {
-  let s = (text || "").trim();
-  if (!s) return null;
-  const fence = /```(?:json)?\s*([\s\S]*?)```/i;
-  const fm = s.match(fence);
-  if (fm) s = fm[1].trim();
-  try {
-    const parsed = JSON.parse(s);
-    if (Array.isArray(parsed)) return parsed;
-  } catch {
-    /* fall through */
-  }
-  const slice = extractJsonArraySlice(s);
-  if (slice) {
-    try {
-      const parsed = JSON.parse(slice);
-      if (Array.isArray(parsed)) return parsed;
-    } catch {
-      return null;
-    }
-  }
-  return null;
-}
-
-function parseEvaluatorJson(text) {
-  let s = (text || "").trim();
-  if (!s) return null;
-  const fence = /```(?:json)?\s*([\s\S]*?)```/i;
-  const fm = s.match(fence);
-  if (fm) s = fm[1].trim();
-  try {
-    return JSON.parse(s);
-  } catch {
-    /* fall through */
-  }
-  const slice = extractJsonObjectSlice(s);
-  if (slice) {
-    try {
-      return JSON.parse(slice);
-    } catch {
-      return null;
-    }
-  }
-  return null;
-}
-
-function parseGapAnalysisGaps(text) {
-  const data = parseEvaluatorJson(text);
-  if (!data || typeof data !== "object") return null;
-  const gaps = Array.isArray(data.gaps) ? data.gaps : Array.isArray(data) ? data : null;
-  if (!gaps) return null;
-  const out = [];
-  for (const g of gaps) {
-    if (!g || typeof g !== "object") continue;
-    const name = String(g.name ?? g.item_name ?? "").trim();
-    const reason = String(g.reason ?? "").trim();
-    const impact = String(g.impact ?? "").trim();
-    if (!name) continue;
-    out.push({ name, reason, impact });
-  }
-  return out.length ? out : null;
-}
-
-function parsePlannerResponse(text) {
-  const data = parseEvaluatorJson(text);
-  if (!data || typeof data !== "object") return null;
-  const primary = data.primary_outfit || data.main_outfit || data.primary;
-  if (!primary || typeof primary !== "object") return null;
-  const name = String(primary.name || primary.title || "").trim();
-  const items = Array.isArray(primary.items) ? primary.items.map((x) => String(x).trim()).filter(Boolean) : [];
-  const why = String(primary.why || primary.rationale || "").trim();
-  const altRaw = data.alternate_outfit ?? data.alternative_outfit ?? data.alternative ?? null;
-  let alternate = null;
-  if (altRaw && typeof altRaw === "object") {
-    const an = String(altRaw.name || altRaw.title || "").trim();
-    const ai = Array.isArray(altRaw.items) ? altRaw.items.map((x) => String(x).trim()).filter(Boolean) : [];
-    const aw = String(altRaw.why || altRaw.rationale || "").trim();
-    if (an || ai.length || aw) alternate = { name: an, items: ai, why: aw };
-  }
-  return { name: name || "Outfit", items, why, alternate };
-}
-
-function parseShopperRecommendations(text) {
-  const data = parseEvaluatorJson(text);
-  if (!data || typeof data !== "object") return null;
-  const recs = Array.isArray(data.recommendations) ? data.recommendations : null;
-  if (!recs) return null;
-  const out = [];
-  for (const r of recs) {
-    if (!r || typeof r !== "object") continue;
-    const item = String(r.item ?? r.name ?? "").trim();
-    if (!item) continue;
-    const n = r.outfits_unlocked;
-    const outfits =
-      typeof n === "number" && !Number.isNaN(n)
-        ? n
-        : Number.parseInt(String(n ?? ""), 10);
-    out.push({
-      item,
-      price_range: String(r.price_range ?? r.price ?? "").trim(),
-      why_it_matters: String(r.why_it_matters ?? r.why ?? "").trim(),
-      outfits_unlocked: Number.isFinite(outfits) ? outfits : 0,
-    });
-  }
-  return out.length ? out : null;
-}
-
-function normalizeEvaluatorResult(raw) {
-  if (!raw || typeof raw !== "object") return null;
-  const scoreObj = raw.score && typeof raw.score === "object" ? raw.score : {};
-  const clip = (v) => {
-    const n = typeof v === "number" ? v : Number(v);
-    if (Number.isNaN(n)) return 0;
-    return Math.min(10, Math.max(0, n));
-  };
-  const strengths = Array.isArray(raw.strengths) ? raw.strengths.map(String) : [];
-  const improvements = Array.isArray(raw.improvements) ? raw.improvements.map(String) : [];
-  let verdict = String(raw.verdict || "").trim();
-  if (verdict === "NEEDS_WORK") verdict = "NEEDS WORK";
-  if (!["APPROVED", "NEEDS WORK", "RECONSIDER"].includes(verdict)) verdict = "NEEDS WORK";
-  const stylist_note =
-    typeof raw.stylist_note === "string"
-      ? raw.stylist_note
-      : typeof raw.stylistNote === "string"
-        ? raw.stylistNote
-        : "";
-  return {
-    score: {
-      fit: clip(scoreObj.fit),
-      color: clip(scoreObj.color),
-      style: clip(scoreObj.style),
-      occasion: clip(scoreObj.occasion),
-      overall: clip(scoreObj.overall),
-    },
-    verdict,
-    strengths,
-    improvements,
-    stylist_note,
-  };
-}
-
-function anthropicTextFromMessage(data) {
-  const content = data?.content;
-  if (!Array.isArray(content)) return "";
-  return content
-    .filter((c) => c.type === "text")
-    .map((c) => c.text)
-    .join("")
-    .trim();
-}
-
-async function callAnthropicWithWebSearch(system, userText) {
-  const agentRunStartedAt = agentTraceHooks.startAgentRun("Shopper Agent", "Search shopping recommendations");
-  try {
-    const creds = resolveVisionCredentials();
-    if (!creds || creds.provider !== "anthropic") {
-      throw new Error(
-        "Shopping Agent requires an Anthropic API key (web search is not available when using OpenAI only)."
-      );
-    }
-    const body = {
-      model: CLAUDE_MODEL,
-      max_tokens: 4096,
-      system,
-      messages: [{ role: "user", content: userText }],
-      tools: [{ type: "web_search_20250305", name: "web_search", max_uses: 5 }],
-    };
-    const res = await fetch(ANTHROPIC_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "anthropic-version": "2023-06-01",
-      },
-      body: JSON.stringify(body),
-    });
-    if (!res.ok) {
-      const errText = await res.text();
-      throw new Error(errText || `Anthropic error ${res.status}`);
-    }
-    const data = await res.json();
-    const out = anthropicTextFromMessage(data);
-    agentTraceHooks.finishAgentRun("Shopper Agent", "Search shopping recommendations", agentRunStartedAt, {
-      status: "success",
-    });
-    return out;
-  } catch (error) {
-    agentTraceHooks.failAgentRun("Shopper Agent", "Search shopping recommendations", agentRunStartedAt, error);
-    throw error;
-  }
-}
-
-async function callShoppingAssistant(system, userText) {
-  const creds = resolveVisionCredentials();
-  if (!creds) {
-    throw new Error("This feature isn’t available right now. Please try again later.");
-  }
-  if (creds.provider === "anthropic") {
-    return callAnthropicWithWebSearch(system, userText);
-  }
-  const systemOpenAI = `${system}
-
-Note: Live web search is not available with your current API setup. Use general knowledge of retailers, styles, and typical price ranges. Mark prices as approximate and suggest the user verify on official store sites.`;
-  return runAgent({
-    agentName: "Shopper Agent",
-    task: "Search shopping recommendations",
-    systemPrompt: systemOpenAI,
-    userPrompt: userText,
-  });
-}
-
-async function evaluateOutfitWithVision(base64, mediaType, profile) {
-  const agentRunStartedAt = agentTraceHooks.startAgentRun("Evaluator Agent", "Evaluate outfit");
-  try {
-  const profileSummary = buildProfileSummary(profile);
-  const system = `You are a strict but constructive fashion evaluator.
-User profile: ${profileSummary}.
-Evaluate this outfit from the photo across five dimensions (each score 0-10): fit, color harmony, style cohesion, occasion appropriateness, and an overall impression.
-
-Return ONLY valid JSON (no markdown):
-{
-  "score": {
-    "fit": 8,
-    "color": 8,
-    "style": 7,
-    "occasion": 8,
-    "overall": 8
-  },
-  "verdict": "APPROVED",
-  "strengths": ["strength 1", "strength 2"],
-  "improvements": ["suggestion 1", "suggestion 2"],
-  "stylist_note": "One sharp memorable insight."
-}
-
-verdict must be one of: APPROVED | NEEDS WORK | RECONSIDER
-All score values must be numbers from 0 to 10.`;
-
-  const creds = resolveVisionCredentials();
-  if (!creds) {
-    throw new Error(
-      "No AI key: set REACT_APP_ANTHROPIC_API_KEY or REACT_APP_OPENAI_API_KEY (or OPENAI_API_KEY / OPEN_AI_KEY)."
-    );
-  }
-
-  if (creds.provider === "anthropic") {
-    const body = {
-      model: CLAUDE_MODEL,
-      max_tokens: 2048,
-      system,
-      messages: [
-        {
-          role: "user",
-          content: [
-            {
-              type: "image",
-              source: { type: "base64", media_type: mediaType, data: base64 },
-            },
-            {
-              type: "text",
-              text: "Evaluate this outfit from the photo. Reply with one raw JSON object only (same schema as the system prompt). No other text.",
-            },
-          ],
-        },
-      ],
-    };
-    const res = await fetch(ANTHROPIC_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "anthropic-version": "2023-06-01",
-      },
-      body: JSON.stringify(body),
-    });
-    if (!res.ok) {
-      const errText = await res.text();
-      throw new Error(errText || `Anthropic error ${res.status}`);
-    }
-    const data = await res.json();
-    const text = anthropicTextFromMessage(data);
-    const outAnthropic = String(text || "").trim();
-    agentTraceHooks.finishAgentRun("Evaluator Agent", "Evaluate outfit", agentRunStartedAt, { status: "success" });
-    return outAnthropic;
-  }
-
-  const dataUrl = `data:${mediaType};base64,${base64}`;
-  const body = {
-    model: OPENAI_VISION_MODEL,
-    max_tokens: 2048,
-    messages: [
-      { role: "system", content: system },
-      {
-        role: "user",
-        content: [
-          { type: "text", text: "Evaluate this outfit from the photo. Reply with one raw JSON object only." },
-          { type: "image_url", image_url: { url: dataUrl } },
-        ],
-      },
-    ],
-  };
-  const res = await fetch(OPENAI_VISION_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${creds.key}`,
-    },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) {
-    const errText = await res.text();
-    throw new Error(errText || `OpenAI error ${res.status}`);
-  }
-  const data = await res.json();
-  const outOpenai = String(data?.choices?.[0]?.message?.content || "").trim();
-  agentTraceHooks.finishAgentRun("Evaluator Agent", "Evaluate outfit", agentRunStartedAt, { status: "success" });
-  return outOpenai;
-  } catch (error) {
-    agentTraceHooks.failAgentRun("Evaluator Agent", "Evaluate outfit", agentRunStartedAt, error);
-    throw error;
-  }
-}
-
-
 
 const DESIGNER_STYLE_DIRECTIONS = [
   "Casual Chic",
