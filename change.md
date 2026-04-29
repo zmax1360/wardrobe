@@ -356,3 +356,23 @@ Removed unused evaluator helper props and passed the existing `mediaTypeForFile`
 Shared functions now live in utility and service modules and are imported back into `App.js`. Build passes with no behavior changes intended.
 
 ---
+
+### [Date: 2026-04-28] - Extract Remaining App Constants and Agents
+
+**Background:**
+`src/App.js` still contained dead shopper code, the gap analysis screen implementation, shared constants, and Shopify helpers that needed to be moved out without changing behavior.
+
+**Changed:**
+
+- `src/App.js`
+- `src/screens/GapAnalysisScreen.js`
+- `src/constants/options.ts`
+- `src/constants/agentOptions.ts`
+- `src/constants/index.ts`
+- `src/utils/helpers.js`
+- `src/services/shopify.js`
+
+**Impact:**
+Deleted the dead `ShopperAgentOld` code, moved gap analysis into its screen file, and moved constants/helpers into shared modules. Build passes with no behavior changes intended.
+
+---

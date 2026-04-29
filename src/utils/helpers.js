@@ -166,3 +166,30 @@ export function calculateCPW(price, wears) {
   const w = typeof wears === "number" && Number.isFinite(wears) ? wears : parseInt(String(wears ?? 0), 10) || 0;
   return p / Math.max(w, 1);
 }
+
+export function mergeFrequentIssuesFromImprovements(prev, improvements) {
+  const list = Array.isArray(improvements) ? improvements : [];
+  const next = [...prev];
+  for (const raw of list) {
+    const s = String(raw || "").trim();
+    if (!s) continue;
+    if (!next.some((x) => String(x).toLowerCase() === s.toLowerCase())) next.push(s);
+  }
+  return next.slice(-20);
+}
+
+export function extractWishlistSuggestions(text) {
+  const out = [];
+  const lines = String(text || "").split("\n");
+  for (const line of lines) {
+    const m = line.match(/^ADD_TO_WISHLIST:\s*(.+?)\s*\|\s*(.+?)\s*\|\s*(.+)$/i);
+    if (m) {
+      out.push({
+        name: m[1].trim(),
+        price: m[2].trim(),
+        store: m[3].trim(),
+      });
+    }
+  }
+  return out;
+}
