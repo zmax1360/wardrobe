@@ -11,7 +11,7 @@ A personal fashion web app built with **React** (Create React App). It includes 
 
 ```bash
 npm install
-```
+```e
 
 ## Environment variables
 
