@@ -32,17 +32,14 @@ export const STYLE_PREFS = [
 ];
 
 export const BRANDS = [
-  "Zara",
-  "H&M",
-  "ASOS",
-  "Uniqlo",
-  "Mango",
-  "COS",
-  "Nike",
-  "Levi's",
-  "Nordstrom",
-  "Net-a-Porter",
-];
+  "Zara", "H&M", "ASOS", "Uniqlo", "Mango",
+  "COS", "Nike", "Levi's", "Nordstrom", "Net-a-Porter",
+  "Boss", "Massimo Dutti", "Ralph Lauren", "Tommy Hilfiger",
+  "Calvin Klein", "Gucci", "Prada", "Balenciaga",
+  "Stone Island", "Arc'teryx", "Lululemon", "Adidas",
+  "New Balance", "Off-White", "Acne Studios", "A.P.C.",
+  "Arket", "& Other Stories",
+] as const;
 
 export const CATEGORIES = [
   "Tops",
