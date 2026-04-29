@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { COLORS } from "../constants/colors";
 
-async function parseStepWithAI(step, userText, currentDraft) {
+async function parseStepWithAI(step, userText, currentDraft, brands) {
   const prompts = {
     2: {
       system: "Extract gender from text. Return ONLY one of these exact strings: male female nonbinary undisclosed. No other text.",
@@ -25,7 +25,7 @@ If not mentioned leave as empty string.`,
 Return ONLY valid JSON (no markdown):
 {
   "styles": ["pick 1-3 from: Minimalist, Casual chic, Streetwear, Business formal, Bohemian, Sporty, Romantic, Edgy, Classic, Eclectic"],
-  "brands": ["pick any mentioned from: Zara, H&M, ASOS, Uniqlo, Mango, COS, Nike, Levi's, Nordstrom, Net-a-Porter — empty array if none"]
+  "brands": ["pick any mentioned from: ${brands.join(", ")} — empty array if none"]
 }`,
       user: userText,
     },
@@ -190,7 +190,7 @@ export function Onboarding({
       }
 
       if (activeStep === 2) {
-        const parsed = await parseStepWithAI(2, answer, draft);
+        const parsed = await parseStepWithAI(2, answer, draft, BRANDS);
         setDraft((d) => ({
           ...d,
           gender: normalizeGender(parsed),
@@ -199,7 +199,7 @@ export function Onboarding({
       }
 
       if (activeStep === 3) {
-        const parsed = await parseStepWithAI(3, answer, draft);
+        const parsed = await parseStepWithAI(3, answer, draft, BRANDS);
         setDraft((d) => ({
           ...d,
           bodyType: String(parsed?.bodyType || ""),
@@ -210,14 +210,14 @@ export function Onboarding({
       }
 
       if (activeStep === 4) {
-        const parsed = await parseStepWithAI(4, answer, draft);
+        const parsed = await parseStepWithAI(4, answer, draft, BRANDS);
         const styles = asArray(parsed?.styles).map(String).filter((s) => STYLE_PREFS.includes(s)).slice(0, 3);
         const brands = asArray(parsed?.brands).map(String).filter((b) => BRANDS.includes(b));
         setDraft((d) => ({ ...d, styles, brands }));
       }
 
       if (activeStep === 5) {
-        const parsed = await parseStepWithAI(5, answer, draft);
+        const parsed = await parseStepWithAI(5, answer, draft, BRANDS);
         setDraft((d) => ({ ...d, budget: normalizeBudget(parsed) }));
       }
 
