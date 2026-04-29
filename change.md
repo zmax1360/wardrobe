@@ -22,6 +22,9 @@ Summary of refactors and fixes applied to this codebase during the wardrobe extr
 
 **Hydration / load**
 
+
+
+
 - Wardrobe is **read once** on init via `loadWardrobeFromStorage()` (safe `JSON.parse`, fallback `[]`, only accept an array).
 - The existing **save** effect still runs only when `hydrated` is true, so the first paint does not overwrite storage before the app marks hydration complete.
 
