@@ -313,34 +313,6 @@ export function ShopperScreen({
       .filter(Boolean)
       .join("; ");
 
-  const budgetMaxPrice = () => {
-    const budgetFilters = {
-      budget: { min_price: 5, max_price: 50 },
-      "mid-range": { min_price: 10, max_price: 150 },
-      premium: { min_price: 50, max_price: 400 },
-      luxury: { min_price: 100, max_price: null },
-      mixed: { min_price: 5, max_price: null },
-    };
-    const b = String(profile?.budget || "").toLowerCase();
-    if (b === "midrange") return budgetFilters["mid-range"].max_price;
-    if (budgetFilters[b]) return budgetFilters[b].max_price || undefined;
-    return undefined;
-  };
-
-  const budgetMinPrice = () => {
-    const budgetFilters = {
-      budget: { min_price: 5, max_price: 50 },
-      "mid-range": { min_price: 10, max_price: 150 },
-      premium: { min_price: 50, max_price: 400 },
-      luxury: { min_price: 100, max_price: null },
-      mixed: { min_price: 5, max_price: null },
-    };
-    const b = String(profile?.budget || "").toLowerCase();
-    if (b === "midrange") return budgetFilters["mid-range"].min_price;
-    if (budgetFilters[b]) return budgetFilters[b].min_price;
-    return undefined;
-  };
-
   function detectOutfitIntent(query) {
     const outfitKeywords = [
       "outfit", "set", "look", "combination", "complete",
@@ -382,6 +354,72 @@ export function ShopperScreen({
     return keywords.slice(0, 2).join(" "); // max 2 style keywords
   }
 
+  function getAntiKeywords(profileForSearch) {
+    const antiMap = {
+      Minimalist: ["maximalist", "loud", "neon", "busy print"],
+      "Casual chic": ["gown", "black tie", "costume"],
+      Streetwear: ["formal suit", "tuxedo", "ball gown"],
+      "Business formal": ["ripped", "distressed", "graphic tee", "hoodie"],
+      Bohemian: ["corporate", "business suit"],
+      Sporty: ["stiletto", "evening gown"],
+      Romantic: ["moto", "combat", "industrial"],
+      Edgy: ["floral", "ruffle", "pastel"],
+      Classic: ["novelty", "costume", "avant garde"],
+      Eclectic: ["uniform", "plain basic"],
+    };
+
+    const out = [];
+    (profileForSearch?.styles || []).forEach((style) => {
+      if (antiMap[style]) out.push(...antiMap[style]);
+    });
+    return [...new Set(out)];
+  }
+
+  function filterResultsForProfile(products, profileForSearch, category) {
+    if (!products || !products.length) return products;
+
+    return products.filter(product => {
+      const variant = product.variants?.[0] || product.raw?.variants?.[0];
+      const title = (product.title || "").toLowerCase();
+      const storeName = (variant?.shop?.name || "").toLowerCase();
+      const allOptions = (variant?.options || product.options || [])
+        .map(o => String(o).toLowerCase());
+
+      // --- Size filter ---
+      // Only apply size filter if we have a size for this category
+      if (category === "Shoes" && profileForSearch?.shoeSize) {
+        const size = String(profileForSearch.shoeSize);
+        const hasSize =
+          allOptions.some(o => o.includes(size)) ||
+          title.includes(`size ${size}`) ||
+          title.includes(`us ${size}`);
+        // Don't hard reject — Shopify variant data is inconsistent
+        // Just deprioritize — we'll sort later
+        void hasSize;
+      }
+
+      if ((category === "Tops") && profileForSearch?.topSize) {
+        const size = profileForSearch.topSize.toLowerCase();
+        const hasSize =
+          allOptions.some(o => o === size || o.includes(size)) ||
+          title.includes(` ${size} `) ||
+          title.includes(`size ${size}`);
+        // Same — don't hard reject
+        void hasSize;
+      }
+
+      // --- Style keyword filter ---
+      // If product title contains completely opposite style words, exclude
+      const styleKw = getStyleKeywords(profileForSearch).toLowerCase();
+      const antiKeywords = getAntiKeywords(profileForSearch);
+      if (antiKeywords.some(kw => title.includes(kw))) return false;
+
+      void storeName;
+      void styleKw;
+      return true;
+    });
+  }
+
   function getBrandKeywords(profileForSearch) {
     const preferred = profileForSearch?.brands || [];
 
@@ -399,9 +437,6 @@ export function ShopperScreen({
 
   function extractOutfitItems(query, profileForSearch) {
     const gender = profileForSearch?.gender === "female" ? "womens" : "mens";
-    const styleKw = getStyleKeywords(profileForSearch);
-    const brandKw = getBrandKeywords(profileForSearch);
-    const modeKw = shoppingModeKeywords();
     const q = query.toLowerCase();
     const items = [];
 
@@ -409,32 +444,28 @@ export function ShopperScreen({
         q.includes("blouse") || q.includes("tee")) {
       items.push({
         category: "Tops", label: "👕 Shirt / Top",
-        query: `${gender} ${styleKw} ${modeKw} shirt top size ${profileForSearch?.topSize || ""}
-              ${brandKw}`.trim(),
+        query: `${gender} shirt`,
       });
     }
     if (q.includes("pant") || q.includes("trouser") ||
         q.includes("jean") || q.includes("bottom")) {
       items.push({
         category: "Bottoms", label: "👖 Pants / Bottoms",
-        query: `${gender} ${styleKw} ${modeKw} pants size ${profileForSearch?.bottomSize || ""}
-              ${brandKw}`.trim(),
+        query: `${gender} pants`,
       });
     }
     if (q.includes("shoe") || q.includes("sneaker") ||
         q.includes("boot") || q.includes("footwear")) {
       items.push({
         category: "Shoes", label: "👟 Shoes",
-        query: `${gender} ${styleKw} ${modeKw} shoes sneakers size ${profileForSearch?.shoeSize || ""}
-              ${brandKw}`.trim(),
+        query: `${gender} shoes`,
       });
     }
     if (q.includes("jacket") || q.includes("coat") ||
         q.includes("outerwear") || q.includes("blazer")) {
       items.push({
         category: "Outerwear", label: "🧥 Jacket",
-        query: `${gender} ${styleKw} ${modeKw} jacket blazer
-              ${brandKw}`.trim(),
+        query: `${gender} jacket`,
       });
     }
 
@@ -443,18 +474,15 @@ export function ShopperScreen({
       items.push(
         {
           category: "Tops", label: "👕 Shirt / Top",
-          query: `${gender} ${styleKw} ${modeKw} shirt top size ${profileForSearch?.topSize || ""}
-                ${brandKw}`.trim(),
+          query: `${gender} shirt`,
         },
         {
           category: "Bottoms", label: "👖 Pants / Bottoms",
-          query: `${gender} ${styleKw} ${modeKw} pants size ${profileForSearch?.bottomSize || ""}
-                ${brandKw}`.trim(),
+          query: `${gender} pants`,
         },
         {
           category: "Shoes", label: "👟 Shoes",
-          query: `${gender} ${styleKw} ${modeKw} shoes size ${profileForSearch?.shoeSize || ""}
-                ${brandKw}`.trim(),
+          query: `${gender} shoes`,
         }
       );
     }
@@ -636,40 +664,58 @@ index is 0-based position in the category list.`;
     setInput("");
     setLoading(true);
 
-    const userQuery = trimmed;
-    const styleKw = getStyleKeywords(profile);
-    const brandKw = getBrandKeywords(profile);
-    const modeKw = shoppingModeKeywords();
-    const min_price = shoppingMode === "new" ? 5 : budgetMinPrice();
-    const enrichedQuery = [
-      userQuery,
-      styleKw,
-      brandKw,
-      modeKw,
-      profile?.gender === "female" ? "womens" : "mens",
-      profile?.shoeSize ? `size ${profile.shoeSize}` : "",
-    ].filter(Boolean).join(" ").trim();
-    const max_price = budgetMaxPrice();
+    const userInput = trimmed;
+    const userQuery = userInput;
+    // Extract core item only — strip price text,
+    // adjectives, brand names, sizes
+    function buildCleanQuery(userInput, profile) {
+      const gender = profile?.gender === "female"
+        ? "womens" : "mens";
+
+      // Extract just the item type from user input
+      // Remove price mentions, size mentions, brand names
+      const cleaned = userInput
+        .replace(/under\s*\$?\d+/gi, "")
+        .replace(/\$\d+/g, "")
+        .replace(/size\s*[\d.]+/gi, "")
+        .replace(/\b(athletic|classic|casual|formal|sporty|minimal)\b/gi, "")
+        .trim();
+
+      // Keep it short — just gender + item
+      return `${gender} ${cleaned}`.trim();
+    }
+
+    const cleanQuery = buildCleanQuery(userInput, profile);
+
+    const budgetMaxPrice = {
+      "budget":    50,
+      "mid-range": 150,
+      "premium":   400,
+      "luxury":    null,
+      "mixed":     null,
+    };
+
+    const maxPrice = budgetMaxPrice[profile?.budget] ?? null;
+
+    // Also check if user typed a price in their message
+    const priceMatch = userInput?.match(/under\s*\$?(\d+)/i);
+    const userMaxPrice = priceMatch ? parseInt(priceMatch[1]) : null;
+
+    // Use the lower of the two if both exist
+    const finalMaxPrice = userMaxPrice && maxPrice
+      ? Math.min(userMaxPrice, maxPrice)
+      : userMaxPrice || maxPrice || null;
 
     try {
       const isOutfit = detectOutfitIntent(userQuery);
 
       if (isOutfit) {
         const outfitItems = extractOutfitItems(userQuery, profile);
-        const budgetMap = {
-          budget: 50,
-          "mid-range": 150,
-          premium: 400,
-          luxury: null,
-          mixed: null,
-        };
-        const maxPrice = budgetMap[profile?.budget] || null;
 
         const results = await Promise.all(
           outfitItems.map((item) =>
             searchShopifyCatalog(item.query, {
-              max_price: maxPrice,
-              min_price,
+              max_price: finalMaxPrice,
               country_code: buyerLocation.country_code,
               currency: buyerLocation.currency,
               allow_secondhand: allowSecondhand,
@@ -677,7 +723,7 @@ index is 0-based position in the category list.`;
             })
               .then((data) => ({
                 ...item,
-                products: normalizeProducts(data),
+                products: filterResultsForProfile(normalizeProducts(data), profile, item.category),
               }))
               .catch(() => ({ ...item, products: [] }))
           )
@@ -771,15 +817,14 @@ Here's what else is available if you want something new:`,
         ]);
       }
 
-      const json = await searchShopifyCatalog(enrichedQuery, {
-        max_price,
-        min_price,
+      const json = await searchShopifyCatalog(cleanQuery, {
+        max_price: finalMaxPrice,
         country_code: buyerLocation.country_code,
         currency: buyerLocation.currency,
-        allow_secondhand: allowSecondhand,
         limit: 10,
+        allow_secondhand: allowSecondhand,
       });
-      const products = normalizeProducts(json);
+      const products = filterResultsForProfile(normalizeProducts(json), profile, category);
 
       if (!products.length) {
         const aid = crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + "a";

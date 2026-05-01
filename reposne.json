@@ -1,0 +1,2871 @@
+ [
+    {
+        "id": "gid://shopify/p/165mw0p93IzrLq0CiPFXOa",
+        "title": "Thick Soled White Casual Sneakers For Men",
+        "description": "Comfortable white casual sneakers with thick soles and flat heels for everyday wear.",
+        "uniqueSellingPoint": "Thick craft viscose soles provide enhanced cushioning and support for all-day comfort.",
+        "topFeatures": [
+            "Thick craft viscose sole: Delivers superior cushioning and shock absorption for extended wear",
+            "Flat heel design: Ensures stability and easy movement for daily activities",
+            "Breathable microfiber upper: Keeps feet cool and comfortable throughout the day",
+            "Round toe holder: Offers a secure fit and classic silhouette",
+            "Front lace-up closure: Allows for adjustable and secure fit"
+        ],
+        "techSpecs": [
+            "Color: White",
+            "Upper Material: Microfiber",
+            "Sole Material: Craft viscose, rubber",
+            "Heel Shape: Flat",
+            "Heel Height: Flat",
+            "Sizes: 39, 40, 41, 42, 43, 44, 45, 46, 47",
+            "Closure: Front lace-up"
+        ],
+        "attributes": [],
+        "media": [
+            {
+                "url": "https://cdn.shopify.com/s/files/1/0662/0626/9630/files/74b0bcab-68c2-4507-b760-a30ff0828c10.jpg",
+                "altText": "Thick Soled White Casual Sneakers For Men"
+            }
+        ],
+        "priceRange": {
+            "min": {
+                "amount": 4699,
+                "currency": "USD"
+            },
+            "max": {
+                "amount": 4699,
+                "currency": "USD"
+            }
+        },
+        "lookupUrl": "https://discover.shopifyapps.com/global/v2/p/165mw0p93IzrLq0CiPFXOa?_gsid=Je8FEWf1a732&available_for_sale=1&max_price=100.0&query=mens+white+sneakers&ships_to=US&variant_id=44619582767294",
+        "options": [
+            {
+                "name": "Color",
+                "values": [
+                    {
+                        "value": "Black"
+                    },
+                    {
+                        "value": "Turmeric"
+                    },
+                    {
+                        "value": "White"
+                    }
+                ]
+            },
+            {
+                "name": "Size",
+                "values": [
+                    {
+                        "value": "39"
+                    },
+                    {
+                        "value": "40"
+                    },
+                    {
+                        "value": "41"
+                    },
+                    {
+                        "value": "42"
+                    },
+                    {
+                        "value": "43"
+                    },
+                    {
+                        "value": "44"
+                    },
+                    {
+                        "value": "45"
+                    },
+                    {
+                        "value": "46"
+                    },
+                    {
+                        "value": "47"
+                    }
+                ]
+            }
+        ],
+        "variants": [
+            {
+                "id": "gid://shopify/ProductVariant/44619582767294?shop=66206269630",
+                "productId": "gid://shopify/Product/8344178196670",
+                "displayName": "Thick Soled White Casual Sneakers For Men",
+                "availableForSale": true,
+                "price": {
+                    "amount": 4699,
+                    "currency": "USD"
+                },
+                "media": [
+                    {
+                        "url": "https://cdn.shopify.com/s/files/1/0662/0626/9630/files/74b0bcab-68c2-4507-b760-a30ff0828c10.jpg",
+                        "altText": "Thick Soled White Casual Sneakers For Men"
+                    }
+                ],
+                "options": [
+                    {
+                        "name": "Color",
+                        "value": "White"
+                    },
+                    {
+                        "name": "Size",
+                        "value": "39"
+                    }
+                ],
+                "shop": {
+                    "id": "gid://shopify/Shop/66206269630",
+                    "name": "Seed Sun Soil",
+                    "onlineStoreUrl": "https://seedsunsoil.com"
+                },
+                "variantUrl": "https://seedsunsoil.com/products/thick-soled-white-casual-sneakers-for-men?variant=44619582767294",
+                "checkoutUrl": "https://seedsunsoil.com/cart/44619582767294:1?_gsid=Je8FEWf1a732&payment=shop_pay",
+                "secondhand": false,
+                "lookupUrl": "https://discover.shopifyapps.com/global/v2/p/165mw0p93IzrLq0CiPFXOa?_gsid=Je8FEWf1a732&available_for_sale=1&max_price=100.0&query=mens+white+sneakers&ships_to=US&variant_id=44619582767294"
+            },
+            {
+                "id": "gid://shopify/ProductVariant/44619582800062?shop=66206269630",
+                "productId": "gid://shopify/Product/8344178196670",
+                "displayName": "Thick Soled White Casual Sneakers For Men",
+                "availableForSale": true,
+                "price": {
+                    "amount": 4699,
+                    "currency": "USD"
+                },
+                "media": [
+                    {
+                        "url": "https://cdn.shopify.com/s/files/1/0662/0626/9630/files/74b0bcab-68c2-4507-b760-a30ff0828c10.jpg",
+                        "altText": "Thick Soled White Casual Sneakers For Men"
+                    }
+                ],
+                "options": [
+                    {
+                        "name": "Color",
+                        "value": "White"
+                    },
+                    {
+                        "name": "Size",
+                        "value": "40"
+                    }
+                ],
+                "shop": {
+                    "id": "gid://shopify/Shop/66206269630",
+                    "name": "Seed Sun Soil",
+                    "onlineStoreUrl": "https://seedsunsoil.com"
+                },
+                "variantUrl": "https://seedsunsoil.com/products/thick-soled-white-casual-sneakers-for-men?variant=44619582800062",
+                "checkoutUrl": "https://seedsunsoil.com/cart/44619582800062:1?_gsid=Je8FEWf1a732&payment=shop_pay",
+                "secondhand": false,
+                "lookupUrl": "https://discover.shopifyapps.com/global/v2/p/165mw0p93IzrLq0CiPFXOa?_gsid=Je8FEWf1a732&available_for_sale=1&max_price=100.0&query=mens+white+sneakers&ships_to=US&variant_id=44619582767294"
+            },
+            {
+                "id": "gid://shopify/ProductVariant/44619582832830?shop=66206269630",
+                "productId": "gid://shopify/Product/8344178196670",
+                "displayName": "Thick Soled White Casual Sneakers For Men",
+                "availableForSale": true,
+                "price": {
+                    "amount": 4699,
+                    "currency": "USD"
+                },
+                "media": [
+                    {
+                        "url": "https://cdn.shopify.com/s/files/1/0662/0626/9630/files/74b0bcab-68c2-4507-b760-a30ff0828c10.jpg",
+                        "altText": "Thick Soled White Casual Sneakers For Men"
+                    }
+                ],
+                "options": [
+                    {
+                        "name": "Color",
+                        "value": "White"
+                    },
+                    {
+                        "name": "Size",
+                        "value": "41"
+                    }
+                ],
+                "shop": {
+                    "id": "gid://shopify/Shop/66206269630",
+                    "name": "Seed Sun Soil",
+                    "onlineStoreUrl": "https://seedsunsoil.com"
+                },
+                "variantUrl": "https://seedsunsoil.com/products/thick-soled-white-casual-sneakers-for-men?variant=44619582832830",
+                "checkoutUrl": "https://seedsunsoil.com/cart/44619582832830:1?_gsid=Je8FEWf1a732&payment=shop_pay",
+                "secondhand": false,
+                "lookupUrl": "https://discover.shopifyapps.com/global/v2/p/165mw0p93IzrLq0CiPFXOa?_gsid=Je8FEWf1a732&available_for_sale=1&max_price=100.0&query=mens+white+sneakers&ships_to=US&variant_id=44619582767294"
+            },
+            {
+                "id": "gid://shopify/ProductVariant/44619582865598?shop=66206269630",
+                "productId": "gid://shopify/Product/8344178196670",
+                "displayName": "Thick Soled White Casual Sneakers For Men",
+                "availableForSale": true,
+                "price": {
+                    "amount": 4699,
+                    "currency": "USD"
+                },
+                "media": [
+                    {
+                        "url": "https://cdn.shopify.com/s/files/1/0662/0626/9630/files/74b0bcab-68c2-4507-b760-a30ff0828c10.jpg",
+                        "altText": "Thick Soled White Casual Sneakers For Men"
+                    }
+                ],
+                "options": [
+                    {
+                        "name": "Color",
+                        "value": "White"
+                    },
+                    {
+                        "name": "Size",
+                        "value": "42"
+                    }
+                ],
+                "shop": {
+                    "id": "gid://shopify/Shop/66206269630",
+                    "name": "Seed Sun Soil",
+                    "onlineStoreUrl": "https://seedsunsoil.com"
+                },
+                "variantUrl": "https://seedsunsoil.com/products/thick-soled-white-casual-sneakers-for-men?variant=44619582865598",
+                "checkoutUrl": "https://seedsunsoil.com/cart/44619582865598:1?_gsid=Je8FEWf1a732&payment=shop_pay",
+                "secondhand": false,
+                "lookupUrl": "https://discover.shopifyapps.com/global/v2/p/165mw0p93IzrLq0CiPFXOa?_gsid=Je8FEWf1a732&available_for_sale=1&max_price=100.0&query=mens+white+sneakers&ships_to=US&variant_id=44619582767294"
+            },
+            {
+                "id": "gid://shopify/ProductVariant/44619582898366?shop=66206269630",
+                "productId": "gid://shopify/Product/8344178196670",
+                "displayName": "Thick Soled White Casual Sneakers For Men",
+                "availableForSale": true,
+                "price": {
+                    "amount": 4699,
+                    "currency": "USD"
+                },
+                "media": [
+                    {
+                        "url": "https://cdn.shopify.com/s/files/1/0662/0626/9630/files/74b0bcab-68c2-4507-b760-a30ff0828c10.jpg",
+                        "altText": "Thick Soled White Casual Sneakers For Men"
+                    }
+                ],
+                "options": [
+                    {
+                        "name": "Color",
+                        "value": "White"
+                    },
+                    {
+                        "name": "Size",
+                        "value": "43"
+                    }
+                ],
+                "shop": {
+                    "id": "gid://shopify/Shop/66206269630",
+                    "name": "Seed Sun Soil",
+                    "onlineStoreUrl": "https://seedsunsoil.com"
+                },
+                "variantUrl": "https://seedsunsoil.com/products/thick-soled-white-casual-sneakers-for-men?variant=44619582898366",
+                "checkoutUrl": "https://seedsunsoil.com/cart/44619582898366:1?_gsid=Je8FEWf1a732&payment=shop_pay",
+                "secondhand": false,
+                "lookupUrl": "https://discover.shopifyapps.com/global/v2/p/165mw0p93IzrLq0CiPFXOa?_gsid=Je8FEWf1a732&available_for_sale=1&max_price=100.0&query=mens+white+sneakers&ships_to=US&variant_id=44619582767294"
+            },
+            {
+                "id": "gid://shopify/ProductVariant/44619582931134?shop=66206269630",
+                "productId": "gid://shopify/Product/8344178196670",
+                "displayName": "Thick Soled White Casual Sneakers For Men",
+                "availableForSale": true,
+                "price": {
+                    "amount": 4699,
+                    "currency": "USD"
+                },
+                "media": [
+                    {
+                        "url": "https://cdn.shopify.com/s/files/1/0662/0626/9630/files/74b0bcab-68c2-4507-b760-a30ff0828c10.jpg",
+                        "altText": "Thick Soled White Casual Sneakers For Men"
+                    }
+                ],
+                "options": [
+                    {
+                        "name": "Color",
+                        "value": "White"
+                    },
+                    {
+                        "name": "Size",
+                        "value": "44"
+                    }
+                ],
+                "shop": {
+                    "id": "gid://shopify/Shop/66206269630",
+                    "name": "Seed Sun Soil",
+                    "onlineStoreUrl": "https://seedsunsoil.com"
+                },
+                "variantUrl": "https://seedsunsoil.com/products/thick-soled-white-casual-sneakers-for-men?variant=44619582931134",
+                "checkoutUrl": "https://seedsunsoil.com/cart/44619582931134:1?_gsid=Je8FEWf1a732&payment=shop_pay",
+                "secondhand": false,
+                "lookupUrl": "https://discover.shopifyapps.com/global/v2/p/165mw0p93IzrLq0CiPFXOa?_gsid=Je8FEWf1a732&available_for_sale=1&max_price=100.0&query=mens+white+sneakers&ships_to=US&variant_id=44619582767294"
+            },
+            {
+                "id": "gid://shopify/ProductVariant/44619582963902?shop=66206269630",
+                "productId": "gid://shopify/Product/8344178196670",
+                "displayName": "Thick Soled White Casual Sneakers For Men",
+                "availableForSale": true,
+                "price": {
+                    "amount": 4699,
+                    "currency": "USD"
+                },
+                "media": [
+                    {
+                        "url": "https://cdn.shopify.com/s/files/1/0662/0626/9630/files/74b0bcab-68c2-4507-b760-a30ff0828c10.jpg",
+                        "altText": "Thick Soled White Casual Sneakers For Men"
+                    }
+                ],
+                "options": [
+                    {
+                        "name": "Color",
+                        "value": "White"
+                    },
+                    {
+                        "name": "Size",
+                        "value": "45"
+                    }
+                ],
+                "shop": {
+                    "id": "gid://shopify/Shop/66206269630",
+                    "name": "Seed Sun Soil",
+                    "onlineStoreUrl": "https://seedsunsoil.com"
+                },
+                "variantUrl": "https://seedsunsoil.com/products/thick-soled-white-casual-sneakers-for-men?variant=44619582963902",
+                "checkoutUrl": "https://seedsunsoil.com/cart/44619582963902:1?_gsid=Je8FEWf1a732&payment=shop_pay",
+                "secondhand": false,
+                "lookupUrl": "https://discover.shopifyapps.com/global/v2/p/165mw0p93IzrLq0CiPFXOa?_gsid=Je8FEWf1a732&available_for_sale=1&max_price=100.0&query=mens+white+sneakers&ships_to=US&variant_id=44619582767294"
+            },
+            {
+                "id": "gid://shopify/ProductVariant/44619582996670?shop=66206269630",
+                "productId": "gid://shopify/Product/8344178196670",
+                "displayName": "Thick Soled White Casual Sneakers For Men",
+                "availableForSale": true,
+                "price": {
+                    "amount": 4699,
+                    "currency": "USD"
+                },
+                "media": [
+                    {
+                        "url": "https://cdn.shopify.com/s/files/1/0662/0626/9630/files/74b0bcab-68c2-4507-b760-a30ff0828c10.jpg",
+                        "altText": "Thick Soled White Casual Sneakers For Men"
+                    }
+                ],
+                "options": [
+                    {
+                        "name": "Color",
+                        "value": "White"
+                    },
+                    {
+                        "name": "Size",
+                        "value": "46"
+                    }
+                ],
+                "shop": {
+                    "id": "gid://shopify/Shop/66206269630",
+                    "name": "Seed Sun Soil",
+                    "onlineStoreUrl": "https://seedsunsoil.com"
+                },
+                "variantUrl": "https://seedsunsoil.com/products/thick-soled-white-casual-sneakers-for-men?variant=44619582996670",
+                "checkoutUrl": "https://seedsunsoil.com/cart/44619582996670:1?_gsid=Je8FEWf1a732&payment=shop_pay",
+                "secondhand": false,
+                "lookupUrl": "https://discover.shopifyapps.com/global/v2/p/165mw0p93IzrLq0CiPFXOa?_gsid=Je8FEWf1a732&available_for_sale=1&max_price=100.0&query=mens+white+sneakers&ships_to=US&variant_id=44619582767294"
+            },
+            {
+                "id": "gid://shopify/ProductVariant/44619583029438?shop=66206269630",
+                "productId": "gid://shopify/Product/8344178196670",
+                "displayName": "Thick Soled White Casual Sneakers For Men",
+                "availableForSale": true,
+                "price": {
+                    "amount": 4699,
+                    "currency": "USD"
+                },
+                "media": [
+                    {
+                        "url": "https://cdn.shopify.com/s/files/1/0662/0626/9630/files/74b0bcab-68c2-4507-b760-a30ff0828c10.jpg",
+                        "altText": "Thick Soled White Casual Sneakers For Men"
+                    }
+                ],
+                "options": [
+                    {
+                        "name": "Color",
+                        "value": "White"
+                    },
+                    {
+                        "name": "Size",
+                        "value": "47"
+                    }
+                ],
+                "shop": {
+                    "id": "gid://shopify/Shop/66206269630",
+                    "name": "Seed Sun Soil",
+                    "onlineStoreUrl": "https://seedsunsoil.com"
+                },
+                "variantUrl": "https://seedsunsoil.com/products/thick-soled-white-casual-sneakers-for-men?variant=44619583029438",
+                "checkoutUrl": "https://seedsunsoil.com/cart/44619583029438:1?_gsid=Je8FEWf1a732&payment=shop_pay",
+                "secondhand": false,
+                "lookupUrl": "https://discover.shopifyapps.com/global/v2/p/165mw0p93IzrLq0CiPFXOa?_gsid=Je8FEWf1a732&available_for_sale=1&max_price=100.0&query=mens+white+sneakers&ships_to=US&variant_id=44619582767294"
+            },
+            {
+                "id": "gid://shopify/ProductVariant/44619582177470?shop=66206269630",
+                "productId": "gid://shopify/Product/8344178196670",
+                "displayName": "Thick Soled White Casual Sneakers For Men",
+                "availableForSale": true,
+                "price": {
+                    "amount": 4699,
+                    "currency": "USD"
+                },
+                "media": [
+                    {
+                        "url": "https://cdn.shopify.com/s/files/1/0662/0626/9630/files/317c1959-1de0-4e8f-8e2b-8128d59e7963.jpg",
+                        "altText": "Thick Soled White Casual Sneakers For Men"
+                    }
+                ],
+                "options": [
+                    {
+                        "name": "Color",
+                        "value": "Black"
+                    },
+                    {
+                        "name": "Size",
+                        "value": "39"
+                    }
+                ],
+                "shop": {
+                    "id": "gid://shopify/Shop/66206269630",
+                    "name": "Seed Sun Soil",
+                    "onlineStoreUrl": "https://seedsunsoil.com"
+                },
+                "variantUrl": "https://seedsunsoil.com/products/thick-soled-white-casual-sneakers-for-men?variant=44619582177470",
+                "checkoutUrl": "https://seedsunsoil.com/cart/44619582177470:1?_gsid=Je8FEWf1a732&payment=shop_pay",
+                "secondhand": false,
+                "lookupUrl": "https://discover.shopifyapps.com/global/v2/p/165mw0p93IzrLq0CiPFXOa?_gsid=Je8FEWf1a732&available_for_sale=1&max_price=100.0&query=mens+white+sneakers&ships_to=US&variant_id=44619582767294"
+            }
+        ]
+    },
+    {
+        "id": "gid://shopify/p/ghGMuC7m9mkrkXWehZuLR",
+        "title": "NIKE Sneakers",
+        "description": "Classic Nike sneakers in white mesh and rubber, designed for everyday comfort and style.",
+        "uniqueSellingPoint": "Breathable mesh upper with cushioned support and low-top design for versatile wear.",
+        "topFeatures": [
+            "Breathable mesh upper keeps feet cool and comfortable",
+            "Cushioned insole provides enhanced comfort for all-day wear",
+            "Lace-up closure ensures a secure and adjustable fit",
+            "Low-top design offers easy access to the ankle",
+            "Durable rubber outsole delivers reliable traction"
+        ],
+        "techSpecs": [
+            "Brand: Nike",
+            "Color: White",
+            "Size: 26 cm",
+            "Heel Height: 3 cm",
+            "Total Length: 27 cm",
+            "Sole Width: 10.5 cm",
+            "Material: Mesh, Rubber"
+        ],
+        "attributes": [],
+        "media": [
+            {
+                "url": "https://cdn.shopify.com/s/files/1/0643/3128/4739/files/3600225s0262_1.jpg",
+                "altText": "NIKE Sneakers"
+            }
+        ],
+        "priceRange": {
+            "min": {
+                "amount": 7100,
+                "currency": "USD"
+            },
+            "max": {
+                "amount": 7100,
+                "currency": "USD"
+            }
+        },
+        "lookupUrl": "https://discover.shopifyapps.com/global/v2/p/ghGMuC7m9mkrkXWehZuLR?_gsid=Je8FEWf1a732&available_for_sale=1&max_price=100.0&query=mens+white+sneakers&ships_to=US&variant_id=47289360285955",
+        "variants": [
+            {
+                "id": "gid://shopify/ProductVariant/47289360285955?shop=64331284739",
+                "productId": "gid://shopify/Product/9121412153603",
+                "displayName": "NIKE Sneakers",
+                "availableForSale": true,
+                "price": {
+                    "amount": 7100,
+                    "currency": "USD"
+                },
+                "media": [
+                    {
+                        "url": "https://cdn.shopify.com/s/files/1/0643/3128/4739/files/3600225s0262_1.jpg",
+                        "altText": "NIKE Sneakers"
+                    }
+                ],
+                "options": [],
+                "shop": {
+                    "id": "gid://shopify/Shop/64331284739",
+                    "name": "RAGTAG GLOBAL",
+                    "onlineStoreUrl": "https://ragtag-global.com"
+                },
+                "variantUrl": "https://ragtag-global.com/products/3600225s0262?variant=47289360285955",
+                "checkoutUrl": "https://ragtag-global.com/cart/47289360285955:1?_gsid=Je8FEWf1a732&payment=shop_pay",
+                "secondhand": true,
+                "lookupUrl": "https://discover.shopifyapps.com/global/v2/p/ghGMuC7m9mkrkXWehZuLR?_gsid=Je8FEWf1a732&available_for_sale=1&max_price=100.0&query=mens+white+sneakers&ships_to=US&variant_id=47289360285955"
+            }
+        ]
+    },
+    {
+        "id": "gid://shopify/p/9i2iuhWH5wqckPsqQd3sG",
+        "title": "Men's Brand Sports Sneakers",
+        "description": "Comfortable low-top sneakers with a solid white design and secure lace-up closure for everyday wear.",
+        "uniqueSellingPoint": "True-to-size fit with versatile lace-up closure and solid white PU upper.",
+        "topFeatures": [
+            "Lace-up closure ensures a secure and adjustable fit",
+            "Solid white PU upper offers durability and easy care",
+            "Low-top design provides a modern, stylish look",
+            "True-to-size fit eliminates the need for size adjustments"
+        ],
+        "techSpecs": [
+            "Closure Type: Lace-up",
+            "Upper Material: PU",
+            "Color: White",
+            "Fit: True to size",
+            "Heel Height: Medium (3 cm - 5 cm)",
+            "Pattern: Solid"
+        ],
+        "attributes": [],
+        "media": [
+            {
+                "url": "https://cdn.shopify.com/s/files/1/0653/9873/5024/files/S5b3b2a4de2b3415d9c206a57a2e40fc1t.webp",
+                "altText": "Men's Brand Sports Sneakers"
+            }
+        ],
+        "priceRange": {
+            "min": {
+                "amount": 2500,
+                "currency": "USD"
+            },
+            "max": {
+                "amount": 2500,
+                "currency": "USD"
+            }
+        },
+        "lookupUrl": "https://discover.shopifyapps.com/global/v2/p/9i2iuhWH5wqckPsqQd3sG?_gsid=Je8FEWf1a732&available_for_sale=1&max_price=100.0&query=mens+white+sneakers&ships_to=US&variant_id=44275297452208",
+        "options": [
+            {
+                "name": "Color",
+                "values": [
+                    {
+                        "value": "K066-Black"
+                    },
+                    {
+                        "value": "K066-White"
+                    }
+                ]
+            },
+            {
+                "name": "Shoe size",
+                "values": [
+                    {
+                        "value": "39"
+                    },
+                    {
+                        "value": "40"
+                    },
+                    {
+                        "value": "41"
+                    },
+                    {
+                        "value": "42"
+                    },
+                    {
+                        "value": "43"
+                    },
+                    {
+                        "value": "44"
+                    }
+                ]
+            }
+        ],
+        "variants": [
+            {
+                "id": "gid://shopify/ProductVariant/44275297452208?shop=65398735024",
+                "productId": "gid://shopify/Product/7808923631792",
+                "displayName": "Men's Brand Sports Sneakers",
+                "availableForSale": true,
+                "price": {
+                    "amount": 2500,
+                    "currency": "USD"
+                },
+                "media": [
+                    {
+                        "url": "https://cdn.shopify.com/s/files/1/0653/9873/5024/files/S5b3b2a4de2b3415d9c206a57a2e40fc1t.webp",
+                        "altText": "Men's Brand Sports Sneakers"
+                    }
+                ],
+                "options": [
+                    {
+                        "name": "Color",
+                        "value": "K066-White"
+                    },
+                    {
+                        "name": "Shoe size",
+                        "value": "39"
+                    }
+                ],
+                "shop": {
+                    "id": "gid://shopify/Shop/65398735024",
+                    "name": "Furrtastic Designs",
+                    "onlineStoreUrl": "https://www.furrtasticdesigns.shop"
+                },
+                "variantUrl": "https://www.furrtasticdesigns.shop/products/original-mens-sports-shoes-men-brand-campus-shoes-man-2024-trend-male-sneakers-mens-summer-sandals-shose-brand-replica-sneaker?variant=44275297452208",
+                "checkoutUrl": "https://www.furrtasticdesigns.shop/cart/44275297452208:1?_gsid=Je8FEWf1a732&payment=shop_pay",
+                "secondhand": false,
+                "lookupUrl": "https://discover.shopifyapps.com/global/v2/p/9i2iuhWH5wqckPsqQd3sG?_gsid=Je8FEWf1a732&available_for_sale=1&max_price=100.0&query=mens+white+sneakers&ships_to=US&variant_id=44275297452208"
+            },
+            {
+                "id": "gid://shopify/ProductVariant/44275297616048?shop=65398735024",
+                "productId": "gid://shopify/Product/7808923631792",
+                "displayName": "Men's Brand Sports Sneakers",
+                "availableForSale": true,
+                "price": {
+                    "amount": 2500,
+                    "currency": "USD"
+                },
+                "media": [
+                    {
+                        "url": "https://cdn.shopify.com/s/files/1/0653/9873/5024/files/S5b3b2a4de2b3415d9c206a57a2e40fc1t.webp",
+                        "altText": "Men's Brand Sports Sneakers"
+                    }
+                ],
+                "options": [
+                    {
+                        "name": "Color",
+                        "value": "K066-White"
+                    },
+                    {
+                        "name": "Shoe size",
+                        "value": "42"
+                    }
+                ],
+                "shop": {
+                    "id": "gid://shopify/Shop/65398735024",
+                    "name": "Furrtastic Designs",
+                    "onlineStoreUrl": "https://www.furrtasticdesigns.shop"
+                },
+                "variantUrl": "https://www.furrtasticdesigns.shop/products/original-mens-sports-shoes-men-brand-campus-shoes-man-2024-trend-male-sneakers-mens-summer-sandals-shose-brand-replica-sneaker?variant=44275297616048",
+                "checkoutUrl": "https://www.furrtasticdesigns.shop/cart/44275297616048:1?_gsid=Je8FEWf1a732&payment=shop_pay",
+                "secondhand": false,
+                "lookupUrl": "https://discover.shopifyapps.com/global/v2/p/9i2iuhWH5wqckPsqQd3sG?_gsid=Je8FEWf1a732&available_for_sale=1&max_price=100.0&query=mens+white+sneakers&ships_to=US&variant_id=44275297452208"
+            },
+            {
+                "id": "gid://shopify/ProductVariant/44275297648816?shop=65398735024",
+                "productId": "gid://shopify/Product/7808923631792",
+                "displayName": "Men's Brand Sports Sneakers",
+                "availableForSale": true,
+                "price": {
+                    "amount": 2500,
+                    "currency": "USD"
+                },
+                "media": [
+                    {
+                        "url": "https://cdn.shopify.com/s/files/1/0653/9873/5024/files/S5b3b2a4de2b3415d9c206a57a2e40fc1t.webp",
+                        "altText": "Men's Brand Sports Sneakers"
+                    }
+                ],
+                "options": [
+                    {
+                        "name": "Color",
+                        "value": "K066-White"
+                    },
+                    {
+                        "name": "Shoe size",
+                        "value": "43"
+                    }
+                ],
+                "shop": {
+                    "id": "gid://shopify/Shop/65398735024",
+                    "name": "Furrtastic Designs",
+                    "onlineStoreUrl": "https://www.furrtasticdesigns.shop"
+                },
+                "variantUrl": "https://www.furrtasticdesigns.shop/products/original-mens-sports-shoes-men-brand-campus-shoes-man-2024-trend-male-sneakers-mens-summer-sandals-shose-brand-replica-sneaker?variant=44275297648816",
+                "checkoutUrl": "https://www.furrtasticdesigns.shop/cart/44275297648816:1?_gsid=Je8FEWf1a732&payment=shop_pay",
+                "secondhand": false,
+                "lookupUrl": "https://discover.shopifyapps.com/global/v2/p/9i2iuhWH5wqckPsqQd3sG?_gsid=Je8FEWf1a732&available_for_sale=1&max_price=100.0&query=mens+white+sneakers&ships_to=US&variant_id=44275297452208"
+            },
+            {
+                "id": "gid://shopify/ProductVariant/44275297714352?shop=65398735024",
+                "productId": "gid://shopify/Product/7808923631792",
+                "displayName": "Men's Brand Sports Sneakers",
+                "availableForSale": true,
+                "price": {
+                    "amount": 2500,
+                    "currency": "USD"
+                },
+                "media": [
+                    {
+                        "url": "https://cdn.shopify.com/s/files/1/0653/9873/5024/files/S5b3b2a4de2b3415d9c206a57a2e40fc1t.webp",
+                        "altText": "Men's Brand Sports Sneakers"
+                    }
+                ],
+                "options": [
+                    {
+                        "name": "Color",
+                        "value": "K066-White"
+                    },
+                    {
+                        "name": "Shoe size",
+                        "value": "44"
+                    }
+                ],
+                "shop": {
+                    "id": "gid://shopify/Shop/65398735024",
+                    "name": "Furrtastic Designs",
+                    "onlineStoreUrl": "https://www.furrtasticdesigns.shop"
+                },
+                "variantUrl": "https://www.furrtasticdesigns.shop/products/original-mens-sports-shoes-men-brand-campus-shoes-man-2024-trend-male-sneakers-mens-summer-sandals-shose-brand-replica-sneaker?variant=44275297714352",
+                "checkoutUrl": "https://www.furrtasticdesigns.shop/cart/44275297714352:1?_gsid=Je8FEWf1a732&payment=shop_pay",
+                "secondhand": false,
+                "lookupUrl": "https://discover.shopifyapps.com/global/v2/p/9i2iuhWH5wqckPsqQd3sG?_gsid=Je8FEWf1a732&available_for_sale=1&max_price=100.0&query=mens+white+sneakers&ships_to=US&variant_id=44275297452208"
+            },
+            {
+                "id": "gid://shopify/ProductVariant/44275297747120?shop=65398735024",
+                "productId": "gid://shopify/Product/7808923631792",
+                "displayName": "Men's Brand Sports Sneakers",
+                "availableForSale": true,
+                "price": {
+                    "amount": 2500,
+                    "currency": "USD"
+                },
+                "media": [
+                    {
+                        "url": "https://cdn.shopify.com/s/files/1/0653/9873/5024/files/S5b3b2a4de2b3415d9c206a57a2e40fc1t.webp",
+                        "altText": "Men's Brand Sports Sneakers"
+                    }
+                ],
+                "options": [
+                    {
+                        "name": "Color",
+                        "value": "K066-White"
+                    },
+                    {
+                        "name": "Shoe size",
+                        "value": "40"
+                    }
+                ],
+                "shop": {
+                    "id": "gid://shopify/Shop/65398735024",
+                    "name": "Furrtastic Designs",
+                    "onlineStoreUrl": "https://www.furrtasticdesigns.shop"
+                },
+                "variantUrl": "https://www.furrtasticdesigns.shop/products/original-mens-sports-shoes-men-brand-campus-shoes-man-2024-trend-male-sneakers-mens-summer-sandals-shose-brand-replica-sneaker?variant=44275297747120",
+                "checkoutUrl": "https://www.furrtasticdesigns.shop/cart/44275297747120:1?_gsid=Je8FEWf1a732&payment=shop_pay",
+                "secondhand": false,
+                "lookupUrl": "https://discover.shopifyapps.com/global/v2/p/9i2iuhWH5wqckPsqQd3sG?_gsid=Je8FEWf1a732&available_for_sale=1&max_price=100.0&query=mens+white+sneakers&ships_to=US&variant_id=44275297452208"
+            },
+            {
+                "id": "gid://shopify/ProductVariant/44275297779888?shop=65398735024",
+                "productId": "gid://shopify/Product/7808923631792",
+                "displayName": "Men's Brand Sports Sneakers",
+                "availableForSale": true,
+                "price": {
+                    "amount": 2500,
+                    "currency": "USD"
+                },
+                "media": [
+                    {
+                        "url": "https://cdn.shopify.com/s/files/1/0653/9873/5024/files/S5b3b2a4de2b3415d9c206a57a2e40fc1t.webp",
+                        "altText": "Men's Brand Sports Sneakers"
+                    }
+                ],
+                "options": [
+                    {
+                        "name": "Color",
+                        "value": "K066-White"
+                    },
+                    {
+                        "name": "Shoe size",
+                        "value": "41"
+                    }
+                ],
+                "shop": {
+                    "id": "gid://shopify/Shop/65398735024",
+                    "name": "Furrtastic Designs",
+                    "onlineStoreUrl": "https://www.furrtasticdesigns.shop"
+                },
+                "variantUrl": "https://www.furrtasticdesigns.shop/products/original-mens-sports-shoes-men-brand-campus-shoes-man-2024-trend-male-sneakers-mens-summer-sandals-shose-brand-replica-sneaker?variant=44275297779888",
+                "checkoutUrl": "https://www.furrtasticdesigns.shop/cart/44275297779888:1?_gsid=Je8FEWf1a732&payment=shop_pay",
+                "secondhand": false,
+                "lookupUrl": "https://discover.shopifyapps.com/global/v2/p/9i2iuhWH5wqckPsqQd3sG?_gsid=Je8FEWf1a732&available_for_sale=1&max_price=100.0&query=mens+white+sneakers&ships_to=US&variant_id=44275297452208"
+            },
+            {
+                "id": "gid://shopify/ProductVariant/44275297419440?shop=65398735024",
+                "productId": "gid://shopify/Product/7808923631792",
+                "displayName": "Men's Brand Sports Sneakers",
+                "availableForSale": true,
+                "price": {
+                    "amount": 2500,
+                    "currency": "USD"
+                },
+                "media": [
+                    {
+                        "url": "https://cdn.shopify.com/s/files/1/0653/9873/5024/files/S7ff06e37f38e45018c1e8492ba8bd27aA.webp",
+                        "altText": "Men's Brand Sports Sneakers"
+                    }
+                ],
+                "options": [
+                    {
+                        "name": "Color",
+                        "value": "K066-Black"
+                    },
+                    {
+                        "name": "Shoe size",
+                        "value": "44"
+                    }
+                ],
+                "shop": {
+                    "id": "gid://shopify/Shop/65398735024",
+                    "name": "Furrtastic Designs",
+                    "onlineStoreUrl": "https://www.furrtasticdesigns.shop"
+                },
+                "variantUrl": "https://www.furrtasticdesigns.shop/products/original-mens-sports-shoes-men-brand-campus-shoes-man-2024-trend-male-sneakers-mens-summer-sandals-shose-brand-replica-sneaker?variant=44275297419440",
+                "checkoutUrl": "https://www.furrtasticdesigns.shop/cart/44275297419440:1?_gsid=Je8FEWf1a732&payment=shop_pay",
+                "secondhand": false,
+                "lookupUrl": "https://discover.shopifyapps.com/global/v2/p/9i2iuhWH5wqckPsqQd3sG?_gsid=Je8FEWf1a732&available_for_sale=1&max_price=100.0&query=mens+white+sneakers&ships_to=US&variant_id=44275297452208"
+            },
+            {
+                "id": "gid://shopify/ProductVariant/44275297484976?shop=65398735024",
+                "productId": "gid://shopify/Product/7808923631792",
+                "displayName": "Men's Brand Sports Sneakers",
+                "availableForSale": true,
+                "price": {
+                    "amount": 2500,
+                    "currency": "USD"
+                },
+                "media": [
+                    {
+                        "url": "https://cdn.shopify.com/s/files/1/0653/9873/5024/files/S7ff06e37f38e45018c1e8492ba8bd27aA.webp",
+                        "altText": "Men's Brand Sports Sneakers"
+                    }
+                ],
+                "options": [
+                    {
+                        "name": "Color",
+                        "value": "K066-Black"
+                    },
+                    {
+                        "name": "Shoe size",
+                        "value": "39"
+                    }
+                ],
+                "shop": {
+                    "id": "gid://shopify/Shop/65398735024",
+                    "name": "Furrtastic Designs",
+                    "onlineStoreUrl": "https://www.furrtasticdesigns.shop"
+                },
+                "variantUrl": "https://www.furrtasticdesigns.shop/products/original-mens-sports-shoes-men-brand-campus-shoes-man-2024-trend-male-sneakers-mens-summer-sandals-shose-brand-replica-sneaker?variant=44275297484976",
+                "checkoutUrl": "https://www.furrtasticdesigns.shop/cart/44275297484976:1?_gsid=Je8FEWf1a732&payment=shop_pay",
+                "secondhand": false,
+                "lookupUrl": "https://discover.shopifyapps.com/global/v2/p/9i2iuhWH5wqckPsqQd3sG?_gsid=Je8FEWf1a732&available_for_sale=1&max_price=100.0&query=mens+white+sneakers&ships_to=US&variant_id=44275297452208"
+            },
+            {
+                "id": "gid://shopify/ProductVariant/44275297517744?shop=65398735024",
+                "productId": "gid://shopify/Product/7808923631792",
+                "displayName": "Men's Brand Sports Sneakers",
+                "availableForSale": true,
+                "price": {
+                    "amount": 2500,
+                    "currency": "USD"
+                },
+                "media": [
+                    {
+                        "url": "https://cdn.shopify.com/s/files/1/0653/9873/5024/files/S7ff06e37f38e45018c1e8492ba8bd27aA.webp",
+                        "altText": "Men's Brand Sports Sneakers"
+                    }
+                ],
+                "options": [
+                    {
+                        "name": "Color",
+                        "value": "K066-Black"
+                    },
+                    {
+                        "name": "Shoe size",
+                        "value": "40"
+                    }
+                ],
+                "shop": {
+                    "id": "gid://shopify/Shop/65398735024",
+                    "name": "Furrtastic Designs",
+                    "onlineStoreUrl": "https://www.furrtasticdesigns.shop"
+                },
+                "variantUrl": "https://www.furrtasticdesigns.shop/products/original-mens-sports-shoes-men-brand-campus-shoes-man-2024-trend-male-sneakers-mens-summer-sandals-shose-brand-replica-sneaker?variant=44275297517744",
+                "checkoutUrl": "https://www.furrtasticdesigns.shop/cart/44275297517744:1?_gsid=Je8FEWf1a732&payment=shop_pay",
+                "secondhand": false,
+                "lookupUrl": "https://discover.shopifyapps.com/global/v2/p/9i2iuhWH5wqckPsqQd3sG?_gsid=Je8FEWf1a732&available_for_sale=1&max_price=100.0&query=mens+white+sneakers&ships_to=US&variant_id=44275297452208"
+            },
+            {
+                "id": "gid://shopify/ProductVariant/44275297550512?shop=65398735024",
+                "productId": "gid://shopify/Product/7808923631792",
+                "displayName": "Men's Brand Sports Sneakers",
+                "availableForSale": true,
+                "price": {
+                    "amount": 2500,
+                    "currency": "USD"
+                },
+                "media": [
+                    {
+                        "url": "https://cdn.shopify.com/s/files/1/0653/9873/5024/files/S7ff06e37f38e45018c1e8492ba8bd27aA.webp",
+                        "altText": "Men's Brand Sports Sneakers"
+                    }
+                ],
+                "options": [
+                    {
+                        "name": "Color",
+                        "value": "K066-Black"
+                    },
+                    {
+                        "name": "Shoe size",
+                        "value": "42"
+                    }
+                ],
+                "shop": {
+                    "id": "gid://shopify/Shop/65398735024",
+                    "name": "Furrtastic Designs",
+                    "onlineStoreUrl": "https://www.furrtasticdesigns.shop"
+                },
+                "variantUrl": "https://www.furrtasticdesigns.shop/products/original-mens-sports-shoes-men-brand-campus-shoes-man-2024-trend-male-sneakers-mens-summer-sandals-shose-brand-replica-sneaker?variant=44275297550512",
+                "checkoutUrl": "https://www.furrtasticdesigns.shop/cart/44275297550512:1?_gsid=Je8FEWf1a732&payment=shop_pay",
+                "secondhand": false,
+                "lookupUrl": "https://discover.shopifyapps.com/global/v2/p/9i2iuhWH5wqckPsqQd3sG?_gsid=Je8FEWf1a732&available_for_sale=1&max_price=100.0&query=mens+white+sneakers&ships_to=US&variant_id=44275297452208"
+            }
+        ]
+    },
+    {
+        "id": "gid://shopify/p/14Pl2altkPb1Es6TAUxMAB",
+        "title": "White Sneakers Men Non Slip Walking Running Shoes Sports",
+        "description": "Comfortable and stylish white sneakers designed for men, ideal for walking and running in various seasons.",
+        "uniqueSellingPoint": "Breathable, non-slip design with a variety of color options for versatile everyday wear.",
+        "topFeatures": [
+            "Non-slip sole material ensures stable footing for walking and running",
+            "Breathable upper material keeps feet cool in warm seasons",
+            "Comfortable cotton interior provides all-day support",
+            "Available in multiple solid colors for versatile styling",
+            "Lace-up front design offers a secure and adjustable fit"
+        ],
+        "techSpecs": [
+            "Upper Material: Flying weave",
+            "Sole Material: PVC",
+            "Interior Material: Cotton",
+            "Upper Height: Low",
+            "Toe Shape: Round",
+            "Available Sizes: 39, 40, 41, 42, 43, 44",
+            "Color Options: Black, Red, White, Blue"
+        ],
+        "attributes": [],
+        "media": [
+            {
+                "url": "https://cdn.shopify.com/s/files/1/0746/2810/4492/products/3ac3e243-8c17-4259-b011-f887aad4eadf.jpg",
+                "altText": "White Sneakers Men Non Slip Walking Running Shoes Sports"
+            }
+        ],
+        "priceRange": {
+            "min": {
+                "amount": 2200,
+                "currency": "USD"
+            },
+            "max": {
+                "amount": 2200,
+                "currency": "USD"
+            }
+        },
+        "lookupUrl": "https://discover.shopifyapps.com/global/v2/p/14Pl2altkPb1Es6TAUxMAB?_gsid=Je8FEWf1a732&available_for_sale=1&max_price=100.0&query=mens+white+sneakers&ships_to=US&variant_id=45026213921068",
+        "options": [
+            {
+                "name": "Color",
+                "values": [
+                    {
+                        "value": "Balckred"
+                    },
+                    {
+                        "value": "Black"
+                    },
+                    {
+                        "value": "Whiteblue"
+                    }
+                ]
+            },
+            {
+                "name": "Size",
+                "values": [
+                    {
+                        "value": "size39"
+                    },
+                    {
+                        "value": "size40"
+                    },
+                    {
+                        "value": "size41"
+                    },
+                    {
+                        "value": "size42"
+                    },
+                    {
+                        "value": "size43"
+                    },
+                    {
+                        "value": "size44"
+                    }
+                ]
+            }
+        ],
+        "variants": [
+            {
+                "id": "gid://shopify/ProductVariant/45026213921068?shop=74628104492",
+                "productId": "gid://shopify/Product/8291417981228",
+                "displayName": "White Sneakers Men Non Slip Walking Running Shoes Sports",
+                "availableForSale": true,
+                "price": {
+                    "amount": 2200,
+                    "currency": "USD"
+                },
+                "media": [
+                    {
+                        "url": "https://cdn.shopify.com/s/files/1/0746/2810/4492/products/3ac3e243-8c17-4259-b011-f887aad4eadf.jpg",
+                        "altText": "White Sneakers Men Non Slip Walking Running Shoes Sports"
+                    }
+                ],
+                "options": [
+                    {
+                        "name": "Color",
+                        "value": "Balckred"
+                    },
+                    {
+                        "name": "Size",
+                        "value": "size39"
+                    }
+                ],
+                "shop": {
+                    "id": "gid://shopify/Shop/74628104492",
+                    "name": "Shopagain",
+                    "onlineStoreUrl": "https://shopagain.net"
+                },
+                "variantUrl": "https://shopagain.net/products/white-sneakers-men-non-slip-walking-running-shoes-sports?variant=45026213921068",
+                "checkoutUrl": "https://shopagain.net/cart/45026213921068:1?_gsid=Je8FEWf1a732&payment=shop_pay",
+                "secondhand": false,
+                "lookupUrl": "https://discover.shopifyapps.com/global/v2/p/14Pl2altkPb1Es6TAUxMAB?_gsid=Je8FEWf1a732&available_for_sale=1&max_price=100.0&query=mens+white+sneakers&ships_to=US&variant_id=45026213921068"
+            },
+            {
+                "id": "gid://shopify/ProductVariant/45026213953836?shop=74628104492",
+                "productId": "gid://shopify/Product/8291417981228",
+                "displayName": "White Sneakers Men Non Slip Walking Running Shoes Sports",
+                "availableForSale": true,
+                "price": {
+                    "amount": 2200,
+                    "currency": "USD"
+                },
+                "media": [
+                    {
+                        "url": "https://cdn.shopify.com/s/files/1/0746/2810/4492/products/3ac3e243-8c17-4259-b011-f887aad4eadf.jpg",
+                        "altText": "White Sneakers Men Non Slip Walking Running Shoes Sports"
+                    }
+                ],
+                "options": [
+                    {
+                        "name": "Color",
+                        "value": "Balckred"
+                    },
+                    {
+                        "name": "Size",
+                        "value": "size40"
+                    }
+                ],
+                "shop": {
+                    "id": "gid://shopify/Shop/74628104492",
+                    "name": "Shopagain",
+                    "onlineStoreUrl": "https://shopagain.net"
+                },
+                "variantUrl": "https://shopagain.net/products/white-sneakers-men-non-slip-walking-running-shoes-sports?variant=45026213953836",
+                "checkoutUrl": "https://shopagain.net/cart/45026213953836:1?_gsid=Je8FEWf1a732&payment=shop_pay",
+                "secondhand": false,
+                "lookupUrl": "https://discover.shopifyapps.com/global/v2/p/14Pl2altkPb1Es6TAUxMAB?_gsid=Je8FEWf1a732&available_for_sale=1&max_price=100.0&query=mens+white+sneakers&ships_to=US&variant_id=45026213921068"
+            },
+            {
+                "id": "gid://shopify/ProductVariant/45026213986604?shop=74628104492",
+                "productId": "gid://shopify/Product/8291417981228",
+                "displayName": "White Sneakers Men Non Slip Walking Running Shoes Sports",
+                "availableForSale": true,
+                "price": {
+                    "amount": 2200,
+                    "currency": "USD"
+                },
+                "media": [
+                    {
+                        "url": "https://cdn.shopify.com/s/files/1/0746/2810/4492/products/3ac3e243-8c17-4259-b011-f887aad4eadf.jpg",
+                        "altText": "White Sneakers Men Non Slip Walking Running Shoes Sports"
+                    }
+                ],
+                "options": [
+                    {
+                        "name": "Color",
+                        "value": "Balckred"
+                    },
+                    {
+                        "name": "Size",
+                        "value": "size41"
+                    }
+                ],
+                "shop": {
+                    "id": "gid://shopify/Shop/74628104492",
+                    "name": "Shopagain",
+                    "onlineStoreUrl": "https://shopagain.net"
+                },
+                "variantUrl": "https://shopagain.net/products/white-sneakers-men-non-slip-walking-running-shoes-sports?variant=45026213986604",
+                "checkoutUrl": "https://shopagain.net/cart/45026213986604:1?_gsid=Je8FEWf1a732&payment=shop_pay",
+                "secondhand": false,
+                "lookupUrl": "https://discover.shopifyapps.com/global/v2/p/14Pl2altkPb1Es6TAUxMAB?_gsid=Je8FEWf1a732&available_for_sale=1&max_price=100.0&query=mens+white+sneakers&ships_to=US&variant_id=45026213921068"
+            },
+            {
+                "id": "gid://shopify/ProductVariant/45026214019372?shop=74628104492",
+                "productId": "gid://shopify/Product/8291417981228",
+                "displayName": "White Sneakers Men Non Slip Walking Running Shoes Sports",
+                "availableForSale": true,
+                "price": {
+                    "amount": 2200,
+                    "currency": "USD"
+                },
+                "media": [
+                    {
+                        "url": "https://cdn.shopify.com/s/files/1/0746/2810/4492/products/3ac3e243-8c17-4259-b011-f887aad4eadf.jpg",
+                        "altText": "White Sneakers Men Non Slip Walking Running Shoes Sports"
+                    }
+                ],
+                "options": [
+                    {
+                        "name": "Color",
+                        "value": "Balckred"
+                    },
+                    {
+                        "name": "Size",
+                        "value": "size42"
+                    }
+                ],
+                "shop": {
+                    "id": "gid://shopify/Shop/74628104492",
+                    "name": "Shopagain",
+                    "onlineStoreUrl": "https://shopagain.net"
+                },
+                "variantUrl": "https://shopagain.net/products/white-sneakers-men-non-slip-walking-running-shoes-sports?variant=45026214019372",
+                "checkoutUrl": "https://shopagain.net/cart/45026214019372:1?_gsid=Je8FEWf1a732&payment=shop_pay",
+                "secondhand": false,
+                "lookupUrl": "https://discover.shopifyapps.com/global/v2/p/14Pl2altkPb1Es6TAUxMAB?_gsid=Je8FEWf1a732&available_for_sale=1&max_price=100.0&query=mens+white+sneakers&ships_to=US&variant_id=45026213921068"
+            },
+            {
+                "id": "gid://shopify/ProductVariant/45026214052140?shop=74628104492",
+                "productId": "gid://shopify/Product/8291417981228",
+                "displayName": "White Sneakers Men Non Slip Walking Running Shoes Sports",
+                "availableForSale": true,
+                "price": {
+                    "amount": 2200,
+                    "currency": "USD"
+                },
+                "media": [
+                    {
+                        "url": "https://cdn.shopify.com/s/files/1/0746/2810/4492/products/3ac3e243-8c17-4259-b011-f887aad4eadf.jpg",
+                        "altText": "White Sneakers Men Non Slip Walking Running Shoes Sports"
+                    }
+                ],
+                "options": [
+                    {
+                        "name": "Color",
+                        "value": "Balckred"
+                    },
+                    {
+                        "name": "Size",
+                        "value": "size43"
+                    }
+                ],
+                "shop": {
+                    "id": "gid://shopify/Shop/74628104492",
+                    "name": "Shopagain",
+                    "onlineStoreUrl": "https://shopagain.net"
+                },
+                "variantUrl": "https://shopagain.net/products/white-sneakers-men-non-slip-walking-running-shoes-sports?variant=45026214052140",
+                "checkoutUrl": "https://shopagain.net/cart/45026214052140:1?_gsid=Je8FEWf1a732&payment=shop_pay",
+                "secondhand": false,
+                "lookupUrl": "https://discover.shopifyapps.com/global/v2/p/14Pl2altkPb1Es6TAUxMAB?_gsid=Je8FEWf1a732&available_for_sale=1&max_price=100.0&query=mens+white+sneakers&ships_to=US&variant_id=45026213921068"
+            },
+            {
+                "id": "gid://shopify/ProductVariant/45026214084908?shop=74628104492",
+                "productId": "gid://shopify/Product/8291417981228",
+                "displayName": "White Sneakers Men Non Slip Walking Running Shoes Sports",
+                "availableForSale": true,
+                "price": {
+                    "amount": 2200,
+                    "currency": "USD"
+                },
+                "media": [
+                    {
+                        "url": "https://cdn.shopify.com/s/files/1/0746/2810/4492/products/3ac3e243-8c17-4259-b011-f887aad4eadf.jpg",
+                        "altText": "White Sneakers Men Non Slip Walking Running Shoes Sports"
+                    }
+                ],
+                "options": [
+                    {
+                        "name": "Color",
+                        "value": "Balckred"
+                    },
+                    {
+                        "name": "Size",
+                        "value": "size44"
+                    }
+                ],
+                "shop": {
+                    "id": "gid://shopify/Shop/74628104492",
+                    "name": "Shopagain",
+                    "onlineStoreUrl": "https://shopagain.net"
+                },
+                "variantUrl": "https://shopagain.net/products/white-sneakers-men-non-slip-walking-running-shoes-sports?variant=45026214084908",
+                "checkoutUrl": "https://shopagain.net/cart/45026214084908:1?_gsid=Je8FEWf1a732&payment=shop_pay",
+                "secondhand": false,
+                "lookupUrl": "https://discover.shopifyapps.com/global/v2/p/14Pl2altkPb1Es6TAUxMAB?_gsid=Je8FEWf1a732&available_for_sale=1&max_price=100.0&query=mens+white+sneakers&ships_to=US&variant_id=45026213921068"
+            },
+            {
+                "id": "gid://shopify/ProductVariant/45026214117676?shop=74628104492",
+                "productId": "gid://shopify/Product/8291417981228",
+                "displayName": "White Sneakers Men Non Slip Walking Running Shoes Sports",
+                "availableForSale": true,
+                "price": {
+                    "amount": 2200,
+                    "currency": "USD"
+                },
+                "media": [
+                    {
+                        "url": "https://cdn.shopify.com/s/files/1/0746/2810/4492/products/8528b4a4-89d1-45c9-9c3e-12b0dd03ab11.jpg",
+                        "altText": "White Sneakers Men Non Slip Walking Running Shoes Sports"
+                    }
+                ],
+                "options": [
+                    {
+                        "name": "Color",
+                        "value": "Black"
+                    },
+                    {
+                        "name": "Size",
+                        "value": "size39"
+                    }
+                ],
+                "shop": {
+                    "id": "gid://shopify/Shop/74628104492",
+                    "name": "Shopagain",
+                    "onlineStoreUrl": "https://shopagain.net"
+                },
+                "variantUrl": "https://shopagain.net/products/white-sneakers-men-non-slip-walking-running-shoes-sports?variant=45026214117676",
+                "checkoutUrl": "https://shopagain.net/cart/45026214117676:1?_gsid=Je8FEWf1a732&payment=shop_pay",
+                "secondhand": false,
+                "lookupUrl": "https://discover.shopifyapps.com/global/v2/p/14Pl2altkPb1Es6TAUxMAB?_gsid=Je8FEWf1a732&available_for_sale=1&max_price=100.0&query=mens+white+sneakers&ships_to=US&variant_id=45026213921068"
+            },
+            {
+                "id": "gid://shopify/ProductVariant/45026214150444?shop=74628104492",
+                "productId": "gid://shopify/Product/8291417981228",
+                "displayName": "White Sneakers Men Non Slip Walking Running Shoes Sports",
+                "availableForSale": true,
+                "price": {
+                    "amount": 2200,
+                    "currency": "USD"
+                },
+                "media": [
+                    {
+                        "url": "https://cdn.shopify.com/s/files/1/0746/2810/4492/products/8528b4a4-89d1-45c9-9c3e-12b0dd03ab11.jpg",
+                        "altText": "White Sneakers Men Non Slip Walking Running Shoes Sports"
+                    }
+                ],
+                "options": [
+                    {
+                        "name": "Color",
+                        "value": "Black"
+                    },
+                    {
+                        "name": "Size",
+                        "value": "size40"
+                    }
+                ],
+                "shop": {
+                    "id": "gid://shopify/Shop/74628104492",
+                    "name": "Shopagain",
+                    "onlineStoreUrl": "https://shopagain.net"
+                },
+                "variantUrl": "https://shopagain.net/products/white-sneakers-men-non-slip-walking-running-shoes-sports?variant=45026214150444",
+                "checkoutUrl": "https://shopagain.net/cart/45026214150444:1?_gsid=Je8FEWf1a732&payment=shop_pay",
+                "secondhand": false,
+                "lookupUrl": "https://discover.shopifyapps.com/global/v2/p/14Pl2altkPb1Es6TAUxMAB?_gsid=Je8FEWf1a732&available_for_sale=1&max_price=100.0&query=mens+white+sneakers&ships_to=US&variant_id=45026213921068"
+            },
+            {
+                "id": "gid://shopify/ProductVariant/45026214183212?shop=74628104492",
+                "productId": "gid://shopify/Product/8291417981228",
+                "displayName": "White Sneakers Men Non Slip Walking Running Shoes Sports",
+                "availableForSale": true,
+                "price": {
+                    "amount": 2200,
+                    "currency": "USD"
+                },
+                "media": [
+                    {
+                        "url": "https://cdn.shopify.com/s/files/1/0746/2810/4492/products/8528b4a4-89d1-45c9-9c3e-12b0dd03ab11.jpg",
+                        "altText": "White Sneakers Men Non Slip Walking Running Shoes Sports"
+                    }
+                ],
+                "options": [
+                    {
+                        "name": "Color",
+                        "value": "Black"
+                    },
+                    {
+                        "name": "Size",
+                        "value": "size41"
+                    }
+                ],
+                "shop": {
+                    "id": "gid://shopify/Shop/74628104492",
+                    "name": "Shopagain",
+                    "onlineStoreUrl": "https://shopagain.net"
+                },
+                "variantUrl": "https://shopagain.net/products/white-sneakers-men-non-slip-walking-running-shoes-sports?variant=45026214183212",
+                "checkoutUrl": "https://shopagain.net/cart/45026214183212:1?_gsid=Je8FEWf1a732&payment=shop_pay",
+                "secondhand": false,
+                "lookupUrl": "https://discover.shopifyapps.com/global/v2/p/14Pl2altkPb1Es6TAUxMAB?_gsid=Je8FEWf1a732&available_for_sale=1&max_price=100.0&query=mens+white+sneakers&ships_to=US&variant_id=45026213921068"
+            },
+            {
+                "id": "gid://shopify/ProductVariant/45026214215980?shop=74628104492",
+                "productId": "gid://shopify/Product/8291417981228",
+                "displayName": "White Sneakers Men Non Slip Walking Running Shoes Sports",
+                "availableForSale": true,
+                "price": {
+                    "amount": 2200,
+                    "currency": "USD"
+                },
+                "media": [
+                    {
+                        "url": "https://cdn.shopify.com/s/files/1/0746/2810/4492/products/8528b4a4-89d1-45c9-9c3e-12b0dd03ab11.jpg",
+                        "altText": "White Sneakers Men Non Slip Walking Running Shoes Sports"
+                    }
+                ],
+                "options": [
+                    {
+                        "name": "Color",
+                        "value": "Black"
+                    },
+                    {
+                        "name": "Size",
+                        "value": "size42"
+                    }
+                ],
+                "shop": {
+                    "id": "gid://shopify/Shop/74628104492",
+                    "name": "Shopagain",
+                    "onlineStoreUrl": "https://shopagain.net"
+                },
+                "variantUrl": "https://shopagain.net/products/white-sneakers-men-non-slip-walking-running-shoes-sports?variant=45026214215980",
+                "checkoutUrl": "https://shopagain.net/cart/45026214215980:1?_gsid=Je8FEWf1a732&payment=shop_pay",
+                "secondhand": false,
+                "lookupUrl": "https://discover.shopifyapps.com/global/v2/p/14Pl2altkPb1Es6TAUxMAB?_gsid=Je8FEWf1a732&available_for_sale=1&max_price=100.0&query=mens+white+sneakers&ships_to=US&variant_id=45026213921068"
+            }
+        ]
+    },
+    {
+        "id": "gid://shopify/p/K9YirYBFRODC9WMwMxyU5",
+        "title": "Adidas Mens Pro Model FV4493 White Casual Shoes Sneakers Size 8",
+        "description": "Adidas Mens Pro Model FV4493 White Casual Shoes Sneakers Size 8 Condition: GOOD: Pre-Owned. Minimal signs of wear. Please refer to photos for more details. Brand: Adidas Model: Pro Model Style Code: FV4493 Department: Men Style: Sneaker Type: Athletic Color: White Size: 8 Upper Material: Leather Pattern: Solid Theme: Sports Occasion: Casual Season: Spring Summer Winter Fall Shoe Shaft Style: Mid Top Closure: Lace Up Features: Comfort Breathable Performance/Activity: Casual Country/Region of Manufacture: Vietnam Sanitization Disclaimer: SneakerCycle is committed to the sanitization of all our products to ensure safety and cleanliness for our customers. All sneakers available for purchase have been professionally cleaned and disinfected by our sneaker restoration team prior to listing for sale. We use a high-grade disinfectant formula which is EPA registered to kill as many as 64 micro-organisms that eliminates odors and kills bacteria, viruses, fungi, mold, and 99.9% of germs.",
+        "attributes": [],
+        "media": [
+            {
+                "url": "https://cdn.shopify.com/s/files/1/0558/1894/4691/files/57_39ebcf2f-f131-43a6-a7a5-0a0d01a1211e.jpg",
+                "altText": "47151436"
+            }
+        ],
+        "priceRange": {
+            "min": {
+                "amount": 3758,
+                "currency": "USD"
+            },
+            "max": {
+                "amount": 3758,
+                "currency": "USD"
+            }
+        },
+        "lookupUrl": "https://discover.shopifyapps.com/global/v2/p/K9YirYBFRODC9WMwMxyU5?_gsid=Je8FEWf1a732&available_for_sale=1&max_price=100.0&query=mens+white+sneakers&ships_to=US&variant_id=45387043111091",
+        "variants": [
+            {
+                "id": "gid://shopify/ProductVariant/45387043111091?shop=55818944691",
+                "productId": "gid://shopify/Product/8463558017203",
+                "displayName": "Adidas Mens Pro Model FV4493 White Casual Shoes Sneakers Size 8",
+                "availableForSale": true,
+                "price": {
+                    "amount": 3758,
+                    "currency": "USD"
+                },
+                "media": [
+                    {
+                        "url": "https://cdn.shopify.com/s/files/1/0558/1894/4691/files/57_39ebcf2f-f131-43a6-a7a5-0a0d01a1211e.jpg",
+                        "altText": "47151436"
+                    }
+                ],
+                "options": [],
+                "shop": {
+                    "id": "gid://shopify/Shop/55818944691",
+                    "name": "SneakerCycle",
+                    "onlineStoreUrl": "https://sneakercycle.com"
+                },
+                "variantUrl": "https://sneakercycle.com/products/adidas-mens-pro-model-fv4493-white-casual-shoes-sneakers-size-9?variant=45387043111091",
+                "checkoutUrl": "https://sneakercycle.com/cart/45387043111091:1?_gsid=Je8FEWf1a732&payment=shop_pay",
+                "secondhand": true,
+                "lookupUrl": "https://discover.shopifyapps.com/global/v2/p/K9YirYBFRODC9WMwMxyU5?_gsid=Je8FEWf1a732&available_for_sale=1&max_price=100.0&query=mens+white+sneakers&ships_to=US&variant_id=45387043111091"
+            }
+        ]
+    },
+    {
+        "id": "gid://shopify/p/1xIkffJc0bwyki3GoxI6au",
+        "title": "Nike | White Sneakers | 11.5 Men’s",
+        "description": "Lightweight white Nike sneakers designed for everyday comfort and style.",
+        "uniqueSellingPoint": "Combines cushioned comfort with breathable mesh and a classic white design for versatile wear.",
+        "topFeatures": [
+            "Lightweight construction ensures all-day comfort for daily activities",
+            "Cushioned insole provides enhanced support and reduces foot fatigue",
+            "Breathable mesh upper keeps feet cool and dry",
+            "Lace-up closure offers a secure and adjustable fit",
+            "Flat heel design supports natural foot movement"
+        ],
+        "techSpecs": [
+            "Color: White",
+            "Size: 11.5 Men’s",
+            "Closure Type: Lace-up",
+            "Upper Material: Synthetic, Mesh",
+            "Heel Height: Flat",
+            "Toe Style: Round"
+        ],
+        "attributes": [],
+        "media": [
+            {
+                "url": "https://cdn.shopify.com/s/files/1/0248/4735/1854/files/IMG_4273-Photoroom.jpg",
+                "altText": "Nike | White Sneakers | 11.5 Men’s"
+            }
+        ],
+        "priceRange": {
+            "min": {
+                "amount": 2500,
+                "currency": "USD"
+            },
+            "max": {
+                "amount": 2500,
+                "currency": "USD"
+            }
+        },
+        "lookupUrl": "https://discover.shopifyapps.com/global/v2/p/1xIkffJc0bwyki3GoxI6au?_gsid=Je8FEWf1a732&available_for_sale=1&max_price=100.0&query=mens+white+sneakers&ships_to=US&variant_id=51934655807719",
+        "variants": [
+            {
+                "id": "gid://shopify/ProductVariant/51934655807719?shop=24847351854",
+                "productId": "gid://shopify/Product/9501145039079",
+                "displayName": "Nike | White Sneakers | 11.5 Men’s",
+                "availableForSale": true,
+                "price": {
+                    "amount": 2500,
+                    "currency": "USD"
+                },
+                "media": [
+                    {
+                        "url": "https://cdn.shopify.com/s/files/1/0248/4735/1854/files/IMG_4273-Photoroom.jpg",
+                        "altText": "Nike | White Sneakers | 11.5 Men’s"
+                    }
+                ],
+                "options": [],
+                "shop": {
+                    "id": "gid://shopify/Shop/24847351854",
+                    "name": "PopUp Kids Shop",
+                    "onlineStoreUrl": "https://popup-kids.com"
+                },
+                "variantUrl": "https://popup-kids.com/products/nike-white-sneakers-11-5-child?variant=51934655807719",
+                "checkoutUrl": "https://popup-kids.com/cart/51934655807719:1?_gsid=Je8FEWf1a732&payment=shop_pay",
+                "secondhand": true,
+                "lookupUrl": "https://discover.shopifyapps.com/global/v2/p/1xIkffJc0bwyki3GoxI6au?_gsid=Je8FEWf1a732&available_for_sale=1&max_price=100.0&query=mens+white+sneakers&ships_to=US&variant_id=51934655807719"
+            }
+        ]
+    },
+    {
+        "id": "gid://shopify/p/5rFz7ODEFEBudqvhnIr7US",
+        "title": "New Balance Sneakers",
+        "description": "Lightweight, cushioned low-top sneakers in white and yellow for all-season comfort.",
+        "uniqueSellingPoint": "Combines breathable mesh, cushioned support, and a lightweight design in a versatile low-top silhouette.",
+        "topFeatures": [
+            "Lightweight construction for all-day comfort",
+            "Cushioned insole provides enhanced support",
+            "Breathable mesh upper keeps feet cool",
+            "Lace-up closure ensures a secure fit",
+            "Low-top design offers versatile styling"
+        ],
+        "techSpecs": [
+            "Brand: New Balance",
+            "Type: Men's",
+            "Color: White, Yellow",
+            "Size: 27 cm",
+            "Heel Height: 9 cm",
+            "Sole Height: 3.5 cm",
+            "Sole Width: 10 cm",
+            "Total Length: 28.5 cm",
+            "Material: Mesh, Rubber, Synthetic"
+        ],
+        "attributes": [],
+        "media": [
+            {
+                "url": "https://cdn.shopify.com/s/files/1/0643/3128/4739/files/3603226j0153_1.jpg",
+                "altText": "New Balance Sneakers"
+            }
+        ],
+        "priceRange": {
+            "min": {
+                "amount": 8100,
+                "currency": "USD"
+            },
+            "max": {
+                "amount": 8100,
+                "currency": "USD"
+            }
+        },
+        "lookupUrl": "https://discover.shopifyapps.com/global/v2/p/5rFz7ODEFEBudqvhnIr7US?_gsid=Je8FEWf1a732&available_for_sale=1&max_price=100.0&query=mens+white+sneakers&ships_to=US&variant_id=47790627782915",
+        "variants": [
+            {
+                "id": "gid://shopify/ProductVariant/47790627782915?shop=64331284739",
+                "productId": "gid://shopify/Product/9318324601091",
+                "displayName": "New Balance Sneakers",
+                "availableForSale": true,
+                "price": {
+                    "amount": 8100,
+                    "currency": "USD"
+                },
+                "media": [
+                    {
+                        "url": "https://cdn.shopify.com/s/files/1/0643/3128/4739/files/3603226j0153_1.jpg",
+                        "altText": "New Balance Sneakers"
+                    }
+                ],
+                "options": [],
+                "shop": {
+                    "id": "gid://shopify/Shop/64331284739",
+                    "name": "RAGTAG GLOBAL",
+                    "onlineStoreUrl": "https://ragtag-global.com"
+                },
+                "variantUrl": "https://ragtag-global.com/products/3603226j0153?variant=47790627782915",
+                "checkoutUrl": "https://ragtag-global.com/cart/47790627782915:1?_gsid=Je8FEWf1a732&payment=shop_pay",
+                "secondhand": true,
+                "lookupUrl": "https://discover.shopifyapps.com/global/v2/p/5rFz7ODEFEBudqvhnIr7US?_gsid=Je8FEWf1a732&available_for_sale=1&max_price=100.0&query=mens+white+sneakers&ships_to=US&variant_id=47790627782915"
+            }
+        ]
+    },
+    {
+        "id": "gid://shopify/p/2y4sG1zhjDtnuEdGs5wJ2l",
+        "title": "Men's White Sneakers Couples Anti-Slip Casual Sports Shoes For Outdoor Activities, High-Top Style",
+        "description": "High-top anti-slip sneakers designed for couples, offering comfort and style for outdoor activities.",
+        "uniqueSellingPoint": "Slip-resistant high-top design ensures stability and comfort during outdoor activities.",
+        "topFeatures": [
+            "Anti-slip outsole provides enhanced safety on various surfaces",
+            "High-top style offers a secure fit and room for personal items",
+            "Mesh lining keeps feet cool and comfortable",
+            "Colorblock pattern adds a stylish touch to casual wear"
+        ],
+        "techSpecs": [
+            "Upper Material: PU leather",
+            "Lining Material: Mesh",
+            "Insole Material: Fabric",
+            "Outsole Material: EVA",
+            "Closure Type: Lace-up",
+            "Fit: True to size"
+        ],
+        "attributes": [
+            {
+                "name": "Closure type",
+                "values": [
+                    "Lace-up"
+                ]
+            },
+            {
+                "name": "Sneaker style",
+                "values": [
+                    "Athletic",
+                    "High-top"
+                ]
+            },
+            {
+                "name": "Age group",
+                "values": [
+                    "Adults"
+                ]
+            },
+            {
+                "name": "Footwear material",
+                "values": [
+                    "Mesh"
+                ]
+            },
+            {
+                "name": "Color",
+                "values": [
+                    "Black",
+                    "White"
+                ]
+            },
+            {
+                "name": "Shoe features",
+                "values": [
+                    "Slip resistant"
+                ]
+            },
+            {
+                "name": "Target gender",
+                "values": [
+                    "Male"
+                ]
+            },
+            {
+                "name": "Shoe fit",
+                "values": [
+                    "Regular"
+                ]
+            }
+        ],
+        "media": [
+            {
+                "url": "https://cdn.shopify.com/s/files/1/0728/0640/0313/files/1706252064582a399ccd7cf4083c68b555bc2d9e1c_900_0ad737c0-f1ad-4230-ad3e-c2acc1211da1.png",
+                "altText": "Men's White Sneakers Couples Anti-Slip Casual Sports Shoes For Outdoor Activities, High-Top Style"
+            }
+        ],
+        "priceRange": {
+            "min": {
+                "amount": 4100,
+                "currency": "USD"
+            },
+            "max": {
+                "amount": 4100,
+                "currency": "USD"
+            }
+        },
+        "lookupUrl": "https://discover.shopifyapps.com/global/v2/p/2y4sG1zhjDtnuEdGs5wJ2l?_gsid=Je8FEWf1a732&available_for_sale=1&max_price=100.0&query=mens+white+sneakers&ships_to=US&variant_id=48489150251321",
+        "options": [
+            {
+                "name": "Size",
+                "values": [
+                    {
+                        "value": "eur36"
+                    },
+                    {
+                        "value": "eur37"
+                    },
+                    {
+                        "value": "eur38"
+                    },
+                    {
+                        "value": "eur39"
+                    },
+                    {
+                        "value": "eur40"
+                    },
+                    {
+                        "value": "eur41"
+                    },
+                    {
+                        "value": "eur42"
+                    },
+                    {
+                        "value": "eur43"
+                    },
+                    {
+                        "value": "eur44"
+                    },
+                    {
+                        "value": "eur45"
+                    }
+                ]
+            }
+        ],
+        "variants": [
+            {
+                "id": "gid://shopify/ProductVariant/48489150251321?shop=72806400313",
+                "productId": "gid://shopify/Product/9206260564281",
+                "displayName": "Men's White Sneakers Couples Anti-Slip Casual Sports Shoes For Outdoor Activities, High-Top Style",
+                "availableForSale": true,
+                "price": {
+                    "amount": 4100,
+                    "currency": "USD"
+                },
+                "media": [
+                    {
+                        "url": "https://cdn.shopify.com/s/files/1/0728/0640/0313/files/1706252064582a399ccd7cf4083c68b555bc2d9e1c_900_0ad737c0-f1ad-4230-ad3e-c2acc1211da1.png",
+                        "altText": "Men's White Sneakers Couples Anti-Slip Casual Sports Shoes For Outdoor Activities, High-Top Style"
+                    }
+                ],
+                "options": [
+                    {
+                        "name": "Size",
+                        "value": "eur36"
+                    }
+                ],
+                "shop": {
+                    "id": "gid://shopify/Shop/72806400313",
+                    "name": "Lolli World Marketplace",
+                    "onlineStoreUrl": "https://lolli.world"
+                },
+                "variantUrl": "https://lolli.world/products/sh48763150?variant=48489150251321",
+                "checkoutUrl": "https://lolli.world/cart/48489150251321:1?_gsid=Je8FEWf1a732&payment=shop_pay",
+                "secondhand": false,
+                "lookupUrl": "https://discover.shopifyapps.com/global/v2/p/2y4sG1zhjDtnuEdGs5wJ2l?_gsid=Je8FEWf1a732&available_for_sale=1&max_price=100.0&query=mens+white+sneakers&ships_to=US&variant_id=48489150251321"
+            },
+            {
+                "id": "gid://shopify/ProductVariant/48489150284089?shop=72806400313",
+                "productId": "gid://shopify/Product/9206260564281",
+                "displayName": "Men's White Sneakers Couples Anti-Slip Casual Sports Shoes For Outdoor Activities, High-Top Style",
+                "availableForSale": true,
+                "price": {
+                    "amount": 4100,
+                    "currency": "USD"
+                },
+                "media": [
+                    {
+                        "url": "https://cdn.shopify.com/s/files/1/0728/0640/0313/files/1706252064582a399ccd7cf4083c68b555bc2d9e1c_900_0ad737c0-f1ad-4230-ad3e-c2acc1211da1.png",
+                        "altText": "Men's White Sneakers Couples Anti-Slip Casual Sports Shoes For Outdoor Activities, High-Top Style"
+                    }
+                ],
+                "options": [
+                    {
+                        "name": "Size",
+                        "value": "eur37"
+                    }
+                ],
+                "shop": {
+                    "id": "gid://shopify/Shop/72806400313",
+                    "name": "Lolli World Marketplace",
+                    "onlineStoreUrl": "https://lolli.world"
+                },
+                "variantUrl": "https://lolli.world/products/sh48763150?variant=48489150284089",
+                "checkoutUrl": "https://lolli.world/cart/48489150284089:1?_gsid=Je8FEWf1a732&payment=shop_pay",
+                "secondhand": false,
+                "lookupUrl": "https://discover.shopifyapps.com/global/v2/p/2y4sG1zhjDtnuEdGs5wJ2l?_gsid=Je8FEWf1a732&available_for_sale=1&max_price=100.0&query=mens+white+sneakers&ships_to=US&variant_id=48489150251321"
+            },
+            {
+                "id": "gid://shopify/ProductVariant/48489150316857?shop=72806400313",
+                "productId": "gid://shopify/Product/9206260564281",
+                "displayName": "Men's White Sneakers Couples Anti-Slip Casual Sports Shoes For Outdoor Activities, High-Top Style",
+                "availableForSale": true,
+                "price": {
+                    "amount": 4100,
+                    "currency": "USD"
+                },
+                "media": [
+                    {
+                        "url": "https://cdn.shopify.com/s/files/1/0728/0640/0313/files/1706252064582a399ccd7cf4083c68b555bc2d9e1c_900_0ad737c0-f1ad-4230-ad3e-c2acc1211da1.png",
+                        "altText": "Men's White Sneakers Couples Anti-Slip Casual Sports Shoes For Outdoor Activities, High-Top Style"
+                    }
+                ],
+                "options": [
+                    {
+                        "name": "Size",
+                        "value": "eur38"
+                    }
+                ],
+                "shop": {
+                    "id": "gid://shopify/Shop/72806400313",
+                    "name": "Lolli World Marketplace",
+                    "onlineStoreUrl": "https://lolli.world"
+                },
+                "variantUrl": "https://lolli.world/products/sh48763150?variant=48489150316857",
+                "checkoutUrl": "https://lolli.world/cart/48489150316857:1?_gsid=Je8FEWf1a732&payment=shop_pay",
+                "secondhand": false,
+                "lookupUrl": "https://discover.shopifyapps.com/global/v2/p/2y4sG1zhjDtnuEdGs5wJ2l?_gsid=Je8FEWf1a732&available_for_sale=1&max_price=100.0&query=mens+white+sneakers&ships_to=US&variant_id=48489150251321"
+            },
+            {
+                "id": "gid://shopify/ProductVariant/48489150349625?shop=72806400313",
+                "productId": "gid://shopify/Product/9206260564281",
+                "displayName": "Men's White Sneakers Couples Anti-Slip Casual Sports Shoes For Outdoor Activities, High-Top Style",
+                "availableForSale": true,
+                "price": {
+                    "amount": 4100,
+                    "currency": "USD"
+                },
+                "media": [
+                    {
+                        "url": "https://cdn.shopify.com/s/files/1/0728/0640/0313/files/1706252064582a399ccd7cf4083c68b555bc2d9e1c_900_0ad737c0-f1ad-4230-ad3e-c2acc1211da1.png",
+                        "altText": "Men's White Sneakers Couples Anti-Slip Casual Sports Shoes For Outdoor Activities, High-Top Style"
+                    }
+                ],
+                "options": [
+                    {
+                        "name": "Size",
+                        "value": "eur39"
+                    }
+                ],
+                "shop": {
+                    "id": "gid://shopify/Shop/72806400313",
+                    "name": "Lolli World Marketplace",
+                    "onlineStoreUrl": "https://lolli.world"
+                },
+                "variantUrl": "https://lolli.world/products/sh48763150?variant=48489150349625",
+                "checkoutUrl": "https://lolli.world/cart/48489150349625:1?_gsid=Je8FEWf1a732&payment=shop_pay",
+                "secondhand": false,
+                "lookupUrl": "https://discover.shopifyapps.com/global/v2/p/2y4sG1zhjDtnuEdGs5wJ2l?_gsid=Je8FEWf1a732&available_for_sale=1&max_price=100.0&query=mens+white+sneakers&ships_to=US&variant_id=48489150251321"
+            },
+            {
+                "id": "gid://shopify/ProductVariant/48489150382393?shop=72806400313",
+                "productId": "gid://shopify/Product/9206260564281",
+                "displayName": "Men's White Sneakers Couples Anti-Slip Casual Sports Shoes For Outdoor Activities, High-Top Style",
+                "availableForSale": true,
+                "price": {
+                    "amount": 4100,
+                    "currency": "USD"
+                },
+                "media": [
+                    {
+                        "url": "https://cdn.shopify.com/s/files/1/0728/0640/0313/files/1706252064582a399ccd7cf4083c68b555bc2d9e1c_900_0ad737c0-f1ad-4230-ad3e-c2acc1211da1.png",
+                        "altText": "Men's White Sneakers Couples Anti-Slip Casual Sports Shoes For Outdoor Activities, High-Top Style"
+                    }
+                ],
+                "options": [
+                    {
+                        "name": "Size",
+                        "value": "eur40"
+                    }
+                ],
+                "shop": {
+                    "id": "gid://shopify/Shop/72806400313",
+                    "name": "Lolli World Marketplace",
+                    "onlineStoreUrl": "https://lolli.world"
+                },
+                "variantUrl": "https://lolli.world/products/sh48763150?variant=48489150382393",
+                "checkoutUrl": "https://lolli.world/cart/48489150382393:1?_gsid=Je8FEWf1a732&payment=shop_pay",
+                "secondhand": false,
+                "lookupUrl": "https://discover.shopifyapps.com/global/v2/p/2y4sG1zhjDtnuEdGs5wJ2l?_gsid=Je8FEWf1a732&available_for_sale=1&max_price=100.0&query=mens+white+sneakers&ships_to=US&variant_id=48489150251321"
+            },
+            {
+                "id": "gid://shopify/ProductVariant/48489150415161?shop=72806400313",
+                "productId": "gid://shopify/Product/9206260564281",
+                "displayName": "Men's White Sneakers Couples Anti-Slip Casual Sports Shoes For Outdoor Activities, High-Top Style",
+                "availableForSale": true,
+                "price": {
+                    "amount": 4100,
+                    "currency": "USD"
+                },
+                "media": [
+                    {
+                        "url": "https://cdn.shopify.com/s/files/1/0728/0640/0313/files/1706252064582a399ccd7cf4083c68b555bc2d9e1c_900_0ad737c0-f1ad-4230-ad3e-c2acc1211da1.png",
+                        "altText": "Men's White Sneakers Couples Anti-Slip Casual Sports Shoes For Outdoor Activities, High-Top Style"
+                    }
+                ],
+                "options": [
+                    {
+                        "name": "Size",
+                        "value": "eur41"
+                    }
+                ],
+                "shop": {
+                    "id": "gid://shopify/Shop/72806400313",
+                    "name": "Lolli World Marketplace",
+                    "onlineStoreUrl": "https://lolli.world"
+                },
+                "variantUrl": "https://lolli.world/products/sh48763150?variant=48489150415161",
+                "checkoutUrl": "https://lolli.world/cart/48489150415161:1?_gsid=Je8FEWf1a732&payment=shop_pay",
+                "secondhand": false,
+                "lookupUrl": "https://discover.shopifyapps.com/global/v2/p/2y4sG1zhjDtnuEdGs5wJ2l?_gsid=Je8FEWf1a732&available_for_sale=1&max_price=100.0&query=mens+white+sneakers&ships_to=US&variant_id=48489150251321"
+            },
+            {
+                "id": "gid://shopify/ProductVariant/48489150447929?shop=72806400313",
+                "productId": "gid://shopify/Product/9206260564281",
+                "displayName": "Men's White Sneakers Couples Anti-Slip Casual Sports Shoes For Outdoor Activities, High-Top Style",
+                "availableForSale": true,
+                "price": {
+                    "amount": 4100,
+                    "currency": "USD"
+                },
+                "media": [
+                    {
+                        "url": "https://cdn.shopify.com/s/files/1/0728/0640/0313/files/1706252064582a399ccd7cf4083c68b555bc2d9e1c_900_0ad737c0-f1ad-4230-ad3e-c2acc1211da1.png",
+                        "altText": "Men's White Sneakers Couples Anti-Slip Casual Sports Shoes For Outdoor Activities, High-Top Style"
+                    }
+                ],
+                "options": [
+                    {
+                        "name": "Size",
+                        "value": "eur42"
+                    }
+                ],
+                "shop": {
+                    "id": "gid://shopify/Shop/72806400313",
+                    "name": "Lolli World Marketplace",
+                    "onlineStoreUrl": "https://lolli.world"
+                },
+                "variantUrl": "https://lolli.world/products/sh48763150?variant=48489150447929",
+                "checkoutUrl": "https://lolli.world/cart/48489150447929:1?_gsid=Je8FEWf1a732&payment=shop_pay",
+                "secondhand": false,
+                "lookupUrl": "https://discover.shopifyapps.com/global/v2/p/2y4sG1zhjDtnuEdGs5wJ2l?_gsid=Je8FEWf1a732&available_for_sale=1&max_price=100.0&query=mens+white+sneakers&ships_to=US&variant_id=48489150251321"
+            },
+            {
+                "id": "gid://shopify/ProductVariant/48489150480697?shop=72806400313",
+                "productId": "gid://shopify/Product/9206260564281",
+                "displayName": "Men's White Sneakers Couples Anti-Slip Casual Sports Shoes For Outdoor Activities, High-Top Style",
+                "availableForSale": true,
+                "price": {
+                    "amount": 4100,
+                    "currency": "USD"
+                },
+                "media": [
+                    {
+                        "url": "https://cdn.shopify.com/s/files/1/0728/0640/0313/files/1706252064582a399ccd7cf4083c68b555bc2d9e1c_900_0ad737c0-f1ad-4230-ad3e-c2acc1211da1.png",
+                        "altText": "Men's White Sneakers Couples Anti-Slip Casual Sports Shoes For Outdoor Activities, High-Top Style"
+                    }
+                ],
+                "options": [
+                    {
+                        "name": "Size",
+                        "value": "eur43"
+                    }
+                ],
+                "shop": {
+                    "id": "gid://shopify/Shop/72806400313",
+                    "name": "Lolli World Marketplace",
+                    "onlineStoreUrl": "https://lolli.world"
+                },
+                "variantUrl": "https://lolli.world/products/sh48763150?variant=48489150480697",
+                "checkoutUrl": "https://lolli.world/cart/48489150480697:1?_gsid=Je8FEWf1a732&payment=shop_pay",
+                "secondhand": false,
+                "lookupUrl": "https://discover.shopifyapps.com/global/v2/p/2y4sG1zhjDtnuEdGs5wJ2l?_gsid=Je8FEWf1a732&available_for_sale=1&max_price=100.0&query=mens+white+sneakers&ships_to=US&variant_id=48489150251321"
+            },
+            {
+                "id": "gid://shopify/ProductVariant/48489150513465?shop=72806400313",
+                "productId": "gid://shopify/Product/9206260564281",
+                "displayName": "Men's White Sneakers Couples Anti-Slip Casual Sports Shoes For Outdoor Activities, High-Top Style",
+                "availableForSale": true,
+                "price": {
+                    "amount": 4100,
+                    "currency": "USD"
+                },
+                "media": [
+                    {
+                        "url": "https://cdn.shopify.com/s/files/1/0728/0640/0313/files/1706252064582a399ccd7cf4083c68b555bc2d9e1c_900_0ad737c0-f1ad-4230-ad3e-c2acc1211da1.png",
+                        "altText": "Men's White Sneakers Couples Anti-Slip Casual Sports Shoes For Outdoor Activities, High-Top Style"
+                    }
+                ],
+                "options": [
+                    {
+                        "name": "Size",
+                        "value": "eur44"
+                    }
+                ],
+                "shop": {
+                    "id": "gid://shopify/Shop/72806400313",
+                    "name": "Lolli World Marketplace",
+                    "onlineStoreUrl": "https://lolli.world"
+                },
+                "variantUrl": "https://lolli.world/products/sh48763150?variant=48489150513465",
+                "checkoutUrl": "https://lolli.world/cart/48489150513465:1?_gsid=Je8FEWf1a732&payment=shop_pay",
+                "secondhand": false,
+                "lookupUrl": "https://discover.shopifyapps.com/global/v2/p/2y4sG1zhjDtnuEdGs5wJ2l?_gsid=Je8FEWf1a732&available_for_sale=1&max_price=100.0&query=mens+white+sneakers&ships_to=US&variant_id=48489150251321"
+            },
+            {
+                "id": "gid://shopify/ProductVariant/48489150546233?shop=72806400313",
+                "productId": "gid://shopify/Product/9206260564281",
+                "displayName": "Men's White Sneakers Couples Anti-Slip Casual Sports Shoes For Outdoor Activities, High-Top Style",
+                "availableForSale": true,
+                "price": {
+                    "amount": 4100,
+                    "currency": "USD"
+                },
+                "media": [
+                    {
+                        "url": "https://cdn.shopify.com/s/files/1/0728/0640/0313/files/1706252064582a399ccd7cf4083c68b555bc2d9e1c_900_0ad737c0-f1ad-4230-ad3e-c2acc1211da1.png",
+                        "altText": "Men's White Sneakers Couples Anti-Slip Casual Sports Shoes For Outdoor Activities, High-Top Style"
+                    }
+                ],
+                "options": [
+                    {
+                        "name": "Size",
+                        "value": "eur45"
+                    }
+                ],
+                "shop": {
+                    "id": "gid://shopify/Shop/72806400313",
+                    "name": "Lolli World Marketplace",
+                    "onlineStoreUrl": "https://lolli.world"
+                },
+                "variantUrl": "https://lolli.world/products/sh48763150?variant=48489150546233",
+                "checkoutUrl": "https://lolli.world/cart/48489150546233:1?_gsid=Je8FEWf1a732&payment=shop_pay",
+                "secondhand": false,
+                "lookupUrl": "https://discover.shopifyapps.com/global/v2/p/2y4sG1zhjDtnuEdGs5wJ2l?_gsid=Je8FEWf1a732&available_for_sale=1&max_price=100.0&query=mens+white+sneakers&ships_to=US&variant_id=48489150251321"
+            }
+        ]
+    },
+    {
+        "id": "gid://shopify/p/4SjsAG9Sn52eTGck3uHHDI",
+        "title": "Breathable White Mesh Men's Casual Sneaker",
+        "description": "Lightweight mesh sneakers designed for breathable comfort during casual wear and light activities.",
+        "uniqueSellingPoint": "Breathable mesh upper keeps feet cool and comfortable in warm weather.",
+        "topFeatures": [
+            "Breathable mesh upper: Enhances airflow to keep feet cool and dry",
+            "Low-top design: Offers a modern, casual look and easy fit",
+            "Flat 1.3 cm heel: Provides stability and comfort for everyday use",
+            "Rubber sole: Ensures reliable traction on various surfaces",
+            "Front lace-up closure: Allows for a secure, adjustable fit"
+        ],
+        "techSpecs": [
+            "Upper Material: Mesh",
+            "Sole Material: Rubber (craft viscose)",
+            "Heel Height: 1.3 cm (flat, low)",
+            "Closure Type: Lace-up",
+            "Available Sizes: 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47",
+            "Color: White, Black"
+        ],
+        "attributes": [],
+        "media": [
+            {
+                "url": "https://cdn.shopify.com/s/files/1/0832/8016/7239/files/ae447e02-a893-4422-a4a6-3dfd7879f2be.jpg",
+                "altText": "676046991-1"
+            }
+        ],
+        "priceRange": {
+            "min": {
+                "amount": 3600,
+                "currency": "USD"
+            },
+            "max": {
+                "amount": 3600,
+                "currency": "USD"
+            }
+        },
+        "lookupUrl": "https://discover.shopifyapps.com/global/v2/p/4SjsAG9Sn52eTGck3uHHDI?_gsid=Je8FEWf1a732&available_for_sale=1&max_price=100.0&query=mens+white+sneakers&ships_to=US&variant_id=51641647497543",
+        "options": [
+            {
+                "name": "Color",
+                "values": [
+                    {
+                        "value": "Black And White"
+                    },
+                    {
+                        "value": "White"
+                    }
+                ]
+            },
+            {
+                "name": "Size",
+                "values": [
+                    {
+                        "value": "35"
+                    },
+                    {
+                        "value": "36"
+                    },
+                    {
+                        "value": "37"
+                    },
+                    {
+                        "value": "38"
+                    },
+                    {
+                        "value": "39"
+                    },
+                    {
+                        "value": "40"
+                    },
+                    {
+                        "value": "41"
+                    },
+                    {
+                        "value": "42"
+                    },
+                    {
+                        "value": "43"
+                    },
+                    {
+                        "value": "44"
+                    },
+                    {
+                        "value": "45"
+                    },
+                    {
+                        "value": "46"
+                    },
+                    {
+                        "value": "47"
+                    }
+                ]
+            }
+        ],
+        "variants": [
+            {
+                "id": "gid://shopify/ProductVariant/51641647497543?shop=83280167239",
+                "productId": "gid://shopify/Product/10185190342983",
+                "displayName": "Breathable White Mesh Men's Casual Sneaker",
+                "availableForSale": true,
+                "price": {
+                    "amount": 3600,
+                    "currency": "USD"
+                },
+                "media": [
+                    {
+                        "url": "https://cdn.shopify.com/s/files/1/0832/8016/7239/files/ae447e02-a893-4422-a4a6-3dfd7879f2be.jpg",
+                        "altText": "676046991-1"
+                    }
+                ],
+                "options": [
+                    {
+                        "name": "Color",
+                        "value": "White"
+                    },
+                    {
+                        "name": "Size",
+                        "value": "35"
+                    }
+                ],
+                "shop": {
+                    "id": "gid://shopify/Shop/83280167239",
+                    "name": "Valstrend shop",
+                    "onlineStoreUrl": "https://valstrendshop.shop"
+                },
+                "variantUrl": "https://valstrendshop.shop/products/breathable-white-mesh-mens-casual-sneaker?variant=51641647497543",
+                "checkoutUrl": "https://valstrendshop.shop/cart/51641647497543:1?_gsid=Je8FEWf1a732&payment=shop_pay",
+                "secondhand": false,
+                "lookupUrl": "https://discover.shopifyapps.com/global/v2/p/4SjsAG9Sn52eTGck3uHHDI?_gsid=Je8FEWf1a732&available_for_sale=1&max_price=100.0&query=mens+white+sneakers&ships_to=US&variant_id=51641647497543"
+            },
+            {
+                "id": "gid://shopify/ProductVariant/51641647530311?shop=83280167239",
+                "productId": "gid://shopify/Product/10185190342983",
+                "displayName": "Breathable White Mesh Men's Casual Sneaker",
+                "availableForSale": true,
+                "price": {
+                    "amount": 3600,
+                    "currency": "USD"
+                },
+                "media": [
+                    {
+                        "url": "https://cdn.shopify.com/s/files/1/0832/8016/7239/files/ae447e02-a893-4422-a4a6-3dfd7879f2be.jpg",
+                        "altText": "676046991-1"
+                    }
+                ],
+                "options": [
+                    {
+                        "name": "Color",
+                        "value": "White"
+                    },
+                    {
+                        "name": "Size",
+                        "value": "39"
+                    }
+                ],
+                "shop": {
+                    "id": "gid://shopify/Shop/83280167239",
+                    "name": "Valstrend shop",
+                    "onlineStoreUrl": "https://valstrendshop.shop"
+                },
+                "variantUrl": "https://valstrendshop.shop/products/breathable-white-mesh-mens-casual-sneaker?variant=51641647530311",
+                "checkoutUrl": "https://valstrendshop.shop/cart/51641647530311:1?_gsid=Je8FEWf1a732&payment=shop_pay",
+                "secondhand": false,
+                "lookupUrl": "https://discover.shopifyapps.com/global/v2/p/4SjsAG9Sn52eTGck3uHHDI?_gsid=Je8FEWf1a732&available_for_sale=1&max_price=100.0&query=mens+white+sneakers&ships_to=US&variant_id=51641647497543"
+            },
+            {
+                "id": "gid://shopify/ProductVariant/51641647563079?shop=83280167239",
+                "productId": "gid://shopify/Product/10185190342983",
+                "displayName": "Breathable White Mesh Men's Casual Sneaker",
+                "availableForSale": true,
+                "price": {
+                    "amount": 3600,
+                    "currency": "USD"
+                },
+                "media": [
+                    {
+                        "url": "https://cdn.shopify.com/s/files/1/0832/8016/7239/files/ae447e02-a893-4422-a4a6-3dfd7879f2be.jpg",
+                        "altText": "676046991-1"
+                    }
+                ],
+                "options": [
+                    {
+                        "name": "Color",
+                        "value": "White"
+                    },
+                    {
+                        "name": "Size",
+                        "value": "38"
+                    }
+                ],
+                "shop": {
+                    "id": "gid://shopify/Shop/83280167239",
+                    "name": "Valstrend shop",
+                    "onlineStoreUrl": "https://valstrendshop.shop"
+                },
+                "variantUrl": "https://valstrendshop.shop/products/breathable-white-mesh-mens-casual-sneaker?variant=51641647563079",
+                "checkoutUrl": "https://valstrendshop.shop/cart/51641647563079:1?_gsid=Je8FEWf1a732&payment=shop_pay",
+                "secondhand": false,
+                "lookupUrl": "https://discover.shopifyapps.com/global/v2/p/4SjsAG9Sn52eTGck3uHHDI?_gsid=Je8FEWf1a732&available_for_sale=1&max_price=100.0&query=mens+white+sneakers&ships_to=US&variant_id=51641647497543"
+            },
+            {
+                "id": "gid://shopify/ProductVariant/51641647595847?shop=83280167239",
+                "productId": "gid://shopify/Product/10185190342983",
+                "displayName": "Breathable White Mesh Men's Casual Sneaker",
+                "availableForSale": true,
+                "price": {
+                    "amount": 3600,
+                    "currency": "USD"
+                },
+                "media": [
+                    {
+                        "url": "https://cdn.shopify.com/s/files/1/0832/8016/7239/files/ae447e02-a893-4422-a4a6-3dfd7879f2be.jpg",
+                        "altText": "676046991-1"
+                    }
+                ],
+                "options": [
+                    {
+                        "name": "Color",
+                        "value": "White"
+                    },
+                    {
+                        "name": "Size",
+                        "value": "42"
+                    }
+                ],
+                "shop": {
+                    "id": "gid://shopify/Shop/83280167239",
+                    "name": "Valstrend shop",
+                    "onlineStoreUrl": "https://valstrendshop.shop"
+                },
+                "variantUrl": "https://valstrendshop.shop/products/breathable-white-mesh-mens-casual-sneaker?variant=51641647595847",
+                "checkoutUrl": "https://valstrendshop.shop/cart/51641647595847:1?_gsid=Je8FEWf1a732&payment=shop_pay",
+                "secondhand": false,
+                "lookupUrl": "https://discover.shopifyapps.com/global/v2/p/4SjsAG9Sn52eTGck3uHHDI?_gsid=Je8FEWf1a732&available_for_sale=1&max_price=100.0&query=mens+white+sneakers&ships_to=US&variant_id=51641647497543"
+            },
+            {
+                "id": "gid://shopify/ProductVariant/51641647628615?shop=83280167239",
+                "productId": "gid://shopify/Product/10185190342983",
+                "displayName": "Breathable White Mesh Men's Casual Sneaker",
+                "availableForSale": true,
+                "price": {
+                    "amount": 3600,
+                    "currency": "USD"
+                },
+                "media": [
+                    {
+                        "url": "https://cdn.shopify.com/s/files/1/0832/8016/7239/files/ae447e02-a893-4422-a4a6-3dfd7879f2be.jpg",
+                        "altText": "676046991-1"
+                    }
+                ],
+                "options": [
+                    {
+                        "name": "Color",
+                        "value": "White"
+                    },
+                    {
+                        "name": "Size",
+                        "value": "36"
+                    }
+                ],
+                "shop": {
+                    "id": "gid://shopify/Shop/83280167239",
+                    "name": "Valstrend shop",
+                    "onlineStoreUrl": "https://valstrendshop.shop"
+                },
+                "variantUrl": "https://valstrendshop.shop/products/breathable-white-mesh-mens-casual-sneaker?variant=51641647628615",
+                "checkoutUrl": "https://valstrendshop.shop/cart/51641647628615:1?_gsid=Je8FEWf1a732&payment=shop_pay",
+                "secondhand": false,
+                "lookupUrl": "https://discover.shopifyapps.com/global/v2/p/4SjsAG9Sn52eTGck3uHHDI?_gsid=Je8FEWf1a732&available_for_sale=1&max_price=100.0&query=mens+white+sneakers&ships_to=US&variant_id=51641647497543"
+            },
+            {
+                "id": "gid://shopify/ProductVariant/51641647661383?shop=83280167239",
+                "productId": "gid://shopify/Product/10185190342983",
+                "displayName": "Breathable White Mesh Men's Casual Sneaker",
+                "availableForSale": true,
+                "price": {
+                    "amount": 3600,
+                    "currency": "USD"
+                },
+                "media": [
+                    {
+                        "url": "https://cdn.shopify.com/s/files/1/0832/8016/7239/files/ae447e02-a893-4422-a4a6-3dfd7879f2be.jpg",
+                        "altText": "676046991-1"
+                    }
+                ],
+                "options": [
+                    {
+                        "name": "Color",
+                        "value": "White"
+                    },
+                    {
+                        "name": "Size",
+                        "value": "37"
+                    }
+                ],
+                "shop": {
+                    "id": "gid://shopify/Shop/83280167239",
+                    "name": "Valstrend shop",
+                    "onlineStoreUrl": "https://valstrendshop.shop"
+                },
+                "variantUrl": "https://valstrendshop.shop/products/breathable-white-mesh-mens-casual-sneaker?variant=51641647661383",
+                "checkoutUrl": "https://valstrendshop.shop/cart/51641647661383:1?_gsid=Je8FEWf1a732&payment=shop_pay",
+                "secondhand": false,
+                "lookupUrl": "https://discover.shopifyapps.com/global/v2/p/4SjsAG9Sn52eTGck3uHHDI?_gsid=Je8FEWf1a732&available_for_sale=1&max_price=100.0&query=mens+white+sneakers&ships_to=US&variant_id=51641647497543"
+            },
+            {
+                "id": "gid://shopify/ProductVariant/51641647694151?shop=83280167239",
+                "productId": "gid://shopify/Product/10185190342983",
+                "displayName": "Breathable White Mesh Men's Casual Sneaker",
+                "availableForSale": true,
+                "price": {
+                    "amount": 3600,
+                    "currency": "USD"
+                },
+                "media": [
+                    {
+                        "url": "https://cdn.shopify.com/s/files/1/0832/8016/7239/files/ae447e02-a893-4422-a4a6-3dfd7879f2be.jpg",
+                        "altText": "676046991-1"
+                    }
+                ],
+                "options": [
+                    {
+                        "name": "Color",
+                        "value": "White"
+                    },
+                    {
+                        "name": "Size",
+                        "value": "40"
+                    }
+                ],
+                "shop": {
+                    "id": "gid://shopify/Shop/83280167239",
+                    "name": "Valstrend shop",
+                    "onlineStoreUrl": "https://valstrendshop.shop"
+                },
+                "variantUrl": "https://valstrendshop.shop/products/breathable-white-mesh-mens-casual-sneaker?variant=51641647694151",
+                "checkoutUrl": "https://valstrendshop.shop/cart/51641647694151:1?_gsid=Je8FEWf1a732&payment=shop_pay",
+                "secondhand": false,
+                "lookupUrl": "https://discover.shopifyapps.com/global/v2/p/4SjsAG9Sn52eTGck3uHHDI?_gsid=Je8FEWf1a732&available_for_sale=1&max_price=100.0&query=mens+white+sneakers&ships_to=US&variant_id=51641647497543"
+            },
+            {
+                "id": "gid://shopify/ProductVariant/51641647726919?shop=83280167239",
+                "productId": "gid://shopify/Product/10185190342983",
+                "displayName": "Breathable White Mesh Men's Casual Sneaker",
+                "availableForSale": true,
+                "price": {
+                    "amount": 3600,
+                    "currency": "USD"
+                },
+                "media": [
+                    {
+                        "url": "https://cdn.shopify.com/s/files/1/0832/8016/7239/files/ae447e02-a893-4422-a4a6-3dfd7879f2be.jpg",
+                        "altText": "676046991-1"
+                    }
+                ],
+                "options": [
+                    {
+                        "name": "Color",
+                        "value": "White"
+                    },
+                    {
+                        "name": "Size",
+                        "value": "41"
+                    }
+                ],
+                "shop": {
+                    "id": "gid://shopify/Shop/83280167239",
+                    "name": "Valstrend shop",
+                    "onlineStoreUrl": "https://valstrendshop.shop"
+                },
+                "variantUrl": "https://valstrendshop.shop/products/breathable-white-mesh-mens-casual-sneaker?variant=51641647726919",
+                "checkoutUrl": "https://valstrendshop.shop/cart/51641647726919:1?_gsid=Je8FEWf1a732&payment=shop_pay",
+                "secondhand": false,
+                "lookupUrl": "https://discover.shopifyapps.com/global/v2/p/4SjsAG9Sn52eTGck3uHHDI?_gsid=Je8FEWf1a732&available_for_sale=1&max_price=100.0&query=mens+white+sneakers&ships_to=US&variant_id=51641647497543"
+            },
+            {
+                "id": "gid://shopify/ProductVariant/51641647759687?shop=83280167239",
+                "productId": "gid://shopify/Product/10185190342983",
+                "displayName": "Breathable White Mesh Men's Casual Sneaker",
+                "availableForSale": true,
+                "price": {
+                    "amount": 3600,
+                    "currency": "USD"
+                },
+                "media": [
+                    {
+                        "url": "https://cdn.shopify.com/s/files/1/0832/8016/7239/files/ae447e02-a893-4422-a4a6-3dfd7879f2be.jpg",
+                        "altText": "676046991-1"
+                    }
+                ],
+                "options": [
+                    {
+                        "name": "Color",
+                        "value": "White"
+                    },
+                    {
+                        "name": "Size",
+                        "value": "43"
+                    }
+                ],
+                "shop": {
+                    "id": "gid://shopify/Shop/83280167239",
+                    "name": "Valstrend shop",
+                    "onlineStoreUrl": "https://valstrendshop.shop"
+                },
+                "variantUrl": "https://valstrendshop.shop/products/breathable-white-mesh-mens-casual-sneaker?variant=51641647759687",
+                "checkoutUrl": "https://valstrendshop.shop/cart/51641647759687:1?_gsid=Je8FEWf1a732&payment=shop_pay",
+                "secondhand": false,
+                "lookupUrl": "https://discover.shopifyapps.com/global/v2/p/4SjsAG9Sn52eTGck3uHHDI?_gsid=Je8FEWf1a732&available_for_sale=1&max_price=100.0&query=mens+white+sneakers&ships_to=US&variant_id=51641647497543"
+            },
+            {
+                "id": "gid://shopify/ProductVariant/51641647792455?shop=83280167239",
+                "productId": "gid://shopify/Product/10185190342983",
+                "displayName": "Breathable White Mesh Men's Casual Sneaker",
+                "availableForSale": true,
+                "price": {
+                    "amount": 3600,
+                    "currency": "USD"
+                },
+                "media": [
+                    {
+                        "url": "https://cdn.shopify.com/s/files/1/0832/8016/7239/files/ae447e02-a893-4422-a4a6-3dfd7879f2be.jpg",
+                        "altText": "676046991-1"
+                    }
+                ],
+                "options": [
+                    {
+                        "name": "Color",
+                        "value": "White"
+                    },
+                    {
+                        "name": "Size",
+                        "value": "44"
+                    }
+                ],
+                "shop": {
+                    "id": "gid://shopify/Shop/83280167239",
+                    "name": "Valstrend shop",
+                    "onlineStoreUrl": "https://valstrendshop.shop"
+                },
+                "variantUrl": "https://valstrendshop.shop/products/breathable-white-mesh-mens-casual-sneaker?variant=51641647792455",
+                "checkoutUrl": "https://valstrendshop.shop/cart/51641647792455:1?_gsid=Je8FEWf1a732&payment=shop_pay",
+                "secondhand": false,
+                "lookupUrl": "https://discover.shopifyapps.com/global/v2/p/4SjsAG9Sn52eTGck3uHHDI?_gsid=Je8FEWf1a732&available_for_sale=1&max_price=100.0&query=mens+white+sneakers&ships_to=US&variant_id=51641647497543"
+            }
+        ]
+    },
+    {
+        "id": "gid://shopify/p/2yKYcD6DGhDIgQ4z1xmBRG",
+        "title": "White Sneakers Men Non Slip Walking Running Shoes Sports",
+        "description": "Lightweight white sneakers with non slip sole and breathable mesh upper for comfortable walking and running.",
+        "uniqueSellingPoint": "Non slip PVC outsole and breathable mesh upper provide superior traction and comfort for daily activities.",
+        "topFeatures": [
+            "Non slip PVC outsole ensures stable footing for walking and running",
+            "Breathable mesh upper keeps feet cool and dry during activity",
+            "Lightweight construction reduces fatigue for extended wear",
+            "Lace up closure offers a secure and adjustable fit",
+            "Available in multiple solid colors for versatile styling"
+        ],
+        "techSpecs": [
+            "Upper Material: Mesh, Polyvinyl chloride (PVC), Cotton",
+            "Sole Material: Polyvinyl chloride (PVC)",
+            "Closure Type: Lace-up",
+            "Toe Style: Round",
+            "Heel Height Type: Flat",
+            "Available Sizes: 39, 40, 41, 42, 43, 44"
+        ],
+        "attributes": [],
+        "media": [
+            {
+                "url": "https://cdn.shopify.com/s/files/1/0620/9323/0245/files/3ac3e243-8c17-4259-b011-f887aad4eadf.jpg",
+                "altText": "White Sneakers Men Non Slip Walking Running Shoes Sports - WOMONA.COM"
+            }
+        ],
+        "priceRange": {
+            "min": {
+                "amount": 4999,
+                "currency": "USD"
+            },
+            "max": {
+                "amount": 4999,
+                "currency": "USD"
+            }
+        },
+        "lookupUrl": "https://discover.shopifyapps.com/global/v2/p/2yKYcD6DGhDIgQ4z1xmBRG?_gsid=Je8FEWf1a732&available_for_sale=1&max_price=100.0&query=mens+white+sneakers&ships_to=US&variant_id=42556446671013",
+        "options": [
+            {
+                "name": "Color",
+                "values": [
+                    {
+                        "value": "Balckred"
+                    },
+                    {
+                        "value": "Black"
+                    },
+                    {
+                        "value": "Whiteblue"
+                    }
+                ]
+            },
+            {
+                "name": "Size",
+                "values": [
+                    {
+                        "value": "size39"
+                    },
+                    {
+                        "value": "size40"
+                    },
+                    {
+                        "value": "size41"
+                    },
+                    {
+                        "value": "size42"
+                    },
+                    {
+                        "value": "size43"
+                    },
+                    {
+                        "value": "size44"
+                    }
+                ]
+            }
+        ],
+        "variants": [
+            {
+                "id": "gid://shopify/ProductVariant/42556446671013?shop=62093230245",
+                "productId": "gid://shopify/Product/8259535962277",
+                "displayName": "White Sneakers Men Non Slip Walking Running Shoes Sports",
+                "availableForSale": true,
+                "price": {
+                    "amount": 4999,
+                    "currency": "USD"
+                },
+                "media": [
+                    {
+                        "url": "https://cdn.shopify.com/s/files/1/0620/9323/0245/files/3ac3e243-8c17-4259-b011-f887aad4eadf.jpg",
+                        "altText": "White Sneakers Men Non Slip Walking Running Shoes Sports - WOMONA.COM"
+                    }
+                ],
+                "options": [
+                    {
+                        "name": "Color",
+                        "value": "Balckred"
+                    },
+                    {
+                        "name": "Size",
+                        "value": "size39"
+                    }
+                ],
+                "shop": {
+                    "id": "gid://shopify/Shop/62093230245",
+                    "name": "WOMONA.COM",
+                    "onlineStoreUrl": "https://womona.com"
+                },
+                "variantUrl": "https://womona.com/products/white-sneakers-men-non-slip-walking-running-shoes-sports?variant=42556446671013",
+                "checkoutUrl": "https://womona.com/cart/42556446671013:1?_gsid=Je8FEWf1a732&payment=shop_pay",
+                "secondhand": false,
+                "lookupUrl": "https://discover.shopifyapps.com/global/v2/p/2yKYcD6DGhDIgQ4z1xmBRG?_gsid=Je8FEWf1a732&available_for_sale=1&max_price=100.0&query=mens+white+sneakers&ships_to=US&variant_id=42556446671013"
+            },
+            {
+                "id": "gid://shopify/ProductVariant/42556446703781?shop=62093230245",
+                "productId": "gid://shopify/Product/8259535962277",
+                "displayName": "White Sneakers Men Non Slip Walking Running Shoes Sports",
+                "availableForSale": true,
+                "price": {
+                    "amount": 4999,
+                    "currency": "USD"
+                },
+                "media": [
+                    {
+                        "url": "https://cdn.shopify.com/s/files/1/0620/9323/0245/files/3ac3e243-8c17-4259-b011-f887aad4eadf.jpg",
+                        "altText": "White Sneakers Men Non Slip Walking Running Shoes Sports - WOMONA.COM"
+                    }
+                ],
+                "options": [
+                    {
+                        "name": "Color",
+                        "value": "Balckred"
+                    },
+                    {
+                        "name": "Size",
+                        "value": "size40"
+                    }
+                ],
+                "shop": {
+                    "id": "gid://shopify/Shop/62093230245",
+                    "name": "WOMONA.COM",
+                    "onlineStoreUrl": "https://womona.com"
+                },
+                "variantUrl": "https://womona.com/products/white-sneakers-men-non-slip-walking-running-shoes-sports?variant=42556446703781",
+                "checkoutUrl": "https://womona.com/cart/42556446703781:1?_gsid=Je8FEWf1a732&payment=shop_pay",
+                "secondhand": false,
+                "lookupUrl": "https://discover.shopifyapps.com/global/v2/p/2yKYcD6DGhDIgQ4z1xmBRG?_gsid=Je8FEWf1a732&available_for_sale=1&max_price=100.0&query=mens+white+sneakers&ships_to=US&variant_id=42556446671013"
+            },
+            {
+                "id": "gid://shopify/ProductVariant/42556446736549?shop=62093230245",
+                "productId": "gid://shopify/Product/8259535962277",
+                "displayName": "White Sneakers Men Non Slip Walking Running Shoes Sports",
+                "availableForSale": true,
+                "price": {
+                    "amount": 4999,
+                    "currency": "USD"
+                },
+                "media": [
+                    {
+                        "url": "https://cdn.shopify.com/s/files/1/0620/9323/0245/files/3ac3e243-8c17-4259-b011-f887aad4eadf.jpg",
+                        "altText": "White Sneakers Men Non Slip Walking Running Shoes Sports - WOMONA.COM"
+                    }
+                ],
+                "options": [
+                    {
+                        "name": "Color",
+                        "value": "Balckred"
+                    },
+                    {
+                        "name": "Size",
+                        "value": "size41"
+                    }
+                ],
+                "shop": {
+                    "id": "gid://shopify/Shop/62093230245",
+                    "name": "WOMONA.COM",
+                    "onlineStoreUrl": "https://womona.com"
+                },
+                "variantUrl": "https://womona.com/products/white-sneakers-men-non-slip-walking-running-shoes-sports?variant=42556446736549",
+                "checkoutUrl": "https://womona.com/cart/42556446736549:1?_gsid=Je8FEWf1a732&payment=shop_pay",
+                "secondhand": false,
+                "lookupUrl": "https://discover.shopifyapps.com/global/v2/p/2yKYcD6DGhDIgQ4z1xmBRG?_gsid=Je8FEWf1a732&available_for_sale=1&max_price=100.0&query=mens+white+sneakers&ships_to=US&variant_id=42556446671013"
+            },
+            {
+                "id": "gid://shopify/ProductVariant/42556446769317?shop=62093230245",
+                "productId": "gid://shopify/Product/8259535962277",
+                "displayName": "White Sneakers Men Non Slip Walking Running Shoes Sports",
+                "availableForSale": true,
+                "price": {
+                    "amount": 4999,
+                    "currency": "USD"
+                },
+                "media": [
+                    {
+                        "url": "https://cdn.shopify.com/s/files/1/0620/9323/0245/files/3ac3e243-8c17-4259-b011-f887aad4eadf.jpg",
+                        "altText": "White Sneakers Men Non Slip Walking Running Shoes Sports - WOMONA.COM"
+                    }
+                ],
+                "options": [
+                    {
+                        "name": "Color",
+                        "value": "Balckred"
+                    },
+                    {
+                        "name": "Size",
+                        "value": "size42"
+                    }
+                ],
+                "shop": {
+                    "id": "gid://shopify/Shop/62093230245",
+                    "name": "WOMONA.COM",
+                    "onlineStoreUrl": "https://womona.com"
+                },
+                "variantUrl": "https://womona.com/products/white-sneakers-men-non-slip-walking-running-shoes-sports?variant=42556446769317",
+                "checkoutUrl": "https://womona.com/cart/42556446769317:1?_gsid=Je8FEWf1a732&payment=shop_pay",
+                "secondhand": false,
+                "lookupUrl": "https://discover.shopifyapps.com/global/v2/p/2yKYcD6DGhDIgQ4z1xmBRG?_gsid=Je8FEWf1a732&available_for_sale=1&max_price=100.0&query=mens+white+sneakers&ships_to=US&variant_id=42556446671013"
+            },
+            {
+                "id": "gid://shopify/ProductVariant/42556446802085?shop=62093230245",
+                "productId": "gid://shopify/Product/8259535962277",
+                "displayName": "White Sneakers Men Non Slip Walking Running Shoes Sports",
+                "availableForSale": true,
+                "price": {
+                    "amount": 4999,
+                    "currency": "USD"
+                },
+                "media": [
+                    {
+                        "url": "https://cdn.shopify.com/s/files/1/0620/9323/0245/files/3ac3e243-8c17-4259-b011-f887aad4eadf.jpg",
+                        "altText": "White Sneakers Men Non Slip Walking Running Shoes Sports - WOMONA.COM"
+                    }
+                ],
+                "options": [
+                    {
+                        "name": "Color",
+                        "value": "Balckred"
+                    },
+                    {
+                        "name": "Size",
+                        "value": "size43"
+                    }
+                ],
+                "shop": {
+                    "id": "gid://shopify/Shop/62093230245",
+                    "name": "WOMONA.COM",
+                    "onlineStoreUrl": "https://womona.com"
+                },
+                "variantUrl": "https://womona.com/products/white-sneakers-men-non-slip-walking-running-shoes-sports?variant=42556446802085",
+                "checkoutUrl": "https://womona.com/cart/42556446802085:1?_gsid=Je8FEWf1a732&payment=shop_pay",
+                "secondhand": false,
+                "lookupUrl": "https://discover.shopifyapps.com/global/v2/p/2yKYcD6DGhDIgQ4z1xmBRG?_gsid=Je8FEWf1a732&available_for_sale=1&max_price=100.0&query=mens+white+sneakers&ships_to=US&variant_id=42556446671013"
+            },
+            {
+                "id": "gid://shopify/ProductVariant/42556446834853?shop=62093230245",
+                "productId": "gid://shopify/Product/8259535962277",
+                "displayName": "White Sneakers Men Non Slip Walking Running Shoes Sports",
+                "availableForSale": true,
+                "price": {
+                    "amount": 4999,
+                    "currency": "USD"
+                },
+                "media": [
+                    {
+                        "url": "https://cdn.shopify.com/s/files/1/0620/9323/0245/files/3ac3e243-8c17-4259-b011-f887aad4eadf.jpg",
+                        "altText": "White Sneakers Men Non Slip Walking Running Shoes Sports - WOMONA.COM"
+                    }
+                ],
+                "options": [
+                    {
+                        "name": "Color",
+                        "value": "Balckred"
+                    },
+                    {
+                        "name": "Size",
+                        "value": "size44"
+                    }
+                ],
+                "shop": {
+                    "id": "gid://shopify/Shop/62093230245",
+                    "name": "WOMONA.COM",
+                    "onlineStoreUrl": "https://womona.com"
+                },
+                "variantUrl": "https://womona.com/products/white-sneakers-men-non-slip-walking-running-shoes-sports?variant=42556446834853",
+                "checkoutUrl": "https://womona.com/cart/42556446834853:1?_gsid=Je8FEWf1a732&payment=shop_pay",
+                "secondhand": false,
+                "lookupUrl": "https://discover.shopifyapps.com/global/v2/p/2yKYcD6DGhDIgQ4z1xmBRG?_gsid=Je8FEWf1a732&available_for_sale=1&max_price=100.0&query=mens+white+sneakers&ships_to=US&variant_id=42556446671013"
+            },
+            {
+                "id": "gid://shopify/ProductVariant/42556446867621?shop=62093230245",
+                "productId": "gid://shopify/Product/8259535962277",
+                "displayName": "White Sneakers Men Non Slip Walking Running Shoes Sports",
+                "availableForSale": true,
+                "price": {
+                    "amount": 4999,
+                    "currency": "USD"
+                },
+                "media": [
+                    {
+                        "url": "https://cdn.shopify.com/s/files/1/0620/9323/0245/files/8528b4a4-89d1-45c9-9c3e-12b0dd03ab11.jpg",
+                        "altText": "White Sneakers Men Non Slip Walking Running Shoes Sports - WOMONA.COM"
+                    }
+                ],
+                "options": [
+                    {
+                        "name": "Color",
+                        "value": "Black"
+                    },
+                    {
+                        "name": "Size",
+                        "value": "size39"
+                    }
+                ],
+                "shop": {
+                    "id": "gid://shopify/Shop/62093230245",
+                    "name": "WOMONA.COM",
+                    "onlineStoreUrl": "https://womona.com"
+                },
+                "variantUrl": "https://womona.com/products/white-sneakers-men-non-slip-walking-running-shoes-sports?variant=42556446867621",
+                "checkoutUrl": "https://womona.com/cart/42556446867621:1?_gsid=Je8FEWf1a732&payment=shop_pay",
+                "secondhand": false,
+                "lookupUrl": "https://discover.shopifyapps.com/global/v2/p/2yKYcD6DGhDIgQ4z1xmBRG?_gsid=Je8FEWf1a732&available_for_sale=1&max_price=100.0&query=mens+white+sneakers&ships_to=US&variant_id=42556446671013"
+            },
+            {
+                "id": "gid://shopify/ProductVariant/42556446900389?shop=62093230245",
+                "productId": "gid://shopify/Product/8259535962277",
+                "displayName": "White Sneakers Men Non Slip Walking Running Shoes Sports",
+                "availableForSale": true,
+                "price": {
+                    "amount": 4999,
+                    "currency": "USD"
+                },
+                "media": [
+                    {
+                        "url": "https://cdn.shopify.com/s/files/1/0620/9323/0245/files/8528b4a4-89d1-45c9-9c3e-12b0dd03ab11.jpg",
+                        "altText": "White Sneakers Men Non Slip Walking Running Shoes Sports - WOMONA.COM"
+                    }
+                ],
+                "options": [
+                    {
+                        "name": "Color",
+                        "value": "Black"
+                    },
+                    {
+                        "name": "Size",
+                        "value": "size40"
+                    }
+                ],
+                "shop": {
+                    "id": "gid://shopify/Shop/62093230245",
+                    "name": "WOMONA.COM",
+                    "onlineStoreUrl": "https://womona.com"
+                },
+                "variantUrl": "https://womona.com/products/white-sneakers-men-non-slip-walking-running-shoes-sports?variant=42556446900389",
+                "checkoutUrl": "https://womona.com/cart/42556446900389:1?_gsid=Je8FEWf1a732&payment=shop_pay",
+                "secondhand": false,
+                "lookupUrl": "https://discover.shopifyapps.com/global/v2/p/2yKYcD6DGhDIgQ4z1xmBRG?_gsid=Je8FEWf1a732&available_for_sale=1&max_price=100.0&query=mens+white+sneakers&ships_to=US&variant_id=42556446671013"
+            },
+            {
+                "id": "gid://shopify/ProductVariant/42556446933157?shop=62093230245",
+                "productId": "gid://shopify/Product/8259535962277",
+                "displayName": "White Sneakers Men Non Slip Walking Running Shoes Sports",
+                "availableForSale": true,
+                "price": {
+                    "amount": 4999,
+                    "currency": "USD"
+                },
+                "media": [
+                    {
+                        "url": "https://cdn.shopify.com/s/files/1/0620/9323/0245/files/8528b4a4-89d1-45c9-9c3e-12b0dd03ab11.jpg",
+                        "altText": "White Sneakers Men Non Slip Walking Running Shoes Sports - WOMONA.COM"
+                    }
+                ],
+                "options": [
+                    {
+                        "name": "Color",
+                        "value": "Black"
+                    },
+                    {
+                        "name": "Size",
+                        "value": "size41"
+                    }
+                ],
+                "shop": {
+                    "id": "gid://shopify/Shop/62093230245",
+                    "name": "WOMONA.COM",
+                    "onlineStoreUrl": "https://womona.com"
+                },
+                "variantUrl": "https://womona.com/products/white-sneakers-men-non-slip-walking-running-shoes-sports?variant=42556446933157",
+                "checkoutUrl": "https://womona.com/cart/42556446933157:1?_gsid=Je8FEWf1a732&payment=shop_pay",
+                "secondhand": false,
+                "lookupUrl": "https://discover.shopifyapps.com/global/v2/p/2yKYcD6DGhDIgQ4z1xmBRG?_gsid=Je8FEWf1a732&available_for_sale=1&max_price=100.0&query=mens+white+sneakers&ships_to=US&variant_id=42556446671013"
+            },
+            {
+                "id": "gid://shopify/ProductVariant/42556446965925?shop=62093230245",
+                "productId": "gid://shopify/Product/8259535962277",
+                "displayName": "White Sneakers Men Non Slip Walking Running Shoes Sports",
+                "availableForSale": true,
+                "price": {
+                    "amount": 4999,
+                    "currency": "USD"
+                },
+                "media": [
+                    {
+                        "url": "https://cdn.shopify.com/s/files/1/0620/9323/0245/files/8528b4a4-89d1-45c9-9c3e-12b0dd03ab11.jpg",
+                        "altText": "White Sneakers Men Non Slip Walking Running Shoes Sports - WOMONA.COM"
+                    }
+                ],
+                "options": [
+                    {
+                        "name": "Color",
+                        "value": "Black"
+                    },
+                    {
+                        "name": "Size",
+                        "value": "size42"
+                    }
+                ],
+                "shop": {
+                    "id": "gid://shopify/Shop/62093230245",
+                    "name": "WOMONA.COM",
+                    "onlineStoreUrl": "https://womona.com"
+                },
+                "variantUrl": "https://womona.com/products/white-sneakers-men-non-slip-walking-running-shoes-sports?variant=42556446965925",
+                "checkoutUrl": "https://womona.com/cart/42556446965925:1?_gsid=Je8FEWf1a732&payment=shop_pay",
+                "secondhand": false,
+                "lookupUrl": "https://discover.shopifyapps.com/global/v2/p/2yKYcD6DGhDIgQ4z1xmBRG?_gsid=Je8FEWf1a732&available_for_sale=1&max_price=100.0&query=mens+white+sneakers&ships_to=US&variant_id=42556446671013"
+            }
+        ]
+    }
+]

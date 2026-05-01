@@ -34,6 +34,27 @@ function loadLocalEnv() {
 
 loadLocalEnv();
 
+const searchCache = new Map();
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
+function getCached(key) {
+  const entry = searchCache.get(key);
+  if (!entry) return null;
+  if (Date.now() - entry.timestamp > CACHE_TTL_MS) {
+    searchCache.delete(key);
+    return null;
+  }
+  return entry.data;
+}
+
+function setCache(key, data) {
+  searchCache.set(key, { data, timestamp: Date.now() });
+  if (searchCache.size > 100) {
+    const firstKey = searchCache.keys().next().value;
+    searchCache.delete(firstKey);
+  }
+}
+
 const app = express();
 const PORT = process.env.PORT || 3001;
 
@@ -440,6 +461,21 @@ app.get("/api/shopify/search", async (req, res) => {
   try {
     const creds = getShopifyCredentials(res);
     if (!creds) return;
+    const searchQuery = req.query.query || req.query.q || "";
+    const cacheKey = JSON.stringify({
+      q: searchQuery,
+      max_price: req.query.max_price || "",
+      currency: req.query.currency || "USD",
+      secondhand: req.query.allow_secondhand || "0",
+    });
+    searchCache.clear();
+
+    const cached = getCached(cacheKey);
+    if (cached) {
+      console.log("[shopify/search] cache hit:", req.query.q);
+      return res.json(cached);
+    }
+
     // Get fresh token
     const tokenRes = await fetch("https://api.shopify.com/auth/access_token", {
       method: "POST",
@@ -454,7 +490,6 @@ app.get("/api/shopify/search", async (req, res) => {
     const { access_token } = await tokenRes.json();
 
     // Forward search to Shopify Catalog
-    const searchQuery = req.query.query || req.query.q || "";
     const params = new URLSearchParams();
     if (searchQuery) params.append("query", searchQuery);
     if (req.query.limit) params.append("limit", req.query.limit);
@@ -462,14 +497,14 @@ app.get("/api/shopify/search", async (req, res) => {
     if (req.query.max_price || req.query.price_max) params.append("max_price", req.query.max_price || req.query.price_max);
     if (req.query.min_price || req.query.price_min) params.append("min_price", req.query.min_price || req.query.price_min);
 
-    // Use values from frontend, fallback to US/USD
-    const shipsTo = req.query.country_code || "US";
+    // Don't filter by ships_to — returns best global results
+    // Currency filtering happens client-side
     const currency = req.query.currency || "USD";
-
-    params.append("ships_to", shipsTo);
-    params.append("buyer_country_code", shipsTo);
     params.append("currency", currency);
-    const catalogUrl = `https://discover.shopifyapps.com/global/v2/search?${params}`;
+    params.append("available_for_sale", "1");
+    const includeSecondhand = req.query.allow_secondhand === "true" ? 1 : 0;
+    params.append("include_secondhand", String(includeSecondhand));
+    const catalogUrl = `https://discover.shopifyapps.com/global/v2/search/01kq6avdgdpbqkj8tkz48nryrq?${params}`;
     console.log("[shopify/search] incoming:", req.query);
     console.log("[shopify/search] forwarding:", catalogUrl);
     const catalogRes = await fetch(catalogUrl, {
@@ -490,14 +525,12 @@ app.get("/api/shopify/search", async (req, res) => {
 
     const sourceProducts = Array.isArray(data)
       ? data
-      : (data?.products || data?.results || []);
+      : (data?.offers || data?.products || data?.results || []);
+    console.log("[shopify/search] offers count:", sourceProducts.length);
+    console.log("[shopify/search] first item keys:",
+      sourceProducts[0] ? Object.keys(sourceProducts[0]) : "empty");
     const filtered = sourceProducts.filter((product) => {
-      // Must have variants
-      if (!product.variants || product.variants.length === 0) {
-        return false;
-      }
-
-      const variant = product.variants[0];
+      const variant = product.variants?.[0] || product;
 
       // Filter secondhand unless explicitly allowed
       if (!allowSecondhand && variant.secondhand === true) {
@@ -507,6 +540,7 @@ app.get("/api/shopify/search", async (req, res) => {
       // Filter by currency
       const productCurrency = (
         variant.price?.currency ||
+        variant.priceRange?.min?.currency ||
         product.priceRange?.min?.currency ||
         ""
       ).toUpperCase();
@@ -516,13 +550,20 @@ app.get("/api/shopify/search", async (req, res) => {
       // Must have image
       const hasImage =
         variant.media?.[0]?.url ||
-        product.media?.[0]?.url;
+        product.media?.[0]?.url ||
+        product.images?.[0]?.url;
       if (!hasImage) return false;
 
       return true;
     });
 
-    res.json({ ...data, products: filtered, results: filtered });
+    const response = {
+      ...data,
+      products: filtered,
+      results: filtered,
+    };
+    setCache(cacheKey, response);
+    res.json(response);
   } catch (e) {
     console.error("[shopify/search] error:", e.message);
     res.status(500).json({ error: e.message });
