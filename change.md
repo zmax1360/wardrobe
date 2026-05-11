@@ -379,3 +379,20 @@ Shared functions now live in utility and service modules and are imported back i
 Deleted the dead `ShopperAgentOld` code, moved gap analysis into its screen file, and moved constants/helpers into shared modules. Build passes with no behavior changes intended.
 
 ---
+
+### [Date: 2026-05-05] - CrewAI local-mode token trims
+
+**Background:**
+Local / SAST remediation runs were spending too many tokens on oversized file reads, full-file writes, and high agent iteration budgets. The crew needed caps, patch-oriented writes, and lower `max_iter` when `alert["local_mode"]` is set.
+
+**Changed:**
+
+- `agents/__init__.py` (new)
+- `agents/crew.py` (new)
+- `requirements.txt`
+
+**Impact:**
+Adds `crewai` as a Python dependency. Repo tools use `CREW_REPO_ROOT` (default `.`) and require `patch(1)` when applying unified diffs. If you already had a different `agents/crew.py` elsewhere, merge these behaviors into that file instead of duplicating.
+
+---
+

@@ -1,10 +1,38 @@
 import React, { useState, useRef } from "react";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { storage } from "../firebase";
+import { auth } from "../firebase";
 
 import { FINANCE } from "../styles/financeTheme";
 import { COLORS, baseTransition } from "../styles/theme";
 import { calculateCPW, getPurchasePriceNum, getTimesWorn, WARDROBE_OCCASION_VALUES } from "../utils/wardrobeFinance";
 import { CHIC_WARDROBE_MOODS } from "../constants/chicMoods";
 import { useWardrobeAgent } from "../hooks/useWardrobeAgent";
+
+const isProduction = process.env.NODE_ENV === "production";
+
+async function uploadImageFile(file) {
+  if (isProduction) {
+    const uid = auth.currentUser?.uid || "anonymous";
+    const ext = file.name.split(".").pop() || "jpg";
+    const filename = `wardrobe/${uid}/${Date.now()}-${Math.random()
+      .toString(36).slice(2)}.${ext}`;
+    const storageRef = ref(storage, filename);
+    await uploadBytes(storageRef, file);
+    const url = await getDownloadURL(storageRef);
+    return { url, filename };
+  }
+
+  const formData = new FormData();
+  formData.append("image", file);
+  const res = await fetch("http://localhost:3001/api/upload-image", {
+    method: "POST",
+    body: formData,
+  });
+  if (!res.ok) throw new Error("Upload failed");
+  const data = await res.json();
+  return { url: data.url, filename: data.filename };
+}
 
 const GALLERY_BG = "#FFFFFF";
 const CARD_BG = "#FFFFFF";
@@ -110,6 +138,34 @@ export function WardrobeScreen({
     addWardrobeFromFile,
   } = handlers;
 
+  const onFileChangeWithUpload = async (e, opts) => {
+    const f = e.target.files?.[0];
+    if (f && f.type.startsWith("image/")) {
+      try {
+        await uploadImageFile(f);
+      } catch (err) {
+        alert(err?.message || "Upload failed");
+        e.target.value = "";
+        return;
+      }
+    }
+    onFileChange(e, opts);
+  };
+
+  const onDropWithUpload = async (e, opts = {}) => {
+    e.preventDefault();
+    const f = e.dataTransfer.files?.[0];
+    if (f && f.type.startsWith("image/")) {
+      try {
+        await uploadImageFile(f);
+      } catch (err) {
+        alert(err?.message || "Upload failed");
+        return;
+      }
+    }
+    onDrop(e, opts);
+  };
+
   const resetManualForm = () => {
     setManualName("");
     setManualCategory("");
@@ -163,6 +219,9 @@ export function WardrobeScreen({
     if (!canSubmitManual || manualSaving) return;
     setManualSaving(true);
     try {
+      if (manualImageFile) {
+        await uploadImageFile(manualImageFile);
+      }
       await addManualWardrobeItem({
         name: manualName,
         category: manualCategory,
@@ -186,10 +245,20 @@ export function WardrobeScreen({
     }
   };
 
-  const handleModalFile = (e) => {
+  const handleModalFile = async (e) => {
     const f = e.target.files?.[0];
     e.target.value = "";
-    if (f) addWardrobeFromFile(f, { removeBg: removeBgNext });
+    if (f) {
+      try {
+        await uploadImageFile(f);
+      } catch (err) {
+        alert(err?.message || "Upload failed");
+        setShowAddModal(false);
+        setRemoveBgNext(false);
+        return;
+      }
+      addWardrobeFromFile(f, { removeBg: removeBgNext });
+    }
     setShowAddModal(false);
     setRemoveBgNext(false);
   };
@@ -201,7 +270,7 @@ export function WardrobeScreen({
 
   return (
     <>
-      <input ref={fileRef} type="file" accept="image/*" style={{ display: "none" }} onChange={(e) => onFileChange(e)} />
+      <input ref={fileRef} type="file" accept="image/*" style={{ display: "none" }} onChange={(e) => onFileChangeWithUpload(e)} />
       {/* `fileRef` drives the single mobile/desktop picker (+ Add Photo) */}
 
       <div
@@ -892,7 +961,7 @@ export function WardrobeScreen({
       <div
         className="wardrobe-quickadd"
         onDragOver={(e) => e.preventDefault()}
-        onDrop={(e) => onDrop(e, {})}
+        onDrop={(e) => onDropWithUpload(e, {})}
         style={{
           marginTop: 32,
           padding: "20px 24px",
@@ -913,7 +982,7 @@ export function WardrobeScreen({
             onClick={() => fileRef.current?.click()}
             className="wardrobe-quickadd-btn"
             onDragOver={(e) => e.preventDefault()}
-            onDrop={(e) => onDrop(e, {})}
+            onDrop={(e) => onDropWithUpload(e, {})}
             style={{
               padding: "12px 22px",
               borderRadius: 999,
