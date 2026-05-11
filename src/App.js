@@ -105,6 +105,57 @@ import {
 // (kept minimal) apiBase still used elsewhere in the app
 import { placeholderRemoveBackground } from "./services/backgroundRemoval";
 
+function FashionOSLogo({ dark = false, size = "md" }) {
+  const sizes = {
+    sm: { width: 140, height: 36, fontSize: 22, barHeight: 22, barY: 7, barX: 82, osX: 89 },
+    md: { width: 180, height: 48, fontSize: 30, barHeight: 28, barY: 10, barX: 105, osX: 112 },
+    lg: { width: 240, height: 64, fontSize: 40, barHeight: 38, barY: 13, barX: 140, osX: 148 },
+  };
+  const s = sizes[size] || sizes.md;
+  const textColor = dark ? "#faf7f2" : "#1a1208";
+  const accentColor = "#c4813a";
+
+  return (
+    <svg
+      width={s.width}
+      height={s.height}
+      viewBox={`0 0 ${s.width} ${s.height}`}
+      fill="none"
+      aria-label="Fashion OS"
+    >
+      <text
+        x="0"
+        y={s.height * 0.75}
+        fontFamily="'Cormorant Garamond', Georgia, serif"
+        fontSize={s.fontSize}
+        fontWeight="400"
+        fill={textColor}
+        letterSpacing="-0.5"
+      >
+        Fashion
+      </text>
+      <rect
+        x={s.barX}
+        y={s.barY}
+        width={1.5}
+        height={s.barHeight}
+        fill={accentColor}
+      />
+      <text
+        x={s.osX}
+        y={s.height * 0.75}
+        fontFamily="'Cormorant Garamond', Georgia, serif"
+        fontSize={s.fontSize}
+        fontWeight="400"
+        fill={textColor}
+        letterSpacing="-0.5"
+      >
+        OS
+      </text>
+    </svg>
+  );
+}
+
 export default function App() {
   const [hydrated, setHydrated] = useState(false);
   const [firebaseUser, setFirebaseUser] = useState(undefined);
@@ -665,95 +716,329 @@ export default function App() {
 
   if (!firebaseUser) {
     return (
-      <div style={{ minHeight: "100vh", background: COLORS.bg, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'DM Sans', sans-serif", padding: "24px" }}>
-        <div style={{ background: COLORS.surface2, borderRadius: 20, padding: "48px 40px", width: "100%", maxWidth: 400, boxShadow: "0 8px 40px rgba(0,0,0,0.10)", border: `1px solid ${COLORS.border}` }}>
-          <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "2rem", fontWeight: 700, color: COLORS.text, margin: "0 0 4px" }}>
-            Fashion OS
-          </h1>
-          <p style={{ color: COLORS.textMuted, fontSize: "0.9rem", margin: "0 0 32px" }}>
-            {authMode === "login" ? "Welcome back." : "Create your account."}
-          </p>
-          {/* Google Sign-In */}
-          <button
-            type="button"
-            onClick={handleGoogleSignIn}
-            disabled={authLoading}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 10,
-              width: "100%",
-              padding: "12px 16px",
-              borderRadius: 10,
-              border: `1px solid ${COLORS.border}`,
-              background: "#fff",
-              color: "#3c4043",
-              fontFamily: "'DM Sans', sans-serif",
-              fontSize: "0.95rem",
-              fontWeight: 600,
-              cursor: authLoading ? "not-allowed" : "pointer",
-              opacity: authLoading ? 0.7 : 1,
-              marginBottom: 16,
-              boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
-              transition: baseTransition,
-            }}
-          >
-            <svg width="18" height="18" viewBox="0 0 48 48">
-              <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
-              <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
-              <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
-              <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
-              <path fill="none" d="M0 0h48v48H0z"/>
-            </svg>
-            Continue with Google
-          </button>
+      <>
+        <style>{`
+          .authLandingRow {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+          }
+          @media (min-width: 768px) {
+            .authLandingRow {
+              flex-direction: row;
+              align-items: stretch;
+            }
+            .authLandingLeft {
+              display: flex !important;
+              flex: 0 0 60%;
+              max-width: 60%;
+            }
+            .authLandingRight {
+              flex: 0 0 40%;
+              max-width: 40%;
+            }
+          }
+          .authLandingLeft {
+            display: none;
+            box-sizing: border-box;
+          }
+          .authLandingRight {
+            box-sizing: border-box;
+            width: 100%;
+          }
+          .authLandingMobileHeader {
+            display: block;
+            text-align: center;
+            margin-bottom: 20px;
+          }
+          @media (min-width: 768px) {
+            .authLandingMobileHeader {
+              display: none !important;
+            }
+          }
+        `}</style>
+        <div style={{ minHeight: "100vh", background: "#faf7f2", fontFamily: "'DM Sans', sans-serif" }}>
+          <div className="authLandingRow">
+            <div
+              className="authLandingLeft"
+              style={{
+                background: "#1a1208",
+                flexDirection: "column",
+                justifyContent: "center",
+                padding: "96px 72px",
+                gap: 24,
+              }}
+            >
+              <div style={{ alignSelf: "flex-start" }}>
+                <FashionOSLogo dark={true} size="md" />
+                <p
+                  style={{
+                    fontFamily: "'Cormorant Garamond', Georgia, serif",
+                    fontSize: "13px",
+                    color: "#7a6a58",
+                    letterSpacing: "0.12em",
+                    textTransform: "uppercase",
+                    marginTop: "8px",
+                    marginBottom: "12px",
+                  }}
+                >
+                  Dress smarter. Shop less.
+                </p>
+              </div>
+              <h1
+                style={{
+                  fontFamily: "Georgia, 'Times New Roman', serif",
+                  fontSize: 64,
+                  fontWeight: 300,
+                  color: "#faf7f2",
+                  margin: 0,
+                  lineHeight: 1.05,
+                  letterSpacing: "-0.02em",
+                  maxWidth: 520,
+                }}
+              >
+                The wardrobe OS that thinks like a{" "}
+                <span style={{ fontStyle: "italic", color: "#c4813a" }}>stylist</span>
+              </h1>
+              <p
+                style={{
+                  margin: 0,
+                  fontSize: 16,
+                  lineHeight: 1.6,
+                  color: "#867560",
+                  maxWidth: 480,
+                }}
+              >
+                Knows every item you own, plans outfits around your life, and shops for exactly what you&apos;re
+                missing — powered by AI.
+              </p>
+              <div style={{ display: "flex", flexDirection: "column", gap: 24, marginTop: 12 }}>
+                {[
+                  {
+                    icon: "📷",
+                    title: "AI wardrobe cataloging from photos",
+                    desc: "Upload images and build a structured closet automatically.",
+                  },
+                  {
+                    icon: "📅",
+                    title: "Weather-aware outfit planning",
+                    desc: "Recommendations that respect your week and the forecast.",
+                  },
+                  {
+                    icon: "🛍",
+                    title: "Smart shopping from millions of stores",
+                    desc: "Discover pieces that complete what you already own.",
+                  },
+                  {
+                    icon: "✨",
+                    title: "Gap analysis and style scoring",
+                    desc: "Spot wardrobe holes and refine looks with clear feedback.",
+                  },
+                ].map((row) => (
+                  <div
+                    key={row.title}
+                    style={{
+                      display: "flex",
+                      alignItems: "flex-start",
+                      gap: 16,
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: 44,
+                        height: 44,
+                        borderRadius: 12,
+                        background: "rgba(255, 255, 255, 0.08)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: "1.25rem",
+                        flexShrink: 0,
+                      }}
+                      aria-hidden
+                    >
+                      {row.icon}
+                    </div>
+                    <div>
+                      <div style={{ fontWeight: 700, color: "#faf7f2", fontSize: "0.98rem", marginBottom: 4 }}>
+                        {row.title}
+                      </div>
+                      <div style={{ fontSize: 13, lineHeight: 1.45, color: "#6a5c4e" }}>{row.desc}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 14, marginTop: 20, flexWrap: "wrap" }}>
+                <div style={{ display: "flex", marginLeft: 4 }}>
+                  {["#c4813a", "#a09078", "#7a6a58"].map((c, i) => (
+                    <div
+                      key={c}
+                      style={{
+                        width: 36,
+                        height: 36,
+                        borderRadius: "50%",
+                        background: `linear-gradient(135deg, ${c}, #1a1208)`,
+                        border: "2px solid #1a1208",
+                        marginLeft: i === 0 ? 0 : -10,
+                      }}
+                    />
+                  ))}
+                </div>
+                <p style={{ margin: 0, fontSize: "0.84rem", color: "#a09078", lineHeight: 1.45 }}>
+                  Beta users are already trying it · Free to start
+                </p>
+              </div>
+            </div>
+            <div
+              className="authLandingRight"
+              style={{
+                background: "#faf7f2",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: "24px",
+              }}
+            >
+              <div className="authLandingMobileHeader">
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "center",
+                    marginBottom: 8,
+                  }}
+                >
+                  <FashionOSLogo dark={false} size="md" />
+                </div>
+                <p style={{ margin: 0, fontSize: "0.9rem", color: "#7a6a58", lineHeight: 1.45 }}>
+                  Your personal AI stylist awaits.
+                </p>
+              </div>
+              <div
+                style={{
+                  background: "#fff",
+                  borderRadius: 20,
+                  padding: 40,
+                  width: "100%",
+                  maxWidth: 400,
+                  boxShadow: "0 8px 40px rgba(0,0,0,0.10)",
+                  border: "1px solid rgba(26, 18, 8, 0.08)",
+                }}
+              >
+                <div style={{ margin: "0 0 4px" }}>
+                  <FashionOSLogo dark={false} size="md" />
+                </div>
+                <p style={{ color: "#7a6a58", fontSize: "0.95rem", margin: "0 0 32px", lineHeight: 1.45 }}>
+                  Your personal AI stylist awaits.
+                </p>
+                {/* Google Sign-In */}
+                <button
+                  type="button"
+                  onClick={handleGoogleSignIn}
+                  disabled={authLoading}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 10,
+                    width: "100%",
+                    padding: "12px 16px",
+                    borderRadius: 10,
+                    border: `1px solid ${COLORS.border}`,
+                    background: "#fff",
+                    color: "#3c4043",
+                    fontFamily: "'DM Sans', sans-serif",
+                    fontSize: "0.95rem",
+                    fontWeight: 600,
+                    cursor: authLoading ? "not-allowed" : "pointer",
+                    opacity: authLoading ? 0.7 : 1,
+                    marginBottom: 16,
+                    boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+                    transition: baseTransition,
+                  }}
+                >
+                  <svg width="18" height="18" viewBox="0 0 48 48">
+                    <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+                    <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+                    <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+                    <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+                    <path fill="none" d="M0 0h48v48H0z"/>
+                  </svg>
+                  Continue with Google
+                </button>
 
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
-            <div style={{ flex: 1, height: 1, background: COLORS.border }} />
-            <span style={{ fontSize: "0.78rem", color: COLORS.textMuted }}>or use email</span>
-            <div style={{ flex: 1, height: 1, background: COLORS.border }} />
+                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
+                  <div style={{ flex: 1, height: 1, background: COLORS.border }} />
+                  <span style={{ fontSize: "0.78rem", color: COLORS.textMuted }}>or use email</span>
+                  <div style={{ flex: 1, height: 1, background: COLORS.border }} />
+                </div>
+
+                <form onSubmit={handleAuthSubmit} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                  <input
+                    type="email" placeholder="Email address" value={authEmail}
+                    onChange={(e) => setAuthEmail(e.target.value)} required
+                    style={{ padding: "12px 16px", borderRadius: 10, border: `1px solid ${COLORS.border}`, background: COLORS.bg, color: COLORS.text, fontSize: "0.95rem", fontFamily: "'DM Sans', sans-serif", outline: "none" }}
+                  />
+                  <input
+                    type="password" placeholder="Password" value={authPassword}
+                    onChange={(e) => setAuthPassword(e.target.value)} required
+                    style={{ padding: "12px 16px", borderRadius: 10, border: `1px solid ${COLORS.border}`, background: COLORS.bg, color: COLORS.text, fontSize: "0.95rem", fontFamily: "'DM Sans', sans-serif", outline: "none" }}
+                  />
+                  {authError && <p style={{ color: "#C0392B", fontSize: "0.85rem", margin: 0 }}>{authError}</p>}
+                  <button
+                    type="submit" disabled={authLoading}
+                    style={{ padding: "13px", borderRadius: 10, border: "none", background: COLORS.primary, color: "#fff", fontFamily: "'DM Sans', sans-serif", fontSize: "0.95rem", fontWeight: 600, cursor: authLoading ? "not-allowed" : "pointer", opacity: authLoading ? 0.7 : 1, marginTop: 4 }}
+                  >
+                    {authLoading ? "Please wait…" : "Get started free"}
+                  </button>
+                </form>
+                <p style={{ textAlign: "center", marginTop: 24, fontSize: "0.88rem", color: COLORS.textMuted }}>
+                  {authMode === "login" ? "Don't have an account? " : "Already have an account? "}
+                  <button
+                    onClick={() => { setAuthMode(authMode === "login" ? "signup" : "login"); setAuthError(""); }}
+                    style={{ background: "none", border: "none", color: COLORS.primary, cursor: "pointer", fontFamily: "'DM Sans', sans-serif", fontSize: "0.88rem", fontWeight: 600, padding: 0 }}
+                  >
+                    {authMode === "login" ? "Sign Up" : "Sign In"}
+                  </button>
+                </p>
+                <p style={{ textAlign: "center", marginTop: 12, fontSize: "0.82rem", color: COLORS.textMuted }}>
+                  Already signed in on another device?{" "}
+                  <button
+                    onClick={() => signOut(auth)}
+                    style={{ background: "none", border: "none", color: COLORS.textMuted, cursor: "pointer", fontFamily: "'DM Sans', sans-serif", fontSize: "0.82rem", textDecoration: "underline", padding: 0 }}
+                  >
+                    Sign out everywhere
+                  </button>
+                </p>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 8,
+                    marginTop: 22,
+                    paddingTop: 20,
+                    borderTop: "1px solid rgba(26, 18, 8, 0.08)",
+                  }}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
+                    <path
+                      d="M7 10V8a5 5 0 0110 0v2M6 10h12a1 1 0 011 1v8a2 2 0 01-2 2H7a2 2 0 01-2-2v-8a1 1 0 011-1z"
+                      stroke="#7a6a58"
+                      strokeWidth="1.75"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                  <span style={{ fontSize: "0.8rem", color: "#7a6a58", fontWeight: 500 }}>
+                    Free to try · No credit card required
+                  </span>
+                </div>
+              </div>
+            </div>
           </div>
-
-          <form onSubmit={handleAuthSubmit} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-            <input
-              type="email" placeholder="Email address" value={authEmail}
-              onChange={(e) => setAuthEmail(e.target.value)} required
-              style={{ padding: "12px 16px", borderRadius: 10, border: `1px solid ${COLORS.border}`, background: COLORS.bg, color: COLORS.text, fontSize: "0.95rem", fontFamily: "'DM Sans', sans-serif", outline: "none" }}
-            />
-            <input
-              type="password" placeholder="Password" value={authPassword}
-              onChange={(e) => setAuthPassword(e.target.value)} required
-              style={{ padding: "12px 16px", borderRadius: 10, border: `1px solid ${COLORS.border}`, background: COLORS.bg, color: COLORS.text, fontSize: "0.95rem", fontFamily: "'DM Sans', sans-serif", outline: "none" }}
-            />
-            {authError && <p style={{ color: "#C0392B", fontSize: "0.85rem", margin: 0 }}>{authError}</p>}
-            <button
-              type="submit" disabled={authLoading}
-              style={{ padding: "13px", borderRadius: 10, border: "none", background: COLORS.primary, color: "#fff", fontFamily: "'DM Sans', sans-serif", fontSize: "0.95rem", fontWeight: 600, cursor: authLoading ? "not-allowed" : "pointer", opacity: authLoading ? 0.7 : 1, marginTop: 4 }}
-            >
-              {authLoading ? "Please wait…" : authMode === "login" ? "Sign In" : "Create Account"}
-            </button>
-          </form>
-          <p style={{ textAlign: "center", marginTop: 24, fontSize: "0.88rem", color: COLORS.textMuted }}>
-            {authMode === "login" ? "Don't have an account? " : "Already have an account? "}
-            <button
-              onClick={() => { setAuthMode(authMode === "login" ? "signup" : "login"); setAuthError(""); }}
-              style={{ background: "none", border: "none", color: COLORS.primary, cursor: "pointer", fontFamily: "'DM Sans', sans-serif", fontSize: "0.88rem", fontWeight: 600, padding: 0 }}
-            >
-              {authMode === "login" ? "Sign Up" : "Sign In"}
-            </button>
-          </p>
-          <p style={{ textAlign: "center", marginTop: 12, fontSize: "0.82rem", color: COLORS.textMuted }}>
-            Already signed in on another device?{" "}
-            <button
-              onClick={() => signOut(auth)}
-              style={{ background: "none", border: "none", color: COLORS.textMuted, cursor: "pointer", fontFamily: "'DM Sans', sans-serif", fontSize: "0.82rem", textDecoration: "underline", padding: 0 }}
-            >
-              Sign out everywhere
-            </button>
-          </p>
         </div>
-      </div>
+      </>
     );
   }
 
