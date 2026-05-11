@@ -396,3 +396,31 @@ Adds `crewai` as a Python dependency. Repo tools use `CREW_REPO_ROOT` (default `
 
 ---
 
+### [Date: 2026-05-10] - Email auth: forgot password + clearer submit labels
+
+**Background:**
+Sign-in/sign-up lacked a password reset option, and the primary button always said “Get started free” even in sign-in mode, which was unclear next to “Already have an account? Sign In” on signup.
+
+**Changed:**
+
+- `src/App.js`
+
+**Impact:**
+Uses Firebase `sendPasswordResetEmail` with user-facing errors and a success hint. Toggle between login/signup clears reset messages; primary button now shows **Sign In** vs **Get started free** by mode.
+
+---
+
+### [Date: 2026-05-10] - Profile keyed by Firebase UID (onboarding for new accounts)
+
+**Background:**
+Profile lived in a single `localStorage` key, so a completed profile from the same browser made every new Firebase user look “already onboarded” (`profile.name` set).
+
+**Changed:**
+
+- `src/App.js`
+
+**Impact:**
+Profiles are stored under `fos_profile__${uid}`; legacy `fos_profile` migrates only when `fos_profile_legacy_owner` matches the signed-in user. New sign-ups with no keyed profile start onboarding again. Completing onboarding or saving profile clears the legacy global key. The wardrobe-agent hook still reads the legacy path only—a follow-up could read the per-user key when auth is wired there.
+
+---
+

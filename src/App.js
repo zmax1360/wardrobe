@@ -29,6 +29,7 @@ import {
   signOut,
   GoogleAuthProvider,
   signInWithPopup,
+  sendPasswordResetEmail,
 } from "firebase/auth";
 
 import { radius } from "./styles/theme";
@@ -105,6 +106,12 @@ import {
 // (kept minimal) apiBase still used elsewhere in the app
 import { placeholderRemoveBackground } from "./services/backgroundRemoval";
 
+/** Per-UID profile in localStorage; legacy `fos_profile` could wrongly complete onboarding for a new Firebase user. */
+const PROFILE_LEGACY_OWNER_KEY = "fos_profile_legacy_owner";
+function profileStorageKeyForUid(uid) {
+  return `${STORAGE_PROFILE}__${uid}`;
+}
+
 function FashionOSLogo({ dark = false, size = "md" }) {
   const sizes = {
     sm: { width: 140, height: 36, fontSize: 22, barHeight: 22, barY: 7, barX: 82, osX: 89 },
@@ -163,6 +170,7 @@ export default function App() {
   const [authEmail, setAuthEmail] = useState("");
   const [authPassword, setAuthPassword] = useState("");
   const [authError, setAuthError] = useState("");
+  const [authResetMessage, setAuthResetMessage] = useState("");
   const [authLoading, setAuthLoading] = useState(false);
   const [profile, setProfile] = useState(null);
   const [onboardingStep, setOnboardingStep] = useState(1);
@@ -239,11 +247,51 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    const p = loadJson(STORAGE_PROFILE, null);
-    setProfile(p);
-    setDraft(p ? { ...defaultProfile(), ...p } : defaultProfile());
     setHydrated(true);
   }, []);
+
+  useEffect(() => {
+    if (!hydrated || !firebaseUser) return;
+
+    const uid = firebaseUser.uid;
+    const perKey = profileStorageKeyForUid(uid);
+    let pData = loadJson(perKey, null);
+
+    const legacy = loadJson(STORAGE_PROFILE, null);
+    const legacyNamed =
+      legacy &&
+      typeof legacy === "object" &&
+      typeof legacy.name === "string" &&
+      legacy.name.trim().length > 0;
+
+    if (
+      !(pData && typeof pData === "object" && String(pData.name || "").trim()) &&
+      legacyNamed
+    ) {
+      const legacyOwner = localStorage.getItem(PROFILE_LEGACY_OWNER_KEY);
+      if (!legacyOwner) {
+        localStorage.setItem(PROFILE_LEGACY_OWNER_KEY, uid);
+      }
+      if (localStorage.getItem(PROFILE_LEGACY_OWNER_KEY) === uid) {
+        localStorage.setItem(perKey, JSON.stringify(legacy));
+        localStorage.removeItem(STORAGE_PROFILE);
+        pData = legacy;
+      }
+    }
+
+    if (pData && typeof pData === "object" && String(pData.name || "").trim()) {
+      setProfile(pData);
+      setDraft({ ...defaultProfile(), ...pData });
+    } else {
+      setProfile(null);
+      setDraft(
+        pData && typeof pData === "object"
+          ? { ...defaultProfile(), ...pData }
+          : defaultProfile()
+      );
+      setOnboardingStep(1);
+    }
+  }, [firebaseUser, hydrated]);
 
   useEffect(() => {
     if (!hydrated) return;
@@ -252,6 +300,7 @@ export default function App() {
 
   const handleGoogleSignIn = async () => {
     setAuthError("");
+    setAuthResetMessage("");
     setAuthLoading(true);
     try {
       const provider = new GoogleAuthProvider();
@@ -291,9 +340,35 @@ export default function App() {
     }
   };
 
+  const handleForgotPassword = async () => {
+    setAuthError("");
+    setAuthResetMessage("");
+    const email = authEmail.trim();
+    if (!email) {
+      setAuthError("Enter your email address, then tap Forgot password to receive a reset link.");
+      return;
+    }
+    setAuthLoading(true);
+    try {
+      await sendPasswordResetEmail(auth, email);
+      setAuthResetMessage(`If an account exists for ${email}, we sent a reset link — check your inbox and spam folder.`);
+    } catch (err) {
+      const msgs = {
+        "auth/invalid-email": "Please enter a valid email address.",
+        "auth/user-not-found": "No account found with this email. Try Sign Up or check the address.",
+        "auth/too-many-requests": "Too many attempts. Wait a minute and try again.",
+        "auth/network-request-failed": "Network error. Check your connection and try again.",
+      };
+      setAuthError(msgs[err?.code] || "Could not send reset email. Try again.");
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
   const handleAuthSubmit = async (e) => {
     e.preventDefault();
     setAuthError("");
+    setAuthResetMessage("");
     setAuthLoading(true);
     try {
       if (authMode === "signup") {
@@ -322,8 +397,14 @@ export default function App() {
 
   const persistProfile = useCallback((next) => {
     setProfile(next);
-    localStorage.setItem(STORAGE_PROFILE, JSON.stringify(next));
-  }, []);
+    if (!firebaseUser) {
+      localStorage.setItem(STORAGE_PROFILE, JSON.stringify(next));
+      return;
+    }
+    const perKey = profileStorageKeyForUid(firebaseUser.uid);
+    localStorage.setItem(perKey, JSON.stringify(next));
+    localStorage.removeItem(STORAGE_PROFILE);
+  }, [firebaseUser]);
 
   const goNextOnboarding = () => {
     if (onboardingStep < 7) setOnboardingStep((s) => s + 1);
@@ -984,21 +1065,55 @@ export default function App() {
                     onChange={(e) => setAuthPassword(e.target.value)} required
                     style={{ padding: "12px 16px", borderRadius: 10, border: `1px solid ${COLORS.border}`, background: COLORS.bg, color: COLORS.text, fontSize: "0.95rem", fontFamily: "'DM Sans', sans-serif", outline: "none" }}
                   />
+                  <div style={{ display: "flex", justifyContent: "flex-end", marginTop: -4 }}>
+                    <button
+                      type="button"
+                      onClick={() => void handleForgotPassword()}
+                      disabled={authLoading}
+                      style={{
+                        background: "none",
+                        border: "none",
+                        padding: "4px 0",
+                        color: COLORS.primary,
+                        fontFamily: "'DM Sans', sans-serif",
+                        fontSize: "0.82rem",
+                        fontWeight: 600,
+                        cursor: authLoading ? "not-allowed" : "pointer",
+                        opacity: authLoading ? 0.65 : 1,
+                        textDecoration: "underline",
+                      }}
+                    >
+                      Forgot password?
+                    </button>
+                  </div>
                   {authError && <p style={{ color: "#C0392B", fontSize: "0.85rem", margin: 0 }}>{authError}</p>}
+                  {authResetMessage && (
+                    <p style={{ color: COLORS.success, fontSize: "0.85rem", margin: 0, lineHeight: 1.45 }}>{authResetMessage}</p>
+                  )}
                   <button
                     type="submit" disabled={authLoading}
                     style={{ padding: "13px", borderRadius: 10, border: "none", background: COLORS.primary, color: "#fff", fontFamily: "'DM Sans', sans-serif", fontSize: "0.95rem", fontWeight: 600, cursor: authLoading ? "not-allowed" : "pointer", opacity: authLoading ? 0.7 : 1, marginTop: 4 }}
                   >
-                    {authLoading ? "Please wait…" : "Get started free"}
+                    {authLoading
+                      ? "Please wait…"
+                      : authMode === "login"
+                        ? "Sign In"
+                        : "Get started free"}
                   </button>
                 </form>
                 <p style={{ textAlign: "center", marginTop: 24, fontSize: "0.88rem", color: COLORS.textMuted }}>
-                  {authMode === "login" ? "Don't have an account? " : "Already have an account? "}
+                  {authMode === "login"
+                    ? "Don't have an account? "
+                    : "Have an account? "}
                   <button
-                    onClick={() => { setAuthMode(authMode === "login" ? "signup" : "login"); setAuthError(""); }}
+                    onClick={() => {
+                      setAuthMode(authMode === "login" ? "signup" : "login");
+                      setAuthError("");
+                      setAuthResetMessage("");
+                    }}
                     style={{ background: "none", border: "none", color: COLORS.primary, cursor: "pointer", fontFamily: "'DM Sans', sans-serif", fontSize: "0.88rem", fontWeight: 600, padding: 0 }}
                   >
-                    {authMode === "login" ? "Sign Up" : "Sign In"}
+                    {authMode === "login" ? "Sign up" : "Sign in"}
                   </button>
                 </p>
                 <p style={{ textAlign: "center", marginTop: 12, fontSize: "0.82rem", color: COLORS.textMuted }}>
