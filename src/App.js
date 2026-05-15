@@ -166,7 +166,7 @@ function FashionOSLogo({ dark = false, size = "md" }) {
 export default function App() {
   const [hydrated, setHydrated] = useState(false);
   const [firebaseUser, setFirebaseUser] = useState(undefined);
-  const [authMode, setAuthMode] = useState("login");
+  const [authMode, setAuthMode] = useState("signup");
   const [authEmail, setAuthEmail] = useState("");
   const [authPassword, setAuthPassword] = useState("");
   const [authError, setAuthError] = useState("");
@@ -407,7 +407,7 @@ export default function App() {
   }, [firebaseUser]);
 
   const goNextOnboarding = () => {
-    if (onboardingStep < 7) setOnboardingStep((s) => s + 1);
+    if (onboardingStep < 8) setOnboardingStep((s) => s + 1);
     else {
       const saved = { ...draft };
       persistProfile(saved);
@@ -429,13 +429,13 @@ export default function App() {
           ? draft.bodyType.length > 0
           : Boolean(draft.bodyType);
       case 4:
-        return Boolean(draft.budget);
-      case 5:
         return draft.styles.length > 0;
+      case 5:
+        return Boolean(draft.budget);
       case 6:
         return true;
       case 7:
-        return Boolean(draft.topSize && draft.bottomSize && draft.shoeSize);
+        return true;
       default:
         return false;
     }
@@ -542,7 +542,7 @@ export default function App() {
   const addWardrobeFromFile = async (file, options = {}) => {
     if (!file || !file.type.startsWith("image/")) {
       setUploadError("Please choose an image file.");
-      return;
+      return null;
     }
     setUploadError("");
     setAnalyzing(true);
@@ -577,8 +577,10 @@ export default function App() {
         expectedLifespan: 365,
       };
       addItem(item);
+      return item;
     } catch (e) {
       setUploadError(e.message || "Could not analyze image.");
+      return null;
     } finally {
       setAnalyzing(false);
     }
@@ -827,14 +829,53 @@ export default function App() {
             box-sizing: border-box;
             width: 100%;
           }
-          .authLandingMobileHeader {
+          .authLandingMobileCondensed {
             display: block;
             text-align: center;
-            margin-bottom: 20px;
+            padding-bottom: 8px;
+            margin-bottom: 8px;
           }
           @media (min-width: 768px) {
-            .authLandingMobileHeader {
+            .authLandingMobileCondensed {
               display: none !important;
+            }
+          }
+          .authMobileFeatureLine {
+            margin: 0;
+            padding: 0;
+            font-size: 0.84rem;
+            line-height: 1.55;
+            color: #867560;
+            font-family: 'DM Sans', sans-serif;
+          }
+          .authMobileFeatureStack {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 14px;
+            max-width: 320px;
+            margin-left: auto;
+            margin-right: auto;
+          }
+          .authLoginCard {
+            box-sizing: border-box;
+          }
+          @media (max-width: 767px) {
+            .authLandingRight {
+              padding: 16px !important;
+              align-items: stretch !important;
+            }
+            .authLoginCardDesktopBranding {
+              display: none !important;
+            }
+            .authLoginCard {
+              box-shadow: none !important;
+              border: none !important;
+              background: #faf7f2 !important;
+              border-radius: 0 !important;
+              padding: 0 !important;
+              max-width: none !important;
+              width: 100% !important;
             }
           }
         `}</style>
@@ -981,21 +1022,31 @@ export default function App() {
                 padding: "24px",
               }}
             >
-              <div className="authLandingMobileHeader">
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "center",
-                    marginBottom: 8,
-                  }}
-                >
+              <div className="authLandingMobileCondensed">
+                <div style={{ display: "flex", justifyContent: "center" }}>
                   <FashionOSLogo dark={false} size="md" />
                 </div>
-                <p style={{ margin: 0, fontSize: "0.9rem", color: "#7a6a58", lineHeight: 1.45 }}>
-                  Your personal AI stylist awaits.
+                <p
+                  style={{
+                    fontFamily: "'Cormorant Garamond', Georgia, serif",
+                    fontSize: "13px",
+                    color: "#7a6a58",
+                    letterSpacing: "0.12em",
+                    textTransform: "uppercase",
+                    marginTop: "10px",
+                    marginBottom: "4px",
+                  }}
+                >
+                  Dress smarter. Shop less.
                 </p>
+                <div className="authMobileFeatureStack">
+                  <p className="authMobileFeatureLine">AI catalogs your wardrobe from photos</p>
+                  <p className="authMobileFeatureLine">Daily outfits based on real weather</p>
+                  <p className="authMobileFeatureLine">Shop millions of real products</p>
+                </div>
               </div>
               <div
+                className="authLoginCard"
                 style={{
                   background: "#fff",
                   borderRadius: 20,
@@ -1006,12 +1057,14 @@ export default function App() {
                   border: "1px solid rgba(26, 18, 8, 0.08)",
                 }}
               >
-                <div style={{ margin: "0 0 4px" }}>
-                  <FashionOSLogo dark={false} size="md" />
+                <div className="authLoginCardDesktopBranding">
+                  <div style={{ margin: "0 0 4px" }}>
+                    <FashionOSLogo dark={false} size="md" />
+                  </div>
+                  <p style={{ color: "#7a6a58", fontSize: "0.95rem", margin: "0 0 32px", lineHeight: 1.45 }}>
+                    Your personal AI stylist awaits.
+                  </p>
                 </div>
-                <p style={{ color: "#7a6a58", fontSize: "0.95rem", margin: "0 0 32px", lineHeight: 1.45 }}>
-                  Your personal AI stylist awaits.
-                </p>
                 {/* Google Sign-In */}
                 <button
                   type="button"
@@ -1170,6 +1223,7 @@ export default function App() {
         goBackOnboarding={goBackOnboarding}
         goNextOnboarding={goNextOnboarding}
         canAdvance={canAdvance}
+        uploadWardrobeItem={addWardrobeFromFile}
         baseTransition={baseTransition}
         GENDER_OPTIONS={GENDER_OPTIONS}
         BUDGET_OPTIONS={BUDGET_OPTIONS}

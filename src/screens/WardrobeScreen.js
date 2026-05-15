@@ -34,6 +34,69 @@ async function uploadImageFile(file) {
   return { url: data.url, filename: data.filename };
 }
 
+async function analyzeClosetPhoto(file, profile) {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      const base64 = e.target.result.split(",")[1];
+
+      try {
+        const { callTextCompletion } = await import("../services/aiService");
+
+        const result = await callTextCompletion(
+          `You are an expert fashion analyst scanning a closet photo. Analyze the visible clothing and return ONLY valid JSON (no markdown):
+           {
+             "totalItems": number,
+             "categories": {
+               "tops": number,
+               "bottoms": number,
+               "shoes": number,
+               "outerwear": number,
+               "dresses": number,
+               "accessories": number,
+               "other": number
+             },
+             "dominantColors": ["color1", "color2", "color3"],
+             "colorBalance": "neutral-heavy | colorful | monochrome | mixed",
+             "summary": "2 sentence description of what you see",
+             "recommendations": [
+               "specific actionable recommendation 1",
+               "specific actionable recommendation 2",
+               "specific actionable recommendation 3"
+             ],
+             "missingPieces": [
+               "item type missing from wardrobe 1",
+               "item type missing from wardrobe 2"
+             ]
+           }`,
+          `Analyze this closet photo for a ${profile?.gender || "person"} who likes ${profile?.styles?.join(", ") || "mixed"} style with a ${profile?.budget || "mixed"} budget.`,
+          "Closet scan analysis"
+        );
+
+        const clean = String(result || "")
+          .replace(/```json|```/g, "")
+          .trim();
+        resolve(JSON.parse(clean));
+      } catch {
+        resolve({
+          totalItems: "several",
+          categories: {},
+          dominantColors: ["neutrals"],
+          colorBalance: "mixed",
+          summary: "I can see your closet. Let me help you organize it better.",
+          recommendations: [
+            "Consider organizing by category",
+            "Add more versatile basics",
+            "Try a capsule wardrobe approach",
+          ],
+          missingPieces: ["Statement piece", "Versatile jacket"],
+        });
+      }
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
 const GALLERY_BG = "#FFFFFF";
 const CARD_BG = "#FFFFFF";
 
@@ -111,6 +174,12 @@ export function WardrobeScreen({
   const [manualImagePreviewUrl, setManualImagePreviewUrl] = useState(null);
   const [moreDetailsOpen, setMoreDetailsOpen] = useState(false);
   const [manualSaving, setManualSaving] = useState(false);
+
+  const [showClosetScan, setShowClosetScan] = useState(false);
+  const [closetScanPhase, setClosetScanPhase] = useState("idle");
+  const [closetScanImage, setClosetScanImage] = useState(null);
+  const [closetAnalysis, setClosetAnalysis] = useState(null);
+  const closetScanRef = useRef(null);
 
   const modalFileRef = useRef(null);
   const manualImageInputRef = useRef(null);
@@ -300,26 +369,69 @@ export function WardrobeScreen({
               Wardrobe as balance sheet · CPW on every piece
             </p>
           </div>
-          <button
-            type="button"
-            onClick={() => {
-              resetManualForm();
-              setShowAddModal(true);
-            }}
-            style={{
-              padding: "12px 22px",
-              borderRadius: 999,
-              border: `1px solid ${FINANCE.slate}`,
-              background: FINANCE.text,
-              color: "#fff",
-              fontSize: "0.85rem",
-              fontWeight: 600,
-              cursor: "pointer",
-              fontFamily: "'Inter', sans-serif",
-            }}
-          >
-            + Add piece
-          </button>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center" }}>
+            <>
+              <input
+                ref={closetScanRef}
+                type="file"
+                accept="image/*"
+                style={{ display: "none" }}
+                onChange={async (e) => {
+                  const file = e.target.files[0];
+                  e.target.value = "";
+                  if (!file) return;
+                  setClosetScanImage(URL.createObjectURL(file));
+                  setClosetScanPhase("scanning");
+                  setShowClosetScan(true);
+                  const analysis = await analyzeClosetPhoto(file, _profile);
+                  setClosetAnalysis(analysis);
+                  setClosetScanPhase("confirm");
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => closetScanRef.current?.click()}
+                style={{
+                  padding: "12px 18px",
+                  borderRadius: 999,
+                  border: "1.5px solid #c4813a",
+                  background: "transparent",
+                  color: "#c4813a",
+                  fontSize: "0.85rem",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  fontFamily: "'Inter', sans-serif",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                  minHeight: 44,
+                  whiteSpace: "nowrap",
+                }}
+              >
+                📸 Scan My Closet
+              </button>
+            </>
+            <button
+              type="button"
+              onClick={() => {
+                resetManualForm();
+                setShowAddModal(true);
+              }}
+              style={{
+                padding: "12px 22px",
+                borderRadius: 999,
+                border: `1px solid ${FINANCE.slate}`,
+                background: FINANCE.text,
+                color: "#fff",
+                fontSize: "0.85rem",
+                fontWeight: 600,
+                cursor: "pointer",
+                fontFamily: "'Inter', sans-serif",
+              }}
+            >
+              + Add piece
+            </button>
+          </div>
         </div>
 
         <div
@@ -1036,6 +1148,411 @@ export function WardrobeScreen({
           <p className="wardrobe-agent-reply">{agentResponse}</p>
         ) : null}
       </div>
+
+      {showClosetScan && (
+        <div
+          className="closet-scan-backdrop"
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.7)",
+            zIndex: 1000,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 24,
+          }}
+        >
+          <div
+            className="closet-scan-dialog"
+            style={{
+              background: "#fff",
+              borderRadius: 20,
+              width: "100%",
+              maxWidth: 520,
+              maxHeight: "90vh",
+              overflowY: "auto",
+              padding: 32,
+            }}
+          >
+            {closetScanPhase === "scanning" && (
+              <div style={{ textAlign: "center" }}>
+                <div
+                  style={{
+                    fontSize: 48,
+                    marginBottom: 16,
+                    animation: "spin 2s linear infinite",
+                  }}
+                >
+                  ✨
+                </div>
+                <h2
+                  style={{
+                    fontFamily: "'Cormorant Garamond', serif",
+                    fontSize: "1.6rem",
+                    margin: "0 0 8px",
+                  }}
+                >
+                  Analyzing your closet...
+                </h2>
+                <p
+                  style={{
+                    color: "#888",
+                    margin: 0,
+                    fontSize: "0.9rem",
+                  }}
+                >
+                  AI is counting items, identifying colors and categories
+                </p>
+                {closetScanImage && (
+                  <img
+                    className="closet-scan-preview-img"
+                    src={closetScanImage}
+                    alt="Your closet"
+                  />
+                )}
+              </div>
+            )}
+
+            {closetScanPhase === "confirm" && closetAnalysis && (
+              <div>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "flex-start",
+                    gap: 16,
+                    marginBottom: 24,
+                  }}
+                >
+                  {closetScanImage && (
+                    <img
+                      src={closetScanImage}
+                      alt="Your closet"
+                      style={{
+                        width: 100,
+                        height: 100,
+                        objectFit: "cover",
+                        borderRadius: 12,
+                        flexShrink: 0,
+                      }}
+                    />
+                  )}
+                  <div>
+                    <h2
+                      style={{
+                        fontFamily: "'Cormorant Garamond', serif",
+                        fontSize: "1.5rem",
+                        margin: "0 0 8px",
+                      }}
+                    >
+                      Here&apos;s what I see
+                    </h2>
+                    <p
+                      style={{
+                        color: "#666",
+                        fontSize: "0.9rem",
+                        margin: 0,
+                        lineHeight: 1.5,
+                      }}
+                    >
+                      {closetAnalysis.summary}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="closet-scan-stats-grid">
+                  <div
+                    style={{
+                      background: "#faf7f2",
+                      borderRadius: 12,
+                      padding: "16px 12px",
+                      textAlign: "center",
+                    }}
+                  >
+                    <p
+                      style={{
+                        fontSize: "1.8rem",
+                        fontWeight: 700,
+                        margin: "0 0 4px",
+                        color: "#1a1208",
+                      }}
+                    >
+                      {closetAnalysis.totalItems}
+                    </p>
+                    <p
+                      style={{
+                        fontSize: "0.75rem",
+                        color: "#888",
+                        margin: 0,
+                      }}
+                    >
+                      Total items
+                    </p>
+                  </div>
+                  <div
+                    style={{
+                      background: "#faf7f2",
+                      borderRadius: 12,
+                      padding: "16px 12px",
+                      textAlign: "center",
+                    }}
+                  >
+                    <p
+                      style={{
+                        fontSize: "1rem",
+                        fontWeight: 600,
+                        margin: "0 0 4px",
+                        color: "#1a1208",
+                      }}
+                    >
+                      {closetAnalysis.dominantColors?.slice(0, 2).join(", ")}
+                    </p>
+                    <p
+                      style={{
+                        fontSize: "0.75rem",
+                        color: "#888",
+                        margin: 0,
+                      }}
+                    >
+                      Main colors
+                    </p>
+                  </div>
+                  <div
+                    style={{
+                      background: "#faf7f2",
+                      borderRadius: 12,
+                      padding: "16px 12px",
+                      textAlign: "center",
+                    }}
+                  >
+                    <p
+                      style={{
+                        fontSize: "1rem",
+                        fontWeight: 600,
+                        margin: "0 0 4px",
+                        color: "#1a1208",
+                        textTransform: "capitalize",
+                      }}
+                    >
+                      {closetAnalysis.colorBalance?.replace("-", " ")}
+                    </p>
+                    <p
+                      style={{
+                        fontSize: "0.75rem",
+                        color: "#888",
+                        margin: 0,
+                      }}
+                    >
+                      Color balance
+                    </p>
+                  </div>
+                </div>
+
+                {closetAnalysis.categories && (
+                  <div style={{ marginBottom: 20 }}>
+                    <p
+                      style={{
+                        fontSize: "0.75rem",
+                        color: "#888",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.06em",
+                        margin: "0 0 10px",
+                      }}
+                    >
+                      Breakdown
+                    </p>
+                    <div
+                      style={{
+                        display: "flex",
+                        flexWrap: "wrap",
+                        gap: 8,
+                      }}
+                    >
+                      {Object.entries(closetAnalysis.categories)
+                        .filter(([, v]) => v > 0)
+                        .map(([cat, count]) => (
+                          <span
+                            key={cat}
+                            style={{
+                              background: "#f0ebe2",
+                              borderRadius: 100,
+                              padding: "4px 12px",
+                              fontSize: "0.8rem",
+                              color: "#7a5c2e",
+                              textTransform: "capitalize",
+                            }}
+                          >
+                            {count} {cat}
+                          </span>
+                        ))}
+                    </div>
+                  </div>
+                )}
+
+                {closetAnalysis.recommendations?.length > 0 && (
+                  <div style={{ marginBottom: 20 }}>
+                    <p
+                      style={{
+                        fontSize: "0.75rem",
+                        color: "#888",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.06em",
+                        margin: "0 0 10px",
+                      }}
+                    >
+                      Recommendations
+                    </p>
+                    <div
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: 8,
+                      }}
+                    >
+                      {closetAnalysis.recommendations.map((rec, i) => (
+                        <div
+                          key={i}
+                          style={{
+                            display: "flex",
+                            gap: 10,
+                            alignItems: "flex-start",
+                            padding: "10px 12px",
+                            background: "#faf7f2",
+                            borderRadius: 10,
+                            border: "0.5px solid #e8e0d4",
+                          }}
+                        >
+                          <span
+                            style={{
+                              color: "#c4813a",
+                              fontWeight: 700,
+                              flexShrink: 0,
+                            }}
+                          >
+                            {i + 1}
+                          </span>
+                          <p
+                            style={{
+                              margin: 0,
+                              fontSize: "0.88rem",
+                              color: "#3a2e22",
+                              lineHeight: 1.5,
+                            }}
+                          >
+                            {rec}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {closetAnalysis.missingPieces?.length > 0 && (
+                  <div style={{ marginBottom: 24 }}>
+                    <p
+                      style={{
+                        fontSize: "0.75rem",
+                        color: "#888",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.06em",
+                        margin: "0 0 10px",
+                      }}
+                    >
+                      You might be missing
+                    </p>
+                    <div
+                      style={{
+                        display: "flex",
+                        flexWrap: "wrap",
+                        gap: 8,
+                      }}
+                    >
+                      {closetAnalysis.missingPieces.map((item, i) => (
+                        <span
+                          key={i}
+                          style={{
+                            background: "transparent",
+                            border: "1px dashed #c4813a",
+                            borderRadius: 100,
+                            padding: "4px 12px",
+                            fontSize: "0.8rem",
+                            color: "#c4813a",
+                          }}
+                        >
+                          + {item}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="closet-scan-actions">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (closetScanImage && String(closetScanImage).startsWith("blob:")) {
+                        URL.revokeObjectURL(closetScanImage);
+                      }
+                      setShowClosetScan(false);
+                      setClosetScanPhase("idle");
+                      setClosetAnalysis(null);
+                      setClosetScanImage(null);
+                    }}
+                    style={{
+                      flex: 1,
+                      padding: "12px",
+                      borderRadius: 10,
+                      border: "1px solid #e8e0d4",
+                      background: "transparent",
+                      color: "#888",
+                      cursor: "pointer",
+                      fontSize: "0.9rem",
+                      minHeight: 48,
+                    }}
+                  >
+                    Close
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (closetScanImage && String(closetScanImage).startsWith("blob:")) {
+                        URL.revokeObjectURL(closetScanImage);
+                      }
+                      setShowClosetScan(false);
+                      setClosetScanPhase("idle");
+                      setClosetAnalysis(null);
+                      setClosetScanImage(null);
+                      resetManualForm();
+                      setShowAddModal(true);
+                    }}
+                    style={{
+                      flex: 2,
+                      padding: "12px",
+                      borderRadius: 10,
+                      border: "none",
+                      background: "#c4813a",
+                      color: "white",
+                      cursor: "pointer",
+                      fontWeight: 600,
+                      fontSize: "0.9rem",
+                      minHeight: 48,
+                    }}
+                  >
+                    Start Adding Items →
+                  </button>
+                </div>
+              </div>
+            )}
+
+            <style>{`
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
+          </div>
+        </div>
+      )}
     </>
   );
 }

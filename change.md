@@ -424,3 +424,46 @@ Profiles are stored under `fos_profile__${uid}`; legacy `fos_profile` migrates o
 
 ---
 
+### [Date: 2026-05-10] - Mobile auth landing + default signup mode
+
+**Background:**
+Mobile landing needed a short value prop above the form, no duplicate logo, flatter full-width card styling, and email auth should open in sign-up mode by default.
+
+**Changed:**
+
+- `src/App.js`
+
+**Impact:**
+`<768px`: condensed logo, slogan, three text features, then form; in-card branding hidden on small screens only; login card uses `#faf7f2` with no border/shadow on mobile and 16px side padding on the column. Desktop right column unchanged. Initial `authMode` is `signup`.
+
+---
+
+### [Date: 2026-05-10] - Onboarding wardrobe demo step (first photo + AI card)
+
+**Background:**
+After the profile summary, users should upload one clothing photo, see an AI scanning state, then a catalog-style item card before entering the app.
+
+**Changed:**
+
+- `src/App.js`
+- `src/components/Onboarding.js`
+
+**Impact:**
+Onboarding now has **7** steps plus a completion tick (**step 8** persists profile). Step 7 uses the existing `addWardrobeFromFile` pipeline (returns the new item for display) and adds the piece to the wardrobe. `goNextOnboarding` / `canAdvance` thresholds updated. Brief “Saving your profile…” state while step 8 finishes.
+
+---
+
+### [Date: 2026-05-10] - Closet scan modal mobile layout
+
+**Background:**
+Scan My Closet needed larger touch targets, bottom-sheet behavior on small screens, and responsive stats/actions.
+
+**Changed:**
+
+- `src/screens/WardrobeScreen.js`
+- `src/index.css`
+
+**Impact:**
+Scan button `minHeight: 44`; modal uses `closet-scan-backdrop` / `closet-scan-dialog` (slides up on ≤640px with safe area); stats use `closet-scan-stats-grid`; actions stack full-width on mobile with `minHeight: 48` buttons; preview image uses `closet-scan-preview-img`. Header stacks scan + add at ≤480px.
+
+---
