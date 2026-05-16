@@ -21,7 +21,7 @@ import React, {
   useMemo,
 } from "react";
 
-import { auth } from "./firebase";
+import { auth, db } from "./firebase";
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
@@ -31,6 +31,7 @@ import {
   signInWithPopup,
   sendPasswordResetEmail,
 } from "firebase/auth";
+import { doc, getDoc, setDoc } from "firebase/firestore";
 
 import { radius } from "./styles/theme";
 import { type } from "./styles/typography";
@@ -183,6 +184,10 @@ export default function App() {
     const e = loadJson(STORAGE_EVENTS, []);
     return Array.isArray(e) ? e : [];
   });
+  const [wishlist, setWishlist] = useState(() => {
+    const w = loadJson(STORAGE_WISHLIST, []);
+    return Array.isArray(w) ? w : [];
+  });
   const [catFilter, setCatFilter] = useState("All");
   const [laundryFilter, setLaundryFilter] = useState("All");
   const [analyzing, setAnalyzing] = useState(false);
@@ -253,6 +258,7 @@ export default function App() {
   useEffect(() => {
     if (!hydrated || !firebaseUser) return;
 
+    let cancelled = false;
     const uid = firebaseUser.uid;
     const perKey = profileStorageKeyForUid(uid);
     let pData = loadJson(perKey, null);
@@ -291,12 +297,90 @@ export default function App() {
       );
       setOnboardingStep(1);
     }
+
+    getDoc(doc(db, "users", uid))
+      .then((snap) => {
+        if (cancelled) return;
+        if (!snap.exists) return;
+
+        const data = snap.data() || {};
+
+        if (data.profile && typeof data.profile === "object" && Object.keys(data.profile).length > 0) {
+          const perKeyFs = profileStorageKeyForUid(uid);
+          const localRaw = localStorage.getItem(perKeyFs);
+          let local = null;
+          try {
+            local = localRaw ? JSON.parse(localRaw) : null;
+          } catch {
+            local = null;
+          }
+          if (!local || typeof local !== "object" || Object.keys(local).length === 0) {
+            localStorage.setItem(perKeyFs, JSON.stringify(data.profile));
+            localStorage.removeItem(STORAGE_PROFILE);
+            setProfile(data.profile);
+            setDraft({ ...defaultProfile(), ...data.profile });
+          }
+        }
+
+        if (data.events && Array.isArray(data.events) && data.events.length > 0) {
+          setEvents(data.events);
+          localStorage.setItem(STORAGE_EVENTS, JSON.stringify(data.events));
+        }
+
+        if (data.wishlist && Array.isArray(data.wishlist) && data.wishlist.length > 0) {
+          setWishlist(data.wishlist);
+          localStorage.setItem(STORAGE_WISHLIST, JSON.stringify(data.wishlist));
+        }
+      })
+      .catch(() => {});
+
+    return () => {
+      cancelled = true;
+    };
   }, [firebaseUser, hydrated]);
+
+  useEffect(() => {
+    if (!hydrated || !firebaseUser) return undefined;
+    const pull = () => {
+      try {
+        const raw = localStorage.getItem(STORAGE_WISHLIST);
+        const parsed = raw ? JSON.parse(raw) : [];
+        const arr = Array.isArray(parsed) ? parsed : [];
+        setWishlist((prev) =>
+          JSON.stringify(prev) === JSON.stringify(arr) ? prev : arr
+        );
+      } catch {
+        /* ignore */
+      }
+    };
+    pull();
+    const id = window.setInterval(pull, 2000);
+    return () => clearInterval(id);
+  }, [hydrated, firebaseUser]);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    localStorage.setItem(STORAGE_WISHLIST, JSON.stringify(wishlist));
+    if (firebaseUser) {
+      setDoc(
+        doc(db, "users", firebaseUser.uid),
+        { wishlist: JSON.parse(JSON.stringify(wishlist)) },
+        { merge: true }
+      ).catch(() => {});
+    }
+  }, [wishlist, hydrated, firebaseUser]);
 
   useEffect(() => {
     if (!hydrated) return;
     localStorage.setItem(STORAGE_EVENTS, JSON.stringify(events));
-  }, [events, hydrated]);
+    if (firebaseUser) {
+      setDoc(
+        doc(db, "users", firebaseUser.uid),
+        { events: JSON.parse(JSON.stringify(events)) },
+        { merge: true }
+      ).catch(() => {});
+    }
+  }, [events, hydrated, firebaseUser]);
 
   const handleGoogleSignIn = async () => {
     setAuthError("");
@@ -404,6 +488,11 @@ export default function App() {
     const perKey = profileStorageKeyForUid(firebaseUser.uid);
     localStorage.setItem(perKey, JSON.stringify(next));
     localStorage.removeItem(STORAGE_PROFILE);
+    setDoc(
+      doc(db, "users", firebaseUser.uid),
+      { profile: JSON.parse(JSON.stringify(next)) },
+      { merge: true }
+    ).catch(() => {});
   }, [firebaseUser]);
 
   const goNextOnboarding = () => {

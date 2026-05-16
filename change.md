@@ -467,3 +467,17 @@ Scan My Closet needed larger touch targets, bottom-sheet behavior on small scree
 Scan button `minHeight: 44`; modal uses `closet-scan-backdrop` / `closet-scan-dialog` (slides up on ≤640px with safe area); stats use `closet-scan-stats-grid`; actions stack full-width on mobile with `minHeight: 48` buttons; preview image uses `closet-scan-preview-img`. Header stacks scan + add at ≤480px.
 
 ---
+
+### [Date: 2026-05-10] - Profile, events, wishlist Firestore dual-write (App)
+
+**Background:**
+Mirror profile, events, and wishlist to Firestore whenever they change (with localStorage unchanged) and hydrate from Firestore after login—without altering wardrobe or ShopperScreen code.
+
+**Changed:**
+
+- `src/App.js`
+
+**Impact:**
+`persistProfile` plus `events`/`wishlist` effects call `setDoc(..., { merge: true })` when signed in. The `firebaseUser` + `hydrated` effect runs legacy profile migration locally, then `getDoc`: merges remote profile only when local per-key cache is empty (`fos_profile__{uid}`); applies `events` / `wishlist` from cloud only when those arrays exist and `length > 0`. Wishlist stays in React in App with a 2s localStorage poll so Shopper’s writes still sync to Firestore. `snap.exists` (Firestore boolean) used with `merge: true` and sanitised payloads for Firestore-compatible JSON.
+
+---
