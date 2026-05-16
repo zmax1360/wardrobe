@@ -3,6 +3,7 @@ import { resolveBackendApiPath } from "../apiBase";
 import { normalizeWardrobeItems } from "../utils/wardrobeFinance";
 import { db, storage } from "../firebase";
 import { doc, getDoc, setDoc } from "firebase/firestore";
+import { STORAGE_WISHLIST } from "../constants";
 import { ref as storageRef, deleteObject } from "firebase/storage";
 
 export const STORAGE_WARDROBE = "fos_wardrobe";
@@ -115,4 +116,34 @@ export function useWardrobe(hydrated, firebaseUser) {
   }, []);
 
   return { wardrobe, setWardrobe, addItem, updateItem, removeItem };
+}
+
+/** Pushes `STORAGE_WISHLIST` from localStorage to Firestore (ShopperScreen still owns wishlist in React + LS). */
+export function useWishlistFirestoreSync(hydrated, firebaseUser) {
+  useEffect(() => {
+    if (!hydrated || !firebaseUser) return undefined;
+    const push = () => {
+      try {
+        const raw = localStorage.getItem(STORAGE_WISHLIST);
+        const parsed = raw ? JSON.parse(raw) : [];
+        if (!Array.isArray(parsed)) return;
+        setDoc(
+          doc(db, "users", firebaseUser.uid),
+          { wishlist: JSON.parse(JSON.stringify(parsed)) },
+          { merge: true }
+        ).catch(() => {});
+      } catch {
+        /* ignore */
+      }
+    };
+    let intervalId = null;
+    const start = window.setTimeout(() => {
+      push();
+      intervalId = window.setInterval(push, 4000);
+    }, 2000);
+    return () => {
+      clearTimeout(start);
+      if (intervalId != null) clearInterval(intervalId);
+    };
+  }, [hydrated, firebaseUser]);
 }

@@ -379,3 +379,105 @@ Shared functions now live in utility and service modules and are imported back i
 Deleted the dead `ShopperAgentOld` code, moved gap analysis into its screen file, and moved constants/helpers into shared modules. Build passes with no behavior changes intended.
 
 ---
+
+### [Date: 2026-05-05] - CrewAI local-mode token trims
+
+**Background:**
+Local / SAST remediation runs were spending too many tokens on oversized file reads, full-file writes, and high agent iteration budgets. The crew needed caps, patch-oriented writes, and lower `max_iter` when `alert["local_mode"]` is set.
+
+**Changed:**
+
+- `agents/__init__.py` (new)
+- `agents/crew.py` (new)
+- `requirements.txt`
+
+**Impact:**
+Adds `crewai` as a Python dependency. Repo tools use `CREW_REPO_ROOT` (default `.`) and require `patch(1)` when applying unified diffs. If you already had a different `agents/crew.py` elsewhere, merge these behaviors into that file instead of duplicating.
+
+---
+
+### [Date: 2026-05-10] - Email auth: forgot password + clearer submit labels
+
+**Background:**
+Sign-in/sign-up lacked a password reset option, and the primary button always said “Get started free” even in sign-in mode, which was unclear next to “Already have an account? Sign In” on signup.
+
+**Changed:**
+
+- `src/App.js`
+
+**Impact:**
+Uses Firebase `sendPasswordResetEmail` with user-facing errors and a success hint. Toggle between login/signup clears reset messages; primary button now shows **Sign In** vs **Get started free** by mode.
+
+---
+
+### [Date: 2026-05-10] - Profile keyed by Firebase UID (onboarding for new accounts)
+
+**Background:**
+Profile lived in a single `localStorage` key, so a completed profile from the same browser made every new Firebase user look “already onboarded” (`profile.name` set).
+
+**Changed:**
+
+- `src/App.js`
+
+**Impact:**
+Profiles are stored under `fos_profile__${uid}`; legacy `fos_profile` migrates only when `fos_profile_legacy_owner` matches the signed-in user. New sign-ups with no keyed profile start onboarding again. Completing onboarding or saving profile clears the legacy global key. The wardrobe-agent hook still reads the legacy path only—a follow-up could read the per-user key when auth is wired there.
+
+---
+
+### [Date: 2026-05-10] - Mobile auth landing + default signup mode
+
+**Background:**
+Mobile landing needed a short value prop above the form, no duplicate logo, flatter full-width card styling, and email auth should open in sign-up mode by default.
+
+**Changed:**
+
+- `src/App.js`
+
+**Impact:**
+`<768px`: condensed logo, slogan, three text features, then form; in-card branding hidden on small screens only; login card uses `#faf7f2` with no border/shadow on mobile and 16px side padding on the column. Desktop right column unchanged. Initial `authMode` is `signup`.
+
+---
+
+### [Date: 2026-05-10] - Onboarding wardrobe demo step (first photo + AI card)
+
+**Background:**
+After the profile summary, users should upload one clothing photo, see an AI scanning state, then a catalog-style item card before entering the app.
+
+**Changed:**
+
+- `src/App.js`
+- `src/components/Onboarding.js`
+
+**Impact:**
+Onboarding now has **7** steps plus a completion tick (**step 8** persists profile). Step 7 uses the existing `addWardrobeFromFile` pipeline (returns the new item for display) and adds the piece to the wardrobe. `goNextOnboarding` / `canAdvance` thresholds updated. Brief “Saving your profile…” state while step 8 finishes.
+
+---
+
+### [Date: 2026-05-10] - Closet scan modal mobile layout
+
+**Background:**
+Scan My Closet needed larger touch targets, bottom-sheet behavior on small screens, and responsive stats/actions.
+
+**Changed:**
+
+- `src/screens/WardrobeScreen.js`
+- `src/index.css`
+
+**Impact:**
+Scan button `minHeight: 44`; modal uses `closet-scan-backdrop` / `closet-scan-dialog` (slides up on ≤640px with safe area); stats use `closet-scan-stats-grid`; actions stack full-width on mobile with `minHeight: 48` buttons; preview image uses `closet-scan-preview-img`. Header stacks scan + add at ≤480px.
+
+---
+
+### [Date: 2026-05-10] - Profile, events, wishlist Firestore dual-write (App)
+
+**Background:**
+Mirror profile, events, and wishlist to Firestore whenever they change (with localStorage unchanged) and hydrate from Firestore after login—without altering wardrobe or ShopperScreen code.
+
+**Changed:**
+
+- `src/App.js`
+
+**Impact:**
+`persistProfile` plus `events`/`wishlist` effects call `setDoc(..., { merge: true })` when signed in. The `firebaseUser` + `hydrated` effect runs legacy profile migration locally, then `getDoc`: merges remote profile only when local per-key cache is empty (`fos_profile__{uid}`); applies `events` / `wishlist` from cloud only when those arrays exist and `length > 0`. Wishlist stays in React in App with a 2s localStorage poll so Shopper’s writes still sync to Firestore. `snap.exists` (Firestore boolean) used with `merge: true` and sanitised payloads for Firestore-compatible JSON.
+
+---

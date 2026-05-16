@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { COLORS } from "../constants/colors";
 
@@ -88,19 +88,84 @@ function displayBodyType(value) {
   return value || "Not set";
 }
 
+const STYLE_EMOJI = {
+  Minimalist: "🤍",
+  "Casual chic": "👟",
+  Streetwear: "🧢",
+  "Business formal": "👔",
+  Bohemian: "🌸",
+  Sporty: "⚡",
+  Romantic: "🌹",
+  Edgy: "🖤",
+  Classic: "🏛️",
+  Eclectic: "🎨",
+};
+
+const BODY_HINT_CHIPS = ["Athletic", "Slim", "Average", "Broad", "Plus size"];
+const SIZE_HINT_CHIPS_ROW1 = ["Size S", "Size M", "Size L", "Size XL"];
+const SIZE_HINT_CHIPS_ROW2 = ["Shoe 8", "Shoe 9", "Shoe 10", "Shoe 11"];
+
+const BUDGET_EMOJI = {
+  budget: "💸",
+  "mid-range": "🛍️",
+  premium: "✨",
+  luxury: "👑",
+  mixed: "🔄",
+};
+
+const CATEGORY_ICON = {
+  Tops: "👕",
+  Bottoms: "👖",
+  Outerwear: "🧥",
+  Shoes: "👟",
+  Accessories: "🧢",
+  Dresses: "👗",
+  Activewear: "🏃",
+  Formal: "🤵",
+  Bags: "👜",
+};
+
+function detectBrandFromCatalog(item, brands) {
+  const blob = `${item?.description || ""} ${Array.isArray(item?.tags) ? item.tags.join(" ") : ""}`.toLowerCase();
+  for (let i = 0; i < brands.length; i += 1) {
+    const b = String(brands[i]);
+    if (blob.includes(b.toLowerCase())) return b;
+  }
+  return null;
+}
+
+function tileBase(selected, transition) {
+  return {
+    cursor: "pointer",
+    borderRadius: 14,
+    border: `2px solid ${selected ? COLORS.primary : COLORS.border}`,
+    boxSizing: "border-box",
+    transition,
+    outline: "none",
+  };
+}
+
 export function Onboarding({
   onboardingStep,
   draft,
   setDraft,
   goBackOnboarding,
   goNextOnboarding,
+  uploadWardrobeItem,
   baseTransition,
   GENDER_OPTIONS,
   BUDGET_OPTIONS,
   STYLE_PREFS,
   BRANDS,
 }) {
-  const activeStep = Math.min(onboardingStep, 6);
+  const isWardrobeStep = onboardingStep === 7;
+  const profileUiStep = onboardingStep <= 6 ? onboardingStep : null;
+  const wardrobeFileRef = useRef(null);
+  const [wardrobePhase, setWardrobePhase] = useState("pick");
+  const [wardrobePreview, setWardrobePreview] = useState("");
+  const [wardrobeItem, setWardrobeItem] = useState(null);
+  const [wardrobeError, setWardrobeError] = useState("");
+
   const [answers, setAnswers] = useState(() => ({
     1: draft.name || "",
     2: "",
@@ -108,11 +173,27 @@ export function Onboarding({
     4: "",
     5: "",
   }));
+  const [selectedStyles, setSelectedStyles] = useState(() =>
+    (draft.styles || []).filter((s) => STYLE_PREFS.includes(s)).slice(0, 3)
+  );
   const [parsing, setParsing] = useState(false);
 
   useEffect(() => {
-    if (onboardingStep === 7) goNextOnboarding();
+    if (onboardingStep === 8) goNextOnboarding();
   }, [goNextOnboarding, onboardingStep]);
+
+  useEffect(() => {
+    if (onboardingStep === 7) return;
+    setWardrobePhase("pick");
+    setWardrobePreview("");
+    setWardrobeItem(null);
+    setWardrobeError("");
+  }, [onboardingStep]);
+
+  useEffect(() => {
+    if (profileUiStep !== 4) return;
+    setSelectedStyles((draft.styles || []).filter((s) => STYLE_PREFS.includes(s)).slice(0, 3));
+  }, [profileUiStep, onboardingStep, draft.styles, STYLE_PREFS]);
 
   const genderMeta = useMemo(
     () => GENDER_OPTIONS.find((opt) => opt.value === draft.gender) || GENDER_OPTIONS.find((opt) => opt.value === "undisclosed"),
@@ -124,43 +205,31 @@ export function Onboarding({
     [BUDGET_OPTIONS, draft.budget]
   );
 
-  const stepConfig = {
-    1: {
-      question: "What should we call you?",
-      input: "input",
-      placeholder: "Alex",
-    },
-    2: {
-      question: "How do you identify? (optional)",
-      input: "input",
-      placeholder: "e.g. male, female, non-binary, prefer not to say",
-    },
-    3: {
-      question: "Describe your body and size",
-      input: "textarea",
-      placeholder: "e.g. I'm 6'1, athletic build, broad shoulders.\nI wear size L tops, 32 pants, size 10.5 shoes",
-    },
-    4: {
-      question: "How would you describe your personal style?",
-      input: "textarea",
-      placeholder: "e.g. I love clean minimal looks, mostly neutrals,\noccasional streetwear. Think Uniqlo meets Nike",
-    },
-    5: {
-      question: "What's your typical clothing budget?",
-      input: "input",
-      placeholder: "e.g. $50-100 per item, or around $200/month",
-    },
-  };
+  const wardrobeDetectedBrand = useMemo(
+    () => (wardrobeItem ? detectBrandFromCatalog(wardrobeItem, BRANDS) : null),
+    [wardrobeItem, BRANDS]
+  );
 
-  const current = stepConfig[activeStep];
-  const answer = answers[activeStep] || "";
-  const canContinue = activeStep === 6 || parsing ? !parsing : activeStep === 1 ? answer.trim().length > 0 : true;
+  const answer = profileUiStep != null ? answers[profileUiStep] || "" : "";
+
+  const canContinue =
+    profileUiStep == null || isWardrobeStep
+      ? false
+      : profileUiStep === 6 || parsing
+        ? !parsing
+        : profileUiStep === 1
+          ? answer.trim().length > 0
+          : profileUiStep === 4
+            ? selectedStyles.length > 0
+            : profileUiStep === 2 || profileUiStep === 5
+              ? false
+              : true;
 
   const inputStyle = {
     width: "100%",
     boxSizing: "border-box",
     padding: "14px 16px",
-    borderRadius: 10,
+    borderRadius: 12,
     border: `1px solid ${COLORS.border}`,
     background: COLORS.surface2,
     color: COLORS.text,
@@ -172,33 +241,67 @@ export function Onboarding({
   };
 
   const setAnswer = (value) => {
-    setAnswers((prev) => ({ ...prev, [activeStep]: value }));
-    if (activeStep === 1) setDraft((d) => ({ ...d, name: value }));
+    if (profileUiStep == null) return;
+    setAnswers((prev) => ({ ...prev, [profileUiStep]: value }));
+    if (profileUiStep === 1) setDraft((d) => ({ ...d, name: value }));
+  };
+
+  const appendBodyHint = (snippet) => {
+    setAnswers((prev) => {
+      const cur = prev[3] || "";
+      const next = cur.trim() ? `${cur.trim()} ${snippet}` : snippet;
+      return { ...prev, 3: next };
+    });
+  };
+
+  const selectGender = (opt) => {
+    setDraft((d) => ({
+      ...d,
+      gender: opt.value,
+      bodyType: d.gender !== opt.value ? "" : d.bodyType,
+    }));
+    goNextOnboarding();
+  };
+
+  const toggleStyle = (name) => {
+    setSelectedStyles((prev) => {
+      if (prev.includes(name)) return prev.filter((x) => x !== name);
+      if (prev.length >= 3) return prev;
+      return [...prev, name];
+    });
+  };
+
+  const selectBudget = (id) => {
+    setDraft((d) => ({ ...d, budget: normalizeBudget(id) }));
+    goNextOnboarding();
   };
 
   const continueStep = async () => {
     if (!canContinue) return;
-    if (activeStep === 6) {
+    if (profileUiStep === 6) {
+      goNextOnboarding();
+      return;
+    }
+    if (profileUiStep === 2 || profileUiStep === 5) return;
+
+    if (profileUiStep === 1) {
+      setDraft((d) => ({ ...d, name: answer.trim() }));
       goNextOnboarding();
       return;
     }
 
-    setParsing(true);
-    try {
-      if (activeStep === 1) {
-        setDraft((d) => ({ ...d, name: answer.trim() }));
-      }
+    if (profileUiStep === 4) {
+      setDraft((d) => ({
+        ...d,
+        styles: selectedStyles.filter((s) => STYLE_PREFS.includes(s)).slice(0, 3),
+      }));
+      goNextOnboarding();
+      return;
+    }
 
-      if (activeStep === 2) {
-        const parsed = await parseStepWithAI(2, answer, draft, BRANDS);
-        setDraft((d) => ({
-          ...d,
-          gender: normalizeGender(parsed),
-          bodyType: d.gender !== normalizeGender(parsed) ? "" : d.bodyType,
-        }));
-      }
-
-      if (activeStep === 3) {
+    if (profileUiStep === 3) {
+      setParsing(true);
+      try {
         const parsed = await parseStepWithAI(3, answer, draft, BRANDS);
         setDraft((d) => ({
           ...d,
@@ -207,29 +310,102 @@ export function Onboarding({
           bottomSize: String(parsed?.bottomSize || ""),
           shoeSize: String(parsed?.shoeSize || ""),
         }));
+        goNextOnboarding();
+      } finally {
+        setParsing(false);
       }
-
-      if (activeStep === 4) {
-        const parsed = await parseStepWithAI(4, answer, draft, BRANDS);
-        const styles = asArray(parsed?.styles).map(String).filter((s) => STYLE_PREFS.includes(s)).slice(0, 3);
-        const brands = asArray(parsed?.brands).map(String).filter((b) => BRANDS.includes(b));
-        setDraft((d) => ({ ...d, styles, brands }));
-      }
-
-      if (activeStep === 5) {
-        const parsed = await parseStepWithAI(5, answer, draft, BRANDS);
-        setDraft((d) => ({ ...d, budget: normalizeBudget(parsed) }));
-      }
-
-      goNextOnboarding();
-    } finally {
-      setParsing(false);
     }
+  };
+
+  const handleWardrobeFiles = async (fileList) => {
+    const file = fileList?.[0];
+    if (!file) return;
+    if (!uploadWardrobeItem) {
+      setWardrobeError("Upload is not available.");
+      return;
+    }
+    if (!file.type.startsWith("image/")) {
+      setWardrobeError("Please choose an image file.");
+      return;
+    }
+    setWardrobeError("");
+    const objectUrl = URL.createObjectURL(file);
+    setWardrobePreview(objectUrl);
+    setWardrobePhase("scanning");
+    const item = await uploadWardrobeItem(file);
+    URL.revokeObjectURL(objectUrl);
+    if (!item) {
+      setWardrobePreview("");
+      setWardrobePhase("pick");
+      setWardrobeError("We couldn't read that photo. Try another image.");
+      return;
+    }
+    setWardrobeItem(item);
+    setWardrobePreview(item.imagePreview || "");
+    setWardrobePhase("result");
+  };
+
+  const finishWardrobeStep = () => {
+    goNextOnboarding();
   };
 
   const editFromStart = () => {
     for (let i = 1; i < onboardingStep; i += 1) goBackOnboarding();
   };
+
+  const stepChrome = {
+    1: {
+      icon: "👋",
+      question: "What should we call you?",
+      subtitle: "We'll personalize everything for you",
+      dataUse: "We use your name in greetings and to make recommendations feel like they’re just for you.",
+    },
+    2: {
+      icon: "🪞",
+      question: "How do you identify?",
+      subtitle: "Helps us find the right fit and styles",
+      dataUse: "Sizing cues and product catalogs are tailored to how you shop and dress.",
+    },
+    3: {
+      icon: "📏",
+      question: "Describe your body and sizing",
+      subtitle: "Type naturally — AI understands you",
+      dataUse: "We turn this into structured sizes so outfit and product matches actually fit.",
+    },
+    4: {
+      icon: "✨",
+      question: "What's your personal style?",
+      subtitle: "Pick up to 3 that feel like you",
+      dataUse: "Your picks shape daily outfit ideas and what we surface from millions of items.",
+    },
+    5: {
+      icon: "💳",
+      question: "What's your shopping comfort zone?",
+      subtitle: "We’ll match suggestions to your typical spend",
+      dataUse: "Filters help us avoid surprises—only pieces in a range that works for you.",
+    },
+  };
+
+  const sc = profileUiStep != null ? stepChrome[profileUiStep] : null;
+
+  if (onboardingStep >= 8) {
+    return (
+      <div
+        style={{
+          minHeight: "100vh",
+          background: COLORS.bg,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          fontFamily: "'DM Sans', sans-serif",
+          color: COLORS.textMuted,
+          fontSize: "0.95rem",
+        }}
+      >
+        Saving your profile…
+      </div>
+    );
+  }
 
   return (
     <div
@@ -238,7 +414,7 @@ export function Onboarding({
         background: COLORS.bg,
         color: COLORS.text,
         fontFamily: "'DM Sans', sans-serif",
-        padding: "48px 24px",
+        padding: "40px 20px 56px",
         display: "flex",
         justifyContent: "center",
         alignItems: "flex-start",
@@ -246,35 +422,42 @@ export function Onboarding({
     >
       <style>{`
         @keyframes onboardingSlideIn {
-          from { opacity: 0; transform: translateX(18px); }
+          from { opacity: 0; transform: translateX(14px); }
           to { opacity: 1; transform: translateX(0); }
         }
+        @keyframes wardScanShimmer {
+          0%, 100% { opacity: 0.65; }
+          50% { opacity: 1; }
+        }
       `}</style>
-      <div style={{ width: "100%", maxWidth: 560 }}>
+      <div style={{ width: "100%", maxWidth: 520 }}>
         <h1
           style={{
             fontFamily: "'Cormorant Garamond', serif",
             fontWeight: 600,
-            fontSize: "2.25rem",
-            margin: "0 0 8px",
+            fontSize: "2.1rem",
+            margin: "0 0 6px",
             letterSpacing: "0.02em",
+            color: COLORS.text,
           }}
         >
           Fashion OS
         </h1>
-        <p style={{ color: COLORS.textMuted, margin: "0 0 32px", fontSize: "0.95rem" }}>
-          Tell us about your style in six quick messages.
+        <p style={{ color: COLORS.textMuted, margin: "0 0 28px", fontSize: "0.98rem", lineHeight: 1.5 }}>
+          {isWardrobeStep
+            ? "One last step—show us a single piece so we can catalog your closet with AI."
+            : "A warm welcome—seven quick steps to a wardrobe that feels like you."}
         </p>
 
-        <div style={{ display: "flex", gap: 8, marginBottom: 28 }}>
-          {[1, 2, 3, 4, 5, 6].map((n) => (
+        <div style={{ display: "flex", gap: 6, marginBottom: 28 }}>
+          {[1, 2, 3, 4, 5, 6, 7].map((n) => (
             <div
               key={n}
               style={{
                 flex: 1,
-                height: 3,
-                borderRadius: 2,
-                background: n <= activeStep ? COLORS.primary : COLORS.surface2,
+                height: 4,
+                borderRadius: 4,
+                background: n <= onboardingStep ? COLORS.primary : COLORS.surface2,
                 transition: baseTransition,
               }}
             />
@@ -282,74 +465,478 @@ export function Onboarding({
         </div>
 
         <div
-          key={activeStep}
+          key={onboardingStep}
           style={{
             background: COLORS.surface,
-            borderRadius: 12,
-            padding: 28,
+            borderRadius: 18,
+            padding: isWardrobeStep ? 28 : profileUiStep != null && profileUiStep < 6 ? 28 : 26,
             border: `1px solid ${COLORS.border}`,
-            animation: "onboardingSlideIn 260ms ease both",
+            boxShadow: "0 12px 40px rgba(26, 18, 8, 0.06)",
+            animation: "onboardingSlideIn 280ms ease both",
           }}
         >
-          {activeStep < 6 ? (
+          {profileUiStep != null && profileUiStep < 6 && sc && (
             <>
-              <div style={{ color: COLORS.textMuted, fontSize: "0.78rem", marginBottom: 10 }}>
-                Step {activeStep} of 6
+              <div style={{ color: COLORS.textMuted, fontSize: "0.72rem", marginBottom: 16, letterSpacing: "0.06em", textTransform: "uppercase" }}>
+                Step {profileUiStep} of 7
               </div>
-              <label
-                style={{
-                  display: "block",
-                  fontFamily: "'Cormorant Garamond', serif",
-                  fontSize: "1.55rem",
-                  fontWeight: 600,
-                  marginBottom: 18,
-                }}
-              >
-                {current.question}
-              </label>
-              {current.input === "textarea" ? (
-                <textarea
-                  value={answer}
-                  onChange={(e) => setAnswer(e.target.value)}
-                  placeholder={current.placeholder}
-                  rows={3}
-                  style={{ ...inputStyle, resize: "vertical" }}
-                />
-              ) : (
-                <input
-                  value={answer}
-                  onChange={(e) => setAnswer(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") void continueStep();
-                  }}
-                  placeholder={current.placeholder}
-                  style={inputStyle}
-                />
-              )}
-            </>
-          ) : (
-            <>
-              <div style={{ color: COLORS.textMuted, fontSize: "0.78rem", marginBottom: 10 }}>
-                Step 6 of 6
+              <div style={{ textAlign: "center", marginBottom: 8 }}>
+                <div style={{ fontSize: 48, lineHeight: 1.1 }} aria-hidden>
+                  {sc.icon}
+                </div>
               </div>
               <h2
                 style={{
                   fontFamily: "'Cormorant Garamond', serif",
                   fontSize: "1.65rem",
                   fontWeight: 600,
-                  margin: "0 0 18px",
+                  margin: "0 0 10px",
+                  textAlign: "center",
+                  lineHeight: 1.25,
                 }}
               >
-                Confirm your profile
+                {sc.question}
               </h2>
+              <p style={{ color: COLORS.textMuted, fontSize: "0.92rem", margin: "0 auto 8px", textAlign: "center", maxWidth: 400, lineHeight: 1.5 }}>
+                {sc.subtitle}
+              </p>
+              <p style={{ color: "#9a8a78", fontSize: "0.8rem", margin: "0 auto 22px", textAlign: "center", maxWidth: 420, lineHeight: 1.45, fontStyle: "italic" }}>
+                {sc.dataUse}
+              </p>
+            </>
+          )}
+
+          {isWardrobeStep && (
+            <>
+              <input
+                ref={wardrobeFileRef}
+                type="file"
+                accept="image/*"
+                style={{ display: "none" }}
+                onChange={(e) => {
+                  void handleWardrobeFiles(e.target.files);
+                  e.target.value = "";
+                }}
+              />
+              <div style={{ color: COLORS.textMuted, fontSize: "0.72rem", marginBottom: 16, letterSpacing: "0.06em", textTransform: "uppercase" }}>
+                Step 7 of 7
+              </div>
+              <div style={{ textAlign: "center", marginBottom: 10 }}>
+                <div style={{ fontSize: 48, lineHeight: 1.1 }} aria-hidden>
+                  🧥
+                </div>
+              </div>
+              <h2
+                style={{
+                  fontFamily: "'Cormorant Garamond', serif",
+                  fontSize: "1.65rem",
+                  fontWeight: 600,
+                  margin: "0 0 8px",
+                  textAlign: "center",
+                  lineHeight: 1.25,
+                }}
+              >
+                Now let&apos;s meet your wardrobe
+              </h2>
+              <p style={{ color: COLORS.textMuted, fontSize: "0.95rem", margin: "0 auto 10px", textAlign: "center", maxWidth: 400, lineHeight: 1.5 }}>
+                Upload one photo of any clothing item.
+                <br />
+                Watch AI identify it instantly.
+              </p>
+              <p style={{ color: "#9a8a78", fontSize: "0.8rem", margin: "0 auto 22px", textAlign: "center", maxWidth: 420, lineHeight: 1.45, fontStyle: "italic" }}>
+                This photo becomes your first cataloged piece—every future add works the same way.
+              </p>
+
+              {wardrobePhase === "pick" && (
+                <button
+                  type="button"
+                  onClick={() => wardrobeFileRef.current?.click()}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                  }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    void handleWardrobeFiles(e.dataTransfer.files);
+                  }}
+                  style={{
+                    width: "100%",
+                    minHeight: 220,
+                    borderRadius: 16,
+                    border: `2px dashed ${COLORS.primary}`,
+                    background: COLORS.primarySoft,
+                    color: COLORS.text,
+                    cursor: "pointer",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 10,
+                    fontFamily: "'DM Sans', sans-serif",
+                    transition: baseTransition,
+                  }}
+                >
+                  <span style={{ fontSize: 44 }} aria-hidden>
+                    📷
+                  </span>
+                  <span style={{ fontWeight: 600, fontSize: "1.05rem" }}>Tap to upload or drag a photo</span>
+                  <span style={{ fontSize: "0.82rem", color: COLORS.textMuted }}>JPG or PNG · one item per photo</span>
+                </button>
+              )}
+
+              {wardrobePhase === "scanning" && wardrobePreview && (
+                <div style={{ position: "relative", borderRadius: 16, overflow: "hidden", marginBottom: 18 }}>
+                  <img
+                    src={wardrobePreview}
+                    alt=""
+                    style={{
+                      width: "100%",
+                      display: "block",
+                      maxHeight: 280,
+                      objectFit: "contain",
+                      background: COLORS.surface2,
+                    }}
+                  />
+                  <div
+                    style={{
+                      position: "absolute",
+                      inset: 0,
+                      background: "rgba(32, 26, 23, 0.35)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      backdropFilter: "blur(1px)",
+                    }}
+                  >
+                    <span
+                      style={{
+                        color: "#fff",
+                        fontWeight: 600,
+                        fontSize: "1.05rem",
+                        textShadow: "0 1px 8px rgba(0,0,0,0.35)",
+                        animation: "wardScanShimmer 1.2s ease-in-out infinite",
+                      }}
+                    >
+                      AI scanning… ✨
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {wardrobePhase === "result" && wardrobePreview && wardrobeItem && (
+                <div style={{ position: "relative", borderRadius: 16, overflow: "hidden", marginBottom: 18 }}>
+                  <img
+                    src={wardrobePreview}
+                    alt=""
+                    style={{
+                      width: "100%",
+                      display: "block",
+                      maxHeight: 220,
+                      objectFit: "contain",
+                      background: COLORS.surface2,
+                    }}
+                  />
+                </div>
+              )}
+
+              {wardrobePhase === "result" && wardrobeItem && (
+                <>
+                  <div
+                    style={{
+                      borderRadius: 16,
+                      border: `1px solid ${COLORS.border}`,
+                      background: COLORS.surface2,
+                      padding: 18,
+                      marginBottom: 18,
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 12 }}>
+                      <span style={{ fontSize: 28 }}>{CATEGORY_ICON[wardrobeItem.category] || "👔"}</span>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "1.25rem", fontWeight: 600, color: COLORS.text, lineHeight: 1.3 }}>
+                          {wardrobeItem.name}
+                        </div>
+                        <div style={{ fontSize: "0.82rem", color: COLORS.textMuted, marginTop: 6, lineHeight: 1.5 }}>
+                          <div>
+                            <strong style={{ color: COLORS.textMuted }}>Category:</strong> {wardrobeItem.category}
+                          </div>
+                          <div>
+                            <strong style={{ color: COLORS.textMuted }}>Color:</strong> {wardrobeItem.color || "—"}
+                          </div>
+                          <div>
+                            <strong style={{ color: COLORS.textMuted }}>Style:</strong> {wardrobeItem.style || "—"}
+                          </div>
+                          <div>
+                            <strong style={{ color: COLORS.textMuted }}>Brand:</strong>{" "}
+                            {wardrobeDetectedBrand ? (
+                              <>
+                                {wardrobeDetectedBrand}{" "}
+                                <span style={{ color: COLORS.accent, fontSize: "0.78rem" }}>(detected)</span>
+                              </>
+                            ) : (
+                              <span style={{ color: COLORS.textMuted }}>—</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <p
+                    style={{
+                      fontFamily: "'Cormorant Garamond', serif",
+                      fontSize: "1.2rem",
+                      fontWeight: 500,
+                      color: COLORS.text,
+                      textAlign: "center",
+                      lineHeight: 1.45,
+                      margin: "0 0 6px",
+                    }}
+                  >
+                    That&apos;s the magic.
+                    <br />
+                    Your whole wardrobe, organized.
+                  </p>
+                </>
+              )}
+
+              {wardrobeError && (
+                <p style={{ color: COLORS.danger, fontSize: "0.88rem", textAlign: "center", marginBottom: 12 }}>{wardrobeError}</p>
+              )}
+            </>
+          )}
+
+          {profileUiStep === 1 && (
+            <input
+              value={answer}
+              onChange={(e) => setAnswer(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") void continueStep();
+              }}
+              placeholder="Your first name"
+              style={inputStyle}
+              autoComplete="given-name"
+            />
+          )}
+
+          {profileUiStep === 2 && (
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
+                gap: 12,
+              }}
+            >
+              {GENDER_OPTIONS.map((opt) => {
+                const selected = draft.gender === opt.value;
+                return (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => selectGender(opt)}
+                    style={{
+                      ...tileBase(selected, baseTransition),
+                      padding: "18px 14px",
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      gap: 8,
+                      background: selected ? COLORS.primarySoft : COLORS.surface2,
+                      fontFamily: "'DM Sans', sans-serif",
+                    }}
+                  >
+                    <span style={{ fontSize: 36, lineHeight: 1 }}>{opt.icon}</span>
+                    <span style={{ fontWeight: 600, fontSize: "0.95rem", color: COLORS.text }}>{opt.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {profileUiStep === 3 && (
+            <>
+              <textarea
+                value={answer}
+                onChange={(e) => setAnswer(e.target.value)}
+                placeholder="e.g. I'm 6'1, athletic build, broad shoulders. I wear size L tops, 32 pants, size 10.5 shoes"
+                rows={4}
+                style={{ ...inputStyle, resize: "vertical", minHeight: 120 }}
+              />
+              <div style={{ marginTop: 14 }}>
+                <div style={{ fontSize: "0.72rem", color: COLORS.textMuted, marginBottom: 8, letterSpacing: "0.04em" }}>Quick hints — tap to add</div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 8 }}>
+                  {BODY_HINT_CHIPS.map((c) => (
+                    <button
+                      key={c}
+                      type="button"
+                      onClick={() => appendBodyHint(c)}
+                      style={{
+                        padding: "8px 12px",
+                        borderRadius: 999,
+                        border: `1px solid ${COLORS.border}`,
+                        background: COLORS.surface2,
+                        color: COLORS.text,
+                        fontSize: "0.82rem",
+                        cursor: "pointer",
+                        transition: baseTransition,
+                        fontFamily: "'DM Sans', sans-serif",
+                      }}
+                    >
+                      {c}
+                    </button>
+                  ))}
+                </div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 8 }}>
+                  {SIZE_HINT_CHIPS_ROW1.map((c) => (
+                    <button
+                      key={c}
+                      type="button"
+                      onClick={() => appendBodyHint(c)}
+                      style={{
+                        padding: "8px 12px",
+                        borderRadius: 999,
+                        border: `1px solid ${COLORS.border}`,
+                        background: COLORS.surface2,
+                        color: COLORS.text,
+                        fontSize: "0.82rem",
+                        cursor: "pointer",
+                        transition: baseTransition,
+                        fontFamily: "'DM Sans', sans-serif",
+                      }}
+                    >
+                      {c}
+                    </button>
+                  ))}
+                </div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                  {SIZE_HINT_CHIPS_ROW2.map((c) => (
+                    <button
+                      key={c}
+                      type="button"
+                      onClick={() => appendBodyHint(c)}
+                      style={{
+                        padding: "8px 12px",
+                        borderRadius: 999,
+                        border: `1px solid ${COLORS.border}`,
+                        background: COLORS.surface2,
+                        color: COLORS.text,
+                        fontSize: "0.82rem",
+                        cursor: "pointer",
+                        transition: baseTransition,
+                        fontFamily: "'DM Sans', sans-serif",
+                      }}
+                    >
+                      {c}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
+
+          {profileUiStep === 4 && (
+            <div>
+              <p style={{ textAlign: "center", fontSize: "0.78rem", color: COLORS.textMuted, margin: "0 0 14px" }}>
+                {selectedStyles.length}/3 selected
+              </p>
               <div
                 style={{
                   display: "grid",
-                  gap: 12,
+                  gridTemplateColumns: "repeat(2, 1fr)",
+                  gap: 10,
+                }}
+              >
+                {STYLE_PREFS.map((name) => {
+                  const selected = selectedStyles.includes(name);
+                  const emoji = STYLE_EMOJI[name] || "✨";
+                  return (
+                    <button
+                      key={name}
+                      type="button"
+                      onClick={() => toggleStyle(name)}
+                      style={{
+                        ...tileBase(selected, baseTransition),
+                        padding: "14px 12px",
+                        display: "flex",
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: 10,
+                        textAlign: "left",
+                        background: selected ? COLORS.primarySoft : COLORS.surface2,
+                        fontFamily: "'DM Sans', sans-serif",
+                      }}
+                    >
+                      <span style={{ fontSize: 26, lineHeight: 1 }}>{emoji}</span>
+                      <span style={{ fontWeight: 600, fontSize: "0.88rem", color: COLORS.text, lineHeight: 1.3 }}>{name}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {profileUiStep === 5 && (
+            <div style={{ display: "grid", gap: 10 }}>
+              {BUDGET_OPTIONS.map((b) => {
+                const selected = draft.budget === b.id;
+                return (
+                  <button
+                    key={b.id}
+                    type="button"
+                    onClick={() => selectBudget(b.id)}
+                    style={{
+                      ...tileBase(selected, baseTransition),
+                      padding: "16px 18px",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 14,
+                      textAlign: "left",
+                      background: selected ? COLORS.primarySoft : COLORS.surface2,
+                      fontFamily: "'DM Sans', sans-serif",
+                    }}
+                  >
+                    <span style={{ fontSize: 30 }}>{BUDGET_EMOJI[b.id] || "◇"}</span>
+                    <div>
+                      <div style={{ fontWeight: 700, fontSize: "0.98rem", color: COLORS.text, marginBottom: 2 }}>{b.label}</div>
+                      <div style={{ fontSize: "0.82rem", color: COLORS.textMuted, lineHeight: 1.35 }}>{b.sub}</div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {profileUiStep === 6 && (
+            <>
+              <div style={{ color: COLORS.textMuted, fontSize: "0.72rem", marginBottom: 12, letterSpacing: "0.06em", textTransform: "uppercase", textAlign: "center" }}>
+                Step 6 of 7
+              </div>
+              <div style={{ textAlign: "center", marginBottom: 10 }}>
+                <div style={{ fontSize: 48, lineHeight: 1 }} aria-hidden>
+                  🎉
+                </div>
+              </div>
+              <h2
+                style={{
+                  fontFamily: "'Cormorant Garamond', serif",
+                  fontSize: "1.6rem",
+                  fontWeight: 600,
+                  margin: "0 0 8px",
+                  textAlign: "center",
+                }}
+              >
+                You&apos;re all set
+              </h2>
+              <p style={{ color: COLORS.textMuted, fontSize: "0.9rem", margin: "0 0 20px", textAlign: "center", lineHeight: 1.45 }}>
+                Here&apos;s how we&apos;ll use your profile—tap enter when it looks right.
+              </p>
+              <div
+                style={{
+                  display: "grid",
+                  gap: 14,
                   background: COLORS.surface2,
                   border: `1px solid ${COLORS.border}`,
-                  borderRadius: 12,
-                  padding: 18,
+                  borderRadius: 14,
+                  padding: 20,
                 }}
               >
                 <SummaryRow label="Name" value={draft.name || "Not set"} />
@@ -366,58 +953,142 @@ export function Onboarding({
             </>
           )}
 
-          <div style={{ display: "flex", justifyContent: "space-between", marginTop: 28, gap: 12 }}>
-            {activeStep === 6 ? (
-              <button
-                type="button"
-                onClick={editFromStart}
-                style={{
-                  padding: "12px 20px",
-                  borderRadius: 8,
-                  border: `1px solid ${COLORS.border}`,
-                  background: "transparent",
-                  color: COLORS.text,
-                  cursor: "pointer",
-                  transition: baseTransition,
-                }}
-              >
-                ← Edit
-              </button>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              marginTop: 28,
+              gap: 12,
+              flexWrap: "wrap",
+            }}
+          >
+            {isWardrobeStep ? (
+              <>
+                <button
+                  type="button"
+                  onClick={goBackOnboarding}
+                  disabled={onboardingStep === 1 || wardrobePhase === "scanning"}
+                  style={{
+                    padding: "12px 20px",
+                    borderRadius: 10,
+                    border: `1px solid ${COLORS.border}`,
+                    background: "transparent",
+                    color: onboardingStep === 1 || wardrobePhase === "scanning" ? COLORS.textMuted : COLORS.text,
+                    cursor: onboardingStep === 1 || wardrobePhase === "scanning" ? "default" : "pointer",
+                    transition: baseTransition,
+                    fontFamily: "'DM Sans', sans-serif",
+                    fontWeight: 500,
+                  }}
+                >
+                  Back
+                </button>
+                {wardrobePhase === "result" ? (
+                  <button
+                    type="button"
+                    onClick={finishWardrobeStep}
+                    style={{
+                      padding: "12px 24px",
+                      borderRadius: 10,
+                      border: "none",
+                      background: COLORS.primary,
+                      color: "#FFFFFF",
+                      cursor: "pointer",
+                      fontWeight: 600,
+                      transition: baseTransition,
+                      fontFamily: "'DM Sans', sans-serif",
+                      marginLeft: "auto",
+                    }}
+                  >
+                    Continue to Fashion OS →
+                  </button>
+                ) : (
+                  <span style={{ flex: 1 }} />
+                )}
+              </>
+            ) : profileUiStep === 6 ? (
+              <>
+                <button
+                  type="button"
+                  onClick={editFromStart}
+                  style={{
+                    padding: "12px 20px",
+                    borderRadius: 10,
+                    border: `1px solid ${COLORS.border}`,
+                    background: "transparent",
+                    color: COLORS.text,
+                    cursor: "pointer",
+                    transition: baseTransition,
+                    fontFamily: "'DM Sans', sans-serif",
+                    fontWeight: 500,
+                  }}
+                >
+                  ← Edit
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void continueStep()}
+                  disabled={!canContinue}
+                  style={{
+                    padding: "12px 24px",
+                    borderRadius: 10,
+                    border: "none",
+                    background: canContinue ? COLORS.primary : COLORS.surface2,
+                    color: canContinue ? "#FFFFFF" : COLORS.textMuted,
+                    cursor: canContinue ? "pointer" : "default",
+                    fontWeight: 600,
+                    transition: baseTransition,
+                    fontFamily: "'DM Sans', sans-serif",
+                    marginLeft: "auto",
+                  }}
+                >
+                  {parsing ? "Parsing…" : "Continue to wardrobe →"}
+                </button>
+              </>
             ) : (
-              <button
-                type="button"
-                onClick={goBackOnboarding}
-                disabled={onboardingStep === 1 || parsing}
-                style={{
-                  padding: "12px 20px",
-                  borderRadius: 8,
-                  border: `1px solid ${COLORS.border}`,
-                  background: "transparent",
-                  color: onboardingStep === 1 || parsing ? COLORS.textMuted : COLORS.text,
-                  cursor: onboardingStep === 1 || parsing ? "default" : "pointer",
-                  transition: baseTransition,
-                }}
-              >
-                Back
-              </button>
+              <>
+                <button
+                  type="button"
+                  onClick={goBackOnboarding}
+                  disabled={onboardingStep === 1 || parsing}
+                  style={{
+                    padding: "12px 20px",
+                    borderRadius: 10,
+                    border: `1px solid ${COLORS.border}`,
+                    background: "transparent",
+                    color: onboardingStep === 1 || parsing ? COLORS.textMuted : COLORS.text,
+                    cursor: onboardingStep === 1 || parsing ? "default" : "pointer",
+                    transition: baseTransition,
+                    fontFamily: "'DM Sans', sans-serif",
+                    fontWeight: 500,
+                  }}
+                >
+                  Back
+                </button>
+                {profileUiStep === 2 || profileUiStep === 5 ? (
+                  <span style={{ flex: 1 }} />
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => void continueStep()}
+                    disabled={!canContinue}
+                    style={{
+                      padding: "12px 24px",
+                      borderRadius: 10,
+                      border: "none",
+                      background: canContinue ? COLORS.primary : COLORS.surface2,
+                      color: canContinue ? "#FFFFFF" : COLORS.textMuted,
+                      cursor: canContinue ? "pointer" : "default",
+                      fontWeight: 600,
+                      transition: baseTransition,
+                      fontFamily: "'DM Sans', sans-serif",
+                      marginLeft: "auto",
+                    }}
+                  >
+                    {parsing ? "Parsing…" : "Continue"}
+                  </button>
+                )}
+              </>
             )}
-            <button
-              type="button"
-              onClick={() => void continueStep()}
-              disabled={!canContinue}
-              style={{
-                padding: "12px 24px",
-                borderRadius: 8,
-                border: "none",
-                background: canContinue ? COLORS.primary : COLORS.surface2,
-                color: canContinue ? "#FFFFFF" : COLORS.textMuted,
-                cursor: canContinue ? "pointer" : "default",
-                fontWeight: 600,
-                transition: baseTransition,
-              }}
-            >
-              {activeStep === 6 ? "Looks good → Enter Fashion OS" : parsing ? "Parsing…" : "Continue"}
-            </button>
           </div>
         </div>
       </div>

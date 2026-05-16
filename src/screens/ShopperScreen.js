@@ -4,6 +4,36 @@ import { COLORS } from "../constants/colors";
 import { ui } from "../styles/ui";
 import { mergeStyles } from "../utils/styleUtils";
 
+const SERVER_URL = process.env.NODE_ENV === "production"
+  ? ""
+  : (process.env.REACT_APP_SERVER_URL || "http://localhost:3001");
+
+async function searchShopifyCatalog(query, filters = {}) {
+  const params = new URLSearchParams({
+    q: query,
+    limit: String(filters.limit || 10),
+  });
+  if (filters.max_price) params.append("price_max", filters.max_price);
+  if (filters.min_price) params.append("price_min", filters.min_price);
+  if (filters.country_code) params.append("country_code", filters.country_code);
+  if (filters.currency) params.append("currency", filters.currency);
+  if (filters.allow_secondhand !== undefined) {
+    params.append("allow_secondhand", String(filters.allow_secondhand));
+  }
+
+  const res = await fetch(
+    `${SERVER_URL}/api/shopify/search?${params}`
+  );
+  if (!res.ok) throw new Error(`Search failed: ${res.status}`);
+  return res.json();
+}
+
+async function getShopifyProductDetails(upid) {
+  const res = await fetch(`${SERVER_URL}/api/shopify/product/${upid}`);
+  if (!res.ok) throw new Error(`Product lookup failed: ${res.status}`);
+  return res.json();
+}
+
 export function ShopperScreen({
   profile,
   wardrobe,
@@ -11,8 +41,6 @@ export function ShopperScreen({
   STORAGE_WISHLIST,
   buildProfileSummary,
   callShoppingAssistant,
-  searchShopifyCatalog,
-  getShopifyProductDetails,
 }) {
   const [view, setView] = useState("chat"); // "chat" | "wishlist"
   const [messages, setMessages] = useState([]); // { id, role, content, products }
@@ -202,6 +230,70 @@ export function ShopperScreen({
 
       return true;
     });
+  }
+
+  function rankProductsForUser(products, userQuery, profile, category) {
+    const query = (userQuery || "").toLowerCase();
+
+    // Extract color intent from query
+    const colorKeywords = ["white", "black", "blue", "red", "grey",
+      "gray", "green", "brown", "navy", "beige", "cream"];
+    const wantedColor = colorKeywords.find(c => query.includes(c));
+
+    return products
+      .map(product => {
+        let score = 0;
+        const title = (product.title || "").toLowerCase();
+        const variant = product.variants?.[0] || product.raw?.variants?.[0];
+        const allOptions = (product.options || [])
+          .flatMap(o => (o.values || []).map(v =>
+            String(v.value || v).toLowerCase()
+          ));
+        const allText = title + " " + allOptions.join(" ");
+
+        // +5 if color matches query
+        if (wantedColor && allText.includes(wantedColor)) score += 5;
+
+        // +4 if user's size found
+        if (category === "Shoes" && profile?.shoeSize) {
+          const size = String(profile.shoeSize);
+          if (allOptions.some(o => o === size || o.includes(size))) {
+            score += 4;
+          }
+        }
+        if (category === "Tops" && profile?.topSize) {
+          const size = profile.topSize.toLowerCase();
+          if (allOptions.some(o => o === size)) score += 4;
+        }
+        if (category === "Bottoms" && profile?.bottomSize) {
+          const size = String(profile.bottomSize);
+          if (allOptions.some(o => o.includes(size))) score += 4;
+        }
+
+        // +3 if gender matches
+        const gender = profile?.gender === "female" ? "women" : "men";
+        if (title.includes(gender) || title.includes("mens") ||
+            title.includes("womens")) score += 3;
+
+        // +2 if preferred brand
+        const brands = (profile?.brands || []).map(b => b.toLowerCase());
+        if (brands.some(b => title.includes(b))) score += 2;
+
+        // +1 if highly rated
+        const rating = variant?.rating?.rating || product.rating?.rating || 0;
+        if (rating >= 4.5) score += 1;
+
+        // -3 if wrong color explicitly
+        if (wantedColor) {
+          const wrongColors = colorKeywords.filter(c => c !== wantedColor);
+          const titleWords = title.split(/\s+/);
+          if (wrongColors.some(c => titleWords.includes(c) &&
+              !title.includes(wantedColor))) score -= 3;
+        }
+
+        return { ...product, _score: score };
+      })
+      .sort((a, b) => b._score - a._score);
   }
 
   function formatShopifyPrice(priceObj) {
@@ -624,6 +716,7 @@ Return ONLY valid JSON (no markdown):
 Given a list of clothing items per category, 
 pick ONE item from each category that best 
 matches together as a cohesive outfit.
+Prioritize items that match the color requested in the user's query. If user asked for white sneakers, only pick white shoes from the results.
 Consider color harmony, style consistency, 
 and occasion appropriateness.
 User profile: ${profileSummary}
@@ -723,7 +816,12 @@ index is 0-based position in the category list.`;
             })
               .then((data) => ({
                 ...item,
-                products: filterResultsForProfile(normalizeProducts(data), profile, item.category),
+                products: rankProductsForUser(
+                  filterResultsForProfile(normalizeProducts(data), profile, item.category),
+                  item.query,
+                  profile,
+                  item.category
+                ).slice(0, 6),
               }))
               .catch(() => ({ ...item, products: [] }))
           )
@@ -824,7 +922,12 @@ Here's what else is available if you want something new:`,
         limit: 10,
         allow_secondhand: allowSecondhand,
       });
-      const products = filterResultsForProfile(normalizeProducts(json), profile, category);
+      const products = rankProductsForUser(
+        filterResultsForProfile(normalizeProducts(json), profile, category),
+        userInput,
+        profile,
+        category
+      );
 
       if (!products.length) {
         const aid = crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + "a";
