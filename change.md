@@ -481,3 +481,73 @@ Mirror profile, events, and wishlist to Firestore whenever they change (with loc
 `persistProfile` plus `events`/`wishlist` effects call `setDoc(..., { merge: true })` when signed in. The `firebaseUser` + `hydrated` effect runs legacy profile migration locally, then `getDoc`: merges remote profile only when local per-key cache is empty (`fos_profile__{uid}`); applies `events` / `wishlist` from cloud only when those arrays exist and `length > 0`. Wishlist stays in React in App with a 2s localStorage poll so Shopper’s writes still sync to Firestore. `snap.exists` (Firestore boolean) used with `merge: true` and sanitised payloads for Firestore-compatible JSON.
 
 ---
+
+### [Date: 2026-05-11] - Requirements agent (idea → ticket JSON)
+
+**Background:**
+Agent pipeline needs a script that reads `agents/inbox/idea.json`, calls Claude Sonnet, and writes a structured ticket under `agents/tickets/`.
+
+**Changed:**
+
+- `agents/requirements-agent.js` (new)
+
+**Impact:**
+Requires `ANTHROPIC_API_KEY`; outputs `agents/tickets/<timestamp>-ticket.json`; creates `agents/tickets/` when missing; exits non-zero if idea/API/JSON parsing fails.
+
+---
+
+### [Date: 2026-05-10] - Dev agent (ticket → Claude edits, build, git push)
+
+**Background:**
+Automate implementing the latest structured ticket under `agents/tickets/`: Claude Sonnet proposes full-file replacements with a blocklist (no `.env`, lockfiles, `agents/`, `.github/`, etc.), backups and a 60% minimum size guard before write, then `npm run build`, commit, and push to `feature/<ticket-id>` via `PIPELINE_TOKEN`.
+
+**Changed:**
+
+- `agents/dev-agent.js` (new)
+
+**Impact:**
+Needs `ANTHROPIC_API_KEY` and `PIPELINE_TOKEN`; mutates tracked files listed in ticket `files_to_modify`, creates `agents/backups/*.bak`; on build or git failure restores from backups and exits non-zero.
+
+---
+
+### [Date: 2026-05-17] - Test agent (build + AI review → GitHub PR)
+
+**Background:**
+Add a validator that consumes the newest ticket under `agents/tickets/`, runs `npm run build`, asks Claude Sonnet whether each touched file satisfies the ticket acceptance criteria via strict JSON replies, then opens a PR (`feature/<ticket-id>` → `main`) when everything passes using `PIPELINE_TOKEN`.
+
+**Changed:**
+
+- `agents/test-agent.js` (new)
+
+**Impact:**
+Requires `ANTHROPIC_API_KEY` and `PIPELINE_TOKEN`; uses GitHub REST `POST /repos/{owner}/{repo}/pulls`; exits with code `1` and skips the PR if the build fails, Claude errors, malformed review JSON, or any file review reports `passed: false`.
+
+---
+
+### [Date: 2026-05-17] - Agent pipeline workflow (idea push → sequential agents)
+
+**Background:**
+Replace the GitHub Actions workflow so pushing `agents/inbox/idea.json` runs `npm ci` then Requirements, Dev, and Test agents in order with Anthropic and pipeline tokens.
+
+**Changed:**
+
+- `.github/workflows/agent-pipeline.yml`
+
+**Impact:**
+Triggers only on pushes touching `agents/inbox/idea.json`; checkout uses `PIPELINE_TOKEN`; needs repo secrets `ANTHROPIC_API_KEY` and `PIPELINE_TOKEN`. Prior workflow logic under this file is replaced entirely.
+
+---
+
+### [Date: 2026-05-17] - Gitignore agent backups
+
+**Background:**
+Dev-agent writes timestamped `.bak` copies under `agents/backups/`; those should not be committed as repo noise or redundant secrets risk.
+
+**Changed:**
+
+- `.gitignore`
+
+**Impact:**
+`agents/backups/` is ignored; existing tracked files in that path (if any) would remain tracked until removed from the index.
+
+---
