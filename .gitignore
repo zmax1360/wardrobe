@@ -32,3 +32,6 @@ yarn-error.log*
 
 # React
 .eslintcache
+
+# Agent pipeline (dev-agent backups, local artifacts)
+agents/backups/
