@@ -1,173 +1,71 @@
-/**
- * Reads agents/inbox/idea.json and uses Anthropic Claude to emit a structured ticket JSON.
- */
+const fs = require('fs');
+const path = require('path');
 
-const fs = require("fs");
-const path = require("path");
-
-const IDEA_PATH = path.join(__dirname, "inbox", "idea.json");
-const TICKETS_DIR = path.join(__dirname, "tickets");
-const MODEL = "claude-sonnet-4-20250514";
-const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
-
-const SYSTEM_PROMPT = `You are a senior product engineer. Convert the following feature idea into a structured development ticket. 
-Respond with ONLY valid JSON matching this exact schema — no markdown, no explanation:
-{
-  id, created, title, description, files_to_modify (max 2 paths), 
-  acceptance_criteria (array of strings), estimated_complexity (low/medium/high)
-}`;
-
-function extractJsonObject(str) {
-  const s = String(str || "").trim();
-  let t = s.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
-  const start = t.indexOf("{");
-  const end = t.lastIndexOf("}");
-  if (start === -1 || end <= start) return null;
-  t = t.slice(start, end + 1);
-  try {
-    return JSON.parse(t);
-  } catch {
-    return null;
-  }
-}
-
-function normalizeTicket(raw, idFallback, createdIso) {
-  if (!raw || typeof raw !== "object") return null;
-
-  let files =
-    Array.isArray(raw.files_to_modify) ?
-      raw.files_to_modify.map(String).filter(Boolean).slice(0, 2)
-    : [];
-
-  const acceptance =
-    Array.isArray(raw.acceptance_criteria) ?
-      raw.acceptance_criteria.map(String).filter((x) => x.trim())
-    : [];
-
-  let complexity =
-    String(raw.estimated_complexity || "medium").toLowerCase();
-  if (!["low", "medium", "high"].includes(complexity)) complexity = "medium";
-
-  return {
-    id: String(raw.id || idFallback),
-    created: String(raw.created || createdIso),
-    title: String(raw.title || "").trim() || "Untitled ticket",
-    description: String(raw.description || "").trim() || "No description",
-    files_to_modify: files,
-    acceptance_criteria:
-      acceptance.length ? acceptance : ["Define acceptance criteria manually"],
-    estimated_complexity: complexity,
-  };
-}
+const INBOX = path.join(__dirname, 'inbox/idea.json');
+const TICKETS_DIR = path.join(__dirname, 'tickets');
 
 async function main() {
-  let ideaRaw = null;
+  if (!fs.existsSync(INBOX)) {
+    console.error('❌ Missing agents/inbox/idea.json');
+    process.exit(1);
+  }
+
+  const raw = fs.readFileSync(INBOX, 'utf8').trim();
+  if (!raw) {
+    console.error('❌ agents/inbox/idea.json is empty');
+    process.exit(1);
+  }
+
+  let idea;
   try {
-    ideaRaw = fs.readFileSync(IDEA_PATH, "utf8").trim();
-  } catch {
-    console.error("[requirements-agent] agents/inbox/idea.json missing or unreadable.");
+    idea = JSON.parse(raw);
+  } catch (e) {
+    console.error('❌ Invalid JSON in idea.json:', e.message);
     process.exit(1);
   }
 
-  if (!ideaRaw) {
-    console.error("[requirements-agent] idea.json is empty.");
-    process.exit(1);
-  }
-
-  let ideaPayload;
-  try {
-    ideaPayload = JSON.parse(ideaRaw);
-  } catch {
-    console.error("[requirements-agent] idea.json is not valid JSON.");
-    process.exit(1);
-  }
-
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey || typeof apiKey !== "string" || !apiKey.trim()) {
-    console.error("[requirements-agent] ANTHROPIC_API_KEY is not set.");
-    process.exit(1);
-  }
-
-  const idFallback = `${Date.now()}`;
-  const createdIso = new Date().toISOString();
-
-  let response;
-  try {
-    response = await fetch(ANTHROPIC_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "anthropic-version": "2023-06-01",
-        "x-api-key": apiKey.trim(),
-      },
-      body: JSON.stringify({
-        model: MODEL,
-        max_tokens: 4096,
-        system: SYSTEM_PROMPT,
-        messages: [
-          {
-            role: "user",
-            content: [{ type: "text", text: JSON.stringify(ideaPayload, null, 2) }],
-          },
-        ],
-      }),
-    });
-  } catch (err) {
-    console.error("[requirements-agent] Claude API request failed:", err?.message || err);
-    process.exit(1);
-  }
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': process.env.ANTHROPIC_API_KEY,
+      'anthropic-version': '2023-06-01'
+    },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 1000,
+      system: `You are a senior product engineer. Convert the following feature idea into a structured development ticket.
+Respond with ONLY valid JSON — no markdown, no explanation, no code fences.
+Schema: { "id": "<timestamp string>", "created": "<ISO date>", "title": "<short title>", "description": "<what to build>", "files_to_modify": ["<path1>"], "acceptance_criteria": ["<criterion>"], "estimated_complexity": "low" | "medium" | "high" }
+files_to_modify must contain at most 2 paths.`,
+      messages: [{ role: 'user', content: JSON.stringify(idea) }]
+    })
+  });
 
   if (!response.ok) {
-    let body = "";
-    try {
-      body = await response.text();
-    } catch {
-      body = "(no body)";
-    }
-    console.error(
-      `[requirements-agent] Claude API error HTTP ${response.status}: ${body.slice(0, 2000)}`
-    );
+    console.error('❌ Anthropic API error:', response.status, await response.text());
     process.exit(1);
   }
 
-  let data;
+  const data = await response.json();
+  const text = data.content.map(b => b.text || '').join('');
+
+  let ticket;
   try {
-    data = await response.json();
-  } catch (err) {
-    console.error("[requirements-agent] Failed to parse API response:", err?.message || err);
+    ticket = JSON.parse(text.replace(/```json|```/g, '').trim());
+  } catch (e) {
+    console.error('❌ Failed to parse Claude response as JSON:', text);
     process.exit(1);
   }
 
-  const textParts = [];
-  const blocks = data?.content || [];
-  for (const block of blocks) {
-    if (block?.type === "text" && typeof block?.text === "string") textParts.push(block.text);
-  }
-  const combinedText = textParts.join("\n").trim();
-  const parsed = extractJsonObject(combinedText);
-  if (!parsed) {
-    console.error(
-      "[requirements-agent] Claude did not return valid JSON. Raw:",
-      combinedText.slice(0, 500)
-    );
-    process.exit(1);
-  }
+  ticket.id = ticket.id || String(Date.now());
+  ticket.created = ticket.created || new Date().toISOString();
 
-  const ticket = normalizeTicket(parsed, idFallback, createdIso);
-  ticket.id = idFallback;
-  ticket.created = createdIso;
+  if (!fs.existsSync(TICKETS_DIR)) fs.mkdirSync(TICKETS_DIR, { recursive: true });
 
-  if (!fs.existsSync(TICKETS_DIR)) {
-    fs.mkdirSync(TICKETS_DIR, { recursive: true });
-  }
-
-  const outfile = path.join(TICKETS_DIR, `${ticket.id}-ticket.json`);
-  fs.writeFileSync(outfile, JSON.stringify(ticket, null, 2), "utf8");
-
-  console.log(`✅ Ticket written: agents/tickets/${ticket.id}-ticket.json`);
+  const outPath = path.join(TICKETS_DIR, `${ticket.id}-ticket.json`);
+  fs.writeFileSync(outPath, JSON.stringify(ticket, null, 2));
+  console.log(`✅ Ticket written: ${outPath}`);
 }
 
-main().catch((err) => {
-  console.error("[requirements-agent] Unhandled error:", err);
-  process.exit(1);
-});
+main();
