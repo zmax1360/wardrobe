@@ -30,7 +30,7 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.PIPELINE_TOKEN }}
           fetch-depth: 0
 
       - name: Setup Node.js
@@ -52,7 +52,7 @@ jobs:
         run: |
           git add tickets/ agents/inbox/
           git diff --staged --quiet || git commit -m "feat: requirements agent created ticket"
-          git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/zmax1360/wardrobe.git main
+          git push origin main
 
   # ─────────────────────────────────────────────
   # JOB 2: Dev Agent
@@ -68,7 +68,7 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.PIPELINE_TOKEN }}
           fetch-depth: 0
 
       - name: Setup Node.js
@@ -119,7 +119,7 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.PIPELINE_TOKEN }}
           fetch-depth: 0
 
       - name: Setup Node.js
@@ -159,7 +159,7 @@ jobs:
       - name: Open PR if tests passed
         if: steps.check.outputs.ticket != 'none'
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.PIPELINE_TOKEN }}
         run: |
           TICKET="${{ steps.check.outputs.ticket }}"
           BRANCH=$(node -e "
