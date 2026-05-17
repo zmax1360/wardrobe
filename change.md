@@ -551,3 +551,31 @@ Dev-agent writes timestamped `.bak` copies under `agents/backups/`; those should
 `agents/backups/` is ignored; existing tracked files in that path (if any) would remain tracked until removed from the index.
 
 ---
+
+### [Date: 2026-05-17] - Agent pipeline: npm install before git config
+
+**Background:**
+Ensure `requirements`, `dev`, and `test` jobs install Node dependencies before running agents or configuring git-backed steps.
+
+**Changed:**
+
+- `workflows/agent-pipeline.yml`
+
+**Impact:**
+Adds `npm install` after `Setup Node.js` and before `Configure git` in each job; no other workflow edits.
+
+---
+
+### [Date: 2026-05-17] - Agent pipeline job conditions (dev/test)
+
+**Background:**
+Avoid running downstream jobs on pure failure chains while still allowing progress when prerequisite jobs were skipped.
+
+**Changed:**
+
+- `workflows/agent-pipeline.yml`
+
+**Impact:**
+`dev` uses `if: success() || needs.requirements.result == 'skipped'`; `test` uses `if: success() || needs.dev.result == 'skipped'` instead of `if: always()`.
+
+---

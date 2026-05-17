@@ -38,6 +38,9 @@ jobs:
         with:
           node-version: "18"
 
+      - name: Install dependencies
+        run: npm install
+
       - name: Configure git
         run: |
           git config user.name "Fashion OS Agent"
@@ -62,7 +65,7 @@ jobs:
     name: "🔨 Dev Agent"
     runs-on: ubuntu-latest
     needs: requirements
-    if: always()
+    if: success() || needs.requirements.result == 'skipped'
 
     steps:
       - name: Checkout repo
@@ -75,6 +78,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "18"
+
+      - name: Install dependencies
+        run: npm install
 
       - name: Configure git
         run: |
@@ -113,7 +119,7 @@ jobs:
     name: "🧪 Test Agent"
     runs-on: ubuntu-latest
     needs: dev
-    if: always()
+    if: success() || needs.dev.result == 'skipped'
 
     steps:
       - name: Checkout repo
@@ -126,6 +132,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "18"
+
+      - name: Install dependencies
+        run: npm install
 
       - name: Configure git
         run: |
