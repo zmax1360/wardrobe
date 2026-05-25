@@ -9,5 +9,10 @@
       "source": "/(.*)",
       "headers": [{ "key": "X-Robots-Tag", "value": "index, follow" }]
     }
+  ],
+  "rewrites": [
+    { "source": "/sitemap.xml", "destination": "/sitemap.xml" },
+    { "source": "/robots.txt", "destination": "/robots.txt" },
+    { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
