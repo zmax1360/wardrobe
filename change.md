@@ -579,3 +579,24 @@ Avoid running downstream jobs on pure failure chains while still allowing progre
 `dev` uses `if: success() || needs.requirements.result == 'skipped'`; `test` uses `if: success() || needs.dev.result == 'skipped'` instead of `if: always()`.
 
 ---
+
+### [Date: 2026-05-24] - SEO: static meta, SPA Helmet, sitemap & crawl headers
+
+**Background:**
+Fashion OS SPA on Vercel exposed almost no crawler-visible metadata; crawlers saw only the default title and the noscript line. Needed full head tags (OG/Twitter), JSON-LD, crawlable `#seo-content` in HTML, `react-helmet-async` defaults and login-specific titles, robots/sitemap, and `X-Robots-Tag`.
+
+**Changed:**
+
+- `public/index.html`
+- `public/og-image-placeholder.txt` (new)
+- `public/sitemap.xml` (new)
+- `public/robots.txt` (new)
+- `vercel.json`
+- `package.json` / `package-lock.json` (`react-helmet-async`)
+- `src/index.js`
+- `src/App.js`
+
+**Impact:**
+`/og-image.png` is referenced but not bundled (add asset per `og-image-placeholder.txt`). `npm run build` verifies clean compile. Hosting must serve `/favicon.ico` (referenced in HTML).
+
+---

@@ -20,6 +20,7 @@ import React, {
   useCallback,
   useMemo,
 } from "react";
+import { Helmet } from "react-helmet-async";
 
 import { auth, db } from "./firebase";
 import {
@@ -106,6 +107,11 @@ import {
 } from "./utils/wardrobeFinance";
 // (kept minimal) apiBase still used elsewhere in the app
 import { placeholderRemoveBackground } from "./services/backgroundRemoval";
+
+const SEO_SITE_TITLE = "Fashion OS — Dress Smarter. Shop Less.";
+const SEO_META_DESCRIPTION =
+  "Fashion OS is your AI-powered personal stylist. Catalog your wardrobe, plan outfits with the weather, and shop only what you actually need.";
+const SEO_LANDING_TITLE = "Fashion OS — Your AI Personal Stylist";
 
 /** Per-UID profile in localStorage; legacy `fos_profile` could wrongly complete onboarding for a new Firebase user. */
 const PROFILE_LEGACY_OWNER_KEY = "fos_profile_legacy_owner";
@@ -867,28 +873,47 @@ export default function App() {
 
   if (!hydrated) {
     return (
-      <div
-        style={{
-          minHeight: "100vh",
-          background: COLORS.bg,
-          color: COLORS.text,
-          fontFamily: "'DM Sans', sans-serif",
-        }}
-      />
+      <>
+        {/* SEO — update per route as app grows */}
+        <Helmet>
+          <title>{SEO_SITE_TITLE}</title>
+          <meta name="description" content={SEO_META_DESCRIPTION} />
+        </Helmet>
+        <div
+          style={{
+            minHeight: "100vh",
+            background: COLORS.bg,
+            color: COLORS.text,
+            fontFamily: "'DM Sans', sans-serif",
+          }}
+        />
+      </>
     );
   }
 
   if (firebaseUser === undefined) {
     return (
-      <div style={{ minHeight: "100vh", background: COLORS.bg, display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <p style={{ fontFamily: "'DM Sans', sans-serif", color: COLORS.textMuted, fontSize: "0.95rem" }}>Loading…</p>
-      </div>
+      <>
+        {/* SEO — update per route as app grows */}
+        <Helmet>
+          <title>{SEO_SITE_TITLE}</title>
+          <meta name="description" content={SEO_META_DESCRIPTION} />
+        </Helmet>
+        <div style={{ minHeight: "100vh", background: COLORS.bg, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <p style={{ fontFamily: "'DM Sans', sans-serif", color: COLORS.textMuted, fontSize: "0.95rem" }}>Loading…</p>
+        </div>
+      </>
     );
   }
 
   if (!firebaseUser) {
     return (
       <>
+        {/* SEO — update per route as app grows */}
+        <Helmet>
+          <title>{SEO_LANDING_TITLE}</title>
+          <meta name="description" content={SEO_META_DESCRIPTION} />
+        </Helmet>
         <style>{`
           .authLandingRow {
             display: flex;
@@ -1301,29 +1326,41 @@ export default function App() {
 
   if (!onboardingDone) {
     return (
-      <Onboarding
-        onboardingStep={onboardingStep}
-        draft={draft}
-        setDraft={setDraft}
-        onboardingBodyTypes={onboardingBodyTypes}
-        onboardingTopSizes={onboardingTopSizes}
-        onboardingBottomSizes={onboardingBottomSizes}
-        onboardingShoeSizes={onboardingShoeSizes}
-        goBackOnboarding={goBackOnboarding}
-        goNextOnboarding={goNextOnboarding}
-        canAdvance={canAdvance}
-        uploadWardrobeItem={addWardrobeFromFile}
-        baseTransition={baseTransition}
-        GENDER_OPTIONS={GENDER_OPTIONS}
-        BUDGET_OPTIONS={BUDGET_OPTIONS}
-        STYLE_PREFS={STYLE_PREFS}
-        BRANDS={BRANDS}
-      />
+      <>
+        {/* SEO — update per route as app grows */}
+        <Helmet>
+          <title>{SEO_SITE_TITLE}</title>
+          <meta name="description" content={SEO_META_DESCRIPTION} />
+        </Helmet>
+        <Onboarding
+          onboardingStep={onboardingStep}
+          draft={draft}
+          setDraft={setDraft}
+          onboardingBodyTypes={onboardingBodyTypes}
+          onboardingTopSizes={onboardingTopSizes}
+          onboardingBottomSizes={onboardingBottomSizes}
+          onboardingShoeSizes={onboardingShoeSizes}
+          goBackOnboarding={goBackOnboarding}
+          goNextOnboarding={goNextOnboarding}
+          canAdvance={canAdvance}
+          uploadWardrobeItem={addWardrobeFromFile}
+          baseTransition={baseTransition}
+          GENDER_OPTIONS={GENDER_OPTIONS}
+          BUDGET_OPTIONS={BUDGET_OPTIONS}
+          STYLE_PREFS={STYLE_PREFS}
+          BRANDS={BRANDS}
+        />
+      </>
     );
   }
 
   return (
     <>
+      {/* SEO — update per route as app grows */}
+      <Helmet>
+        <title>{SEO_SITE_TITLE}</title>
+        <meta name="description" content={SEO_META_DESCRIPTION} />
+      </Helmet>
       <AppLayoutSidebarDataProvider profile={profile} wardrobe={wardrobe} events={events}>
         <AppLayout
           activeNav={activeNav}

@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://fashionos.app/sitemap.xml
