@@ -678,3 +678,20 @@ Tighten marketing HTML semantics for accessibility and crawling, confirm screens
 `public/sitemap.xml` already matched requested URLs (`/`, `#how-it-works`, `#features`, `#waitlist`). Screenshot PNGs in `public/screenshots/` remain under ~200 KB each; no binary re-export in this change. Hydrated SPA still exposes one visible `<h1>` in `#hero`; the static shell `#seo-content` retains its own `<h1>` for no-JS crawler text.
 
 ---
+
+### [Date: 2026-05-24] - Wardrobe: persist photos via Firebase Storage (no ephemeral blob URLs)
+
+**Background:**
+Adding items with camera/gallery previews used transient `blob:` URLs (and redundant pre-uploads in Wardrobe UI), so thumbnails vanished after reload. Authenticated uploads should land in Firebase Storage with stable HTTPS previews and Storage paths compatible with existing `removeItem` deletion.
+
+**Changed:**
+
+- `src/hooks/useWardrobe.js` (`uploadWardrobeImage`, blob stripping on load/Persist `stripWardrobeForStorage`, Firestore hydrate sanitization)
+- `src/App.js` (`addWardrobeFromFile`, `addManualWardrobeItem` — optimistic blob preview + background upload + `imageUploading`; unauthenticated fallback keeps compressed data URLs)
+- `src/screens/WardrobeScreen.js` (removed duplicate upload shim; amber upload spinner on cards)
+- `storage.rules` (new — deploy alongside Firebase CLI or paste into Console rules editor)
+
+**Impact:**
+Requires deploying `storage.rules` (or equivalent) so users may read/write under `wardrobe/{uid}/**`. Legacy `imageFilename` values that are Express API filenames still delete via DELETE `/api/delete-image`; `removeItem` unchanged otherwise. Ephemeral UI flag `imageUploading` never persists to localStorage/Firestore.
+
+---

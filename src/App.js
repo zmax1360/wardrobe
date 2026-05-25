@@ -88,7 +88,7 @@ import {
 import { runAgent } from "./agents/agentOrchestrator";
 import { useAgentActivity } from "./hooks/useAgentActivity";
 import { useAgentInsights } from "./hooks/useAgentInsights";
-import { useWardrobe } from "./hooks/useWardrobe";
+import { useWardrobe, uploadWardrobeImage } from "./hooks/useWardrobe";
 import { AppLayout, AppLayoutSidebarDataProvider } from "./layout/AppLayout";
 import { WardrobeScreen } from "./screens/WardrobeScreen";
 import { PlannerScreen } from "./screens/PlannerScreen";
@@ -649,15 +649,18 @@ export default function App() {
       if (options.removeBg) {
         fileToUse = await placeholderRemoveBackground(file);
       }
+
+      const itemId = crypto.randomUUID ? crypto.randomUUID() : String(Date.now());
+      let tempBlobUrl = null;
+
       const dataUrl = await compressImage(fileToUse, 800, 0.6);
       const b64 = String(dataUrl).includes(",") ? String(dataUrl).split(",")[1] : String(dataUrl);
       const parsed = await catalogImageWithVision(b64, "image/jpeg");
       const category = CATEGORIES.includes(parsed.category) ? parsed.category : "Accessories";
       const tags = Array.isArray(parsed.tags) ? parsed.tags.map(String).slice(0, 20) : [];
-      const item = {
-        id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
-        imagePreview: dataUrl,
-        imageFilename: null,
+
+      const itemBase = {
+        id: itemId,
         name: String(parsed.name || "Untitled"),
         category,
         color: String(parsed.color || ""),
@@ -673,6 +676,39 @@ export default function App() {
         lastWorn: null,
         purchaseDate: new Date().toISOString().split("T")[0],
         expectedLifespan: 365,
+      };
+
+      if (firebaseUser) {
+        tempBlobUrl = URL.createObjectURL(fileToUse);
+        const item = {
+          ...itemBase,
+          imagePreview: tempBlobUrl,
+          imageFilename: null,
+          imageUploading: true,
+        };
+        addItem(item);
+
+        uploadWardrobeImage(firebaseUser, fileToUse, itemId)
+          .then(({ downloadURL, path }) => {
+            updateItem(itemId, {
+              imagePreview: downloadURL,
+              imageFilename: path,
+              imageUploading: false,
+            });
+            if (tempBlobUrl) URL.revokeObjectURL(tempBlobUrl);
+          })
+          .catch((err) => {
+            console.error("Image upload failed:", err);
+            updateItem(itemId, { imageUploading: false });
+          });
+
+        return item;
+      }
+
+      const item = {
+        ...itemBase,
+        imagePreview: dataUrl,
+        imageFilename: null,
       };
       addItem(item);
       return item;
@@ -698,11 +734,24 @@ export default function App() {
 
   const addManualWardrobeItem = useCallback(
     async (payload) => {
+      const id = crypto.randomUUID ? crypto.randomUUID() : String(Date.now());
+
       let imagePreview = null;
       let imageFilename = null;
-      if (payload.imageFile instanceof File) {
-        imagePreview = await compressImage(payload.imageFile, 800, 0.6);
-        imageFilename = null;
+      let tempBlobUrl = null;
+      let hasUploadInFlight = false;
+
+      const imageFile =
+        payload.imageFile instanceof File && String(payload.imageFile.type || "").startsWith("image/")
+          ? payload.imageFile
+          : null;
+
+      if (imageFile && firebaseUser) {
+        tempBlobUrl = URL.createObjectURL(imageFile);
+        imagePreview = tempBlobUrl;
+        hasUploadInFlight = true;
+      } else if (imageFile) {
+        imagePreview = await compressImage(imageFile, 800, 0.6);
       }
 
       const raw = String(payload.purchasePrice ?? "").trim();
@@ -713,9 +762,7 @@ export default function App() {
       const tags = ["manual-entry"];
       if (payload.brand?.trim()) tags.push(payload.brand.trim());
 
-      const id = crypto.randomUUID ? crypto.randomUUID() : String(Date.now());
-
-      addItem({
+      const newItem = {
         id,
         name: payload.name.trim(),
         category: payload.category,
@@ -738,10 +785,29 @@ export default function App() {
         tags,
         imagePreview,
         imageFilename,
+        ...(hasUploadInFlight ? { imageUploading: true } : {}),
         sourceUrl: payload.sourceUrl?.trim() ?? "",
-      });
+      };
+
+      addItem(newItem);
+
+      if (imageFile && firebaseUser && tempBlobUrl) {
+        uploadWardrobeImage(firebaseUser, imageFile, id)
+          .then(({ downloadURL, path }) => {
+            updateItem(id, {
+              imagePreview: downloadURL,
+              imageFilename: path,
+              imageUploading: false,
+            });
+            URL.revokeObjectURL(tempBlobUrl);
+          })
+          .catch((err) => {
+            console.error("Image upload failed:", err);
+            updateItem(id, { imageUploading: false });
+          });
+      }
     },
-    [addItem]
+    [addItem, updateItem, firebaseUser]
   );
 
   const openEdit = (it) => {
