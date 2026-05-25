@@ -21,6 +21,7 @@ import React, {
   useMemo,
 } from "react";
 import { Helmet } from "react-helmet-async";
+import { useLocation, Navigate } from "react-router-dom";
 
 import { auth, db } from "./firebase";
 import {
@@ -101,6 +102,7 @@ import { WardrobeEquityScreen } from "./screens/WardrobeEquityScreen";
 import { DashboardScreen } from "./screens/DashboardScreen";
 import { AgentPanel } from "./components/AgentPanel";
 import { Onboarding } from "./components/Onboarding";
+import LandingPage from "./components/LandingPage";
 import {
   getTimesWorn,
   getPurchasePriceNum,
@@ -171,6 +173,7 @@ function FashionOSLogo({ dark = false, size = "md" }) {
 }
 
 export default function App() {
+  const location = useLocation();
   const [hydrated, setHydrated] = useState(false);
   const [firebaseUser, setFirebaseUser] = useState(undefined);
   const [authMode, setAuthMode] = useState("signup");
@@ -907,6 +910,10 @@ export default function App() {
   }
 
   if (!firebaseUser) {
+    const isAppLoginPath = /^\/app\/?$/i.test(location.pathname);
+    if (!isAppLoginPath) {
+      return <LandingPage />;
+    }
     return (
       <>
         {/* SEO — update per route as app grows */}
@@ -1322,6 +1329,10 @@ export default function App() {
         </div>
       </>
     );
+  }
+
+  if (firebaseUser && /^\/app\/?$/i.test(location.pathname)) {
+    return <Navigate to="/" replace />;
   }
 
   if (!onboardingDone) {

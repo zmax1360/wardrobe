@@ -600,3 +600,81 @@ Fashion OS SPA on Vercel exposed almost no crawler-visible metadata; crawlers sa
 `/og-image.png` is referenced but not bundled (add asset per `og-image-placeholder.txt`). `npm run build` verifies clean compile. Hosting must serve `/favicon.ico` (referenced in HTML).
 
 ---
+
+### [Date: 2026-05-25] - Marketing landing page & waitlist (before login)
+
+**Background:**
+Visitors hit login immediately; added a cinematic marketing SPA ahead of auth: `/` for guests, `/app` for sign-in, waitlist questionnaire persisted to Firestore (`waitlist`).
+
+**Changed:**
+
+- `src/components/LandingPage.js` (new)
+- `src/App.js`
+- `src/index.js`
+- `package.json` / `package-lock.json` (`react-router-dom`)
+
+**Impact:**
+Requires Firestore rules that allow **`waitlist`** `create` (recommended: validate fields + rate limits). Logged-in users requesting `/app` redirect to `/`. No edits to screens, Firebase Auth handlers, APIs, or agents besides routing shell.
+
+---
+
+### [Date: 2026-05-25] - Landing: How it works (screenshots + phone frames)
+
+**Background:**
+Swap abstract “How Fashion OS works” placeholders for four real screens in CSS phone mocks, alternating copy/image layout and mobile stack (image on top).
+
+**Changed:**
+
+- `src/components/LandingPage.js`
+- `public/screenshots/` (PNG assets mirrored from repo root `public/screenshot-*.png`)
+
+**Impact:**
+Screens load from `/screenshots/*.png`; replace files there to refresh marketing captures. Hero/problem/features/testimonials/waitlist/footer logic unchanged.
+
+---
+
+### [Date: 2026-05-25] - SEO: landing semantics, schema, sitemap, compressed screenshots
+
+**Background:**
+Marketing page needed crawlable semantics (header/main/section ids), descriptive screenshot alts plus intrinsic image dimensions/lazy-loading, richer JSON-LD and `seo-content`, sitemap anchors, and lighter PNG assets in `public/screenshots/`.
+
+**Changed:**
+
+- `src/components/LandingPage.js`
+- `public/index.html`
+- `public/sitemap.xml`
+- `public/screenshots/*.png` (resampled for smaller file sizes; all roughly under ~200 KB)
+
+**Impact:**
+Static HTML still exposes `#seo-content` with an `<h1>`; the SPA hero also uses a distinct `<h1>` after hydrate (common tradeoff for crawler vs app shell). Anchor URLs `#how-it-works`, `#features`, `#waitlist` match rendered section IDs.
+
+---
+
+### [Date: 2026-05-24] - Landing: hero-to-problem spacing and waitlist section sizing
+
+**Background:**
+Tighten the vertical gap between the hero CTA and “Sound familiar?”, keep how-it-works screenshot order aligned with the four steps (already correct in data), and make the waitlist block larger and easier to read without changing Firestore, nav, or SEO copy.
+
+**Changed:**
+
+- `src/components/LandingPage.js`
+
+**Impact:**
+Hero uses up to 80px bottom padding with `#problem` top padding removed so the combined gap stays within that budget; `#waitlist` gains min-height, 120px vertical section padding, larger headline/subhead, 560px form card, 56px inputs/primary CTAs, and 64px-tall choice rows scoped to that section. No impact on other sections’ layout rules beyond `#problem` top padding.
+
+---
+
+### [Date: 2026-05-24] - Landing SEO: semantics, structured data, crawler content
+
+**Background:**
+Tighten marketing HTML semantics for accessibility and crawling, confirm screenshot `loading`/`width`/`height`/alt parity, refresh static JSON-LD and hidden `#seo-content` to mirror section messaging, and keep sitemap anchors aligned with in-app hashes.
+
+**Changed:**
+
+- `src/components/LandingPage.js` (sections/lists for how-it-works steps, features, testimonials; waitlist questionnaire `section`; `<section>` wrappers with `aria-labelledby` for HIW steps; `RevealWrap` polymorphic `as`; problem bullets aligned with SEO copy; quote/feature list CSS resets)
+- `public/index.html` (expanded JSON-LD block; `#seo-content` layout per current landing sections)
+
+**Impact:**
+`public/sitemap.xml` already matched requested URLs (`/`, `#how-it-works`, `#features`, `#waitlist`). Screenshot PNGs in `public/screenshots/` remain under ~200 KB each; no binary re-export in this change. Hydrated SPA still exposes one visible `<h1>` in `#hero`; the static shell `#seo-content` retains its own `<h1>` for no-JS crawler text.
+
+---
