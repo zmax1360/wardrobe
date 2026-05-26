@@ -28,6 +28,19 @@ REACT_APP_OPENAI_API_KEY=sk-...
 
 Restart the dev server after changing `.env`.
 
+### API authentication (Firebase Admin)
+
+`server.js` verifies **Firebase ID tokens** on protected routes (`/api/chat`, Shopify proxies, ingest, `upload-image`). For local dev choose one:
+
+1. **`serviceAccountKey.json`** at the repo root (from Firebase Console → Project settings → Service accounts → Generate new private key), **or**
+2. **Environment variables** (same shape as Vercel): `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY` (newline escapes as `\n` in `.env`).
+
+The React app attaches `Authorization: Bearer <idToken>` when the user is signed in.
+
+**Vercel** (`api/chat.js`): set `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY` (values from the same service account JSON) plus `ANTHROPIC_API_KEY`.
+
+Allowed CORS origins in `server.js` include `http://localhost:3000` and production `fashionos.app` hosts — add yours if deploying elsewhere.
+
 ## Run the app
 
 **Recommended** — starts the React app **and** the image API together:

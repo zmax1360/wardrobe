@@ -1,5 +1,7 @@
+import { getFirebaseAuthHeader } from "../firebase";
+
 export const ANTHROPIC_URL =
-  process.env.NODE_ENV === "development" ? "http://localhost:3002/api/chat" : "/api/chat";
+  process.env.NODE_ENV === "development" ? "http://localhost:300/api/chat" : "/api/chat";
 export const CLAUDE_MODEL = "claude-sonnet-4-20250514";
 export const OPENAI_VISION_URL = "https://api.openai.com/v1/chat/completions";
 export const OPENAI_VISION_MODEL = "gpt-4o";
@@ -89,11 +91,13 @@ export async function callClosetPhotoVision(base64Jpeg, userPromptText) {
       },
     ],
   };
+  const authHeader = await getFirebaseAuthHeader();
   const res = await fetch(ANTHROPIC_URL, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       "anthropic-version": "2023-06-01",
+      ...authHeader,
     },
     body: JSON.stringify(body),
   });
@@ -150,11 +154,13 @@ export async function callTextCompletion(system, user, explicitTaskLabel) {
         system,
         messages: [{ role: "user", content: user }],
       };
+      const authHeader = await getFirebaseAuthHeader();
       const res = await fetch(ANTHROPIC_URL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "anthropic-version": "2023-06-01",
+          ...authHeader,
         },
         body: JSON.stringify(body),
       });

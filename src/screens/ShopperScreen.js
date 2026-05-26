@@ -3,6 +3,7 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { COLORS } from "../constants/colors";
 import { ui } from "../styles/ui";
 import { mergeStyles } from "../utils/styleUtils";
+import { getFirebaseAuthHeader } from "../firebase";
 
 const SERVER_URL = process.env.NODE_ENV === "production"
   ? ""
@@ -21,15 +22,20 @@ async function searchShopifyCatalog(query, filters = {}) {
     params.append("allow_secondhand", String(filters.allow_secondhand));
   }
 
+  const authHeader = await getFirebaseAuthHeader();
   const res = await fetch(
-    `${SERVER_URL}/api/shopify/search?${params}`
+    `${SERVER_URL}/api/shopify/search?${params}`,
+    { headers: { ...authHeader } }
   );
   if (!res.ok) throw new Error(`Search failed: ${res.status}`);
   return res.json();
 }
 
 async function getShopifyProductDetails(upid) {
-  const res = await fetch(`${SERVER_URL}/api/shopify/product/${upid}`);
+  const authHeader = await getFirebaseAuthHeader();
+  const res = await fetch(`${SERVER_URL}/api/shopify/product/${upid}`, {
+    headers: { ...authHeader },
+  });
   if (!res.ok) throw new Error(`Product lookup failed: ${res.status}`);
   return res.json();
 }
