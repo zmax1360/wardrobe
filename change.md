@@ -921,3 +921,17 @@ Waitlist steps 2 and 3 should allow multiple answers; Firestore should store **`
 Existing **`waitlist`** documents that expect scalar **`frustration`** / **`currentSystem`** now receive arrays from new submissions; analytics or queries should account for array types if needed.
 
 ---
+
+### [Date: 2026-05-29] - Landing hero: mobile layout (≤768px)
+
+**Background:**
+On narrow viewports the hero used full viewport height with bottom-aligned content, leaving a large empty band above the headline.
+
+**Changed:**
+
+- `src/components/LandingPage.js` (mobile **`@media (max-width: 768px)`**: **`min-height: auto`**, **`justify-content: flex-start`**, **`padding-top: 80px`**, **`padding-bottom: 60px`**; smaller **`fos-lp-headline`** / **`fos-lp-subheadline`** clamps)
+
+**Impact:**
+Desktop hero behavior unchanged; mobile hero height follows content so the H1 is visible sooner with less dead space.
+
+---

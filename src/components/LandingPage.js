@@ -571,6 +571,20 @@ export default function LandingPage() {
           margin: 22px 0 22px;
         }
         .fos-lp-lead-strong { color: rgba(250,247,242,0.92); font-weight: 500; }
+        @media (max-width: 768px) {
+          .fos-lp-hero {
+            min-height: auto;
+            justify-content: flex-start;
+            padding-top: 80px;
+            padding-bottom: 60px;
+          }
+          .fos-lp-headline {
+            font-size: clamp(2rem, 8vw, 3.5rem);
+          }
+          .fos-lp-subheadline {
+            font-size: clamp(1.1rem, 5.2vw, 2rem);
+          }
+        }
         .fos-lp-btn-primary {
           display: inline-flex;
           align-items: center;
