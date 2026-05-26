@@ -964,7 +964,7 @@ export default function LandingPage() {
             border: none !important;
             border-radius: 12px !important;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25) !important;
-            width: min(85vw, 360px) !important;
+            width: min(88vw, 380px) !important;
           }
 
           .fos-lp .phone-frame::before {
@@ -981,21 +981,30 @@ export default function LandingPage() {
           }
 
           .fos-lp-section {
-            padding: clamp(40px, 10vw, 80px) clamp(16px, 5vw, 24px);
+            padding: clamp(48px, 12vw, 80px) clamp(16px, 5vw, 24px) !important;
           }
           section#problem.fos-lp-section {
             padding-top: 0;
             padding-right: clamp(16px, 5vw, 24px);
-            padding-bottom: clamp(40px, 10vw, 80px);
+            padding-bottom: clamp(48px, 12vw, 80px);
             padding-left: clamp(16px, 5vw, 24px);
           }
 
           .fos-lp-section-title {
             font-size: clamp(1.4rem, 6vw, 2.2rem);
           }
-          .fos-lp-card-heading {
-            font-size: clamp(1.1rem, 4.5vw, 1.5rem);
+          #problem article.fos-lp-dark-card h3.fos-lp-card-heading {
+            white-space: normal !important;
+            overflow: visible !important;
+            text-overflow: unset !important;
+            font-size: clamp(0.9rem, 3.8vw, 1rem) !important;
+            line-height: 1.55 !important;
           }
+          #problem .fos-lp-card-num {
+            font-size: clamp(1.8rem, 7vw, 2.5rem) !important;
+            margin-bottom: 8px !important;
+          }
+
           .fos-lp-lead {
             font-size: clamp(0.875rem, 3.5vw, 1rem);
           }
@@ -1049,15 +1058,17 @@ export default function LandingPage() {
           ul.fos-lp-feature-grid {
             grid-template-columns: 1fr;
           }
-          .fos-lp-feat {
-            padding: clamp(16px, 4vw, 24px);
+          ul.fos-lp-feature-grid .fos-lp-feat {
+            padding: clamp(18px, 5vw, 24px) !important;
             min-height: auto;
           }
-          .fos-lp-feat h3 {
-            font-size: clamp(0.9rem, 3.8vw, 1rem);
+          #features ul.fos-lp-feature-grid .fos-lp-feat h3 {
+            font-size: clamp(1rem, 4vw, 1.1rem) !important;
+            margin-bottom: 8px !important;
           }
-          .fos-lp-feat p {
-            font-size: clamp(0.8rem, 3.2vw, 0.875rem);
+          ul.fos-lp-feature-grid .fos-lp-feat p {
+            font-size: clamp(0.875rem, 3.5vw, 0.95rem) !important;
+            line-height: 1.55 !important;
           }
 
           ul.fos-lp-quote-grid {
@@ -1073,8 +1084,8 @@ export default function LandingPage() {
 
           section#waitlist.fos-lp-section.fos-lp-inner.fos-lp-waitlist-section {
             min-height: auto;
-            padding-top: clamp(40px, 10vw, 80px);
-            padding-bottom: clamp(40px, 10vw, 80px);
+            padding-top: clamp(48px, 12vw, 80px);
+            padding-bottom: clamp(48px, 12vw, 80px);
             padding-left: clamp(16px, 5vw, 24px);
             padding-right: clamp(16px, 5vw, 24px);
           }

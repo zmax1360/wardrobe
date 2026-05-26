@@ -963,3 +963,17 @@ On small screens the decorative phone bezel competes with content; screenshots r
 Desktop phone mockup unchanged; How-it-works images appear as flat rounded rectangles on mobile.
 
 ---
+
+### [Date: 2026-05-29] - Landing mobile: problem/feature typography, screenshots, section rhythm
+
+**Background:**
+Problem card copy wrapping, feature density, screenshot size, and vertical section spacing needed refinement on narrow viewports without affecting desktop ≥769px.
+
+**Changed:**
+
+- `src/components/LandingPage.js` (≤768px: **`#problem`** card heading + **`fos-lp-card-num`**, **`#features`** **`ul.fos-lp-feature-grid`** padding/typography, **`min(88vw, 380px)`** phone mocks, **`!important`** **` fos-lp-section`** vertical **` clamp(48px, 12vw, 80px) `**, waitlist outer padding aligned to same rhythm; avoided **`[class\*="num"]`** so HIW step numerals unchanged)
+
+**Impact:**
+Selectors use existing **`fos-lp-feature-grid`** / **`fos-lp-card-*`** markup (no JSX edits).
+
+---
