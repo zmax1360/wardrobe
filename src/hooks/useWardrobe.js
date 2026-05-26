@@ -4,21 +4,65 @@ import { normalizeWardrobeItems } from "../utils/wardrobeFinance";
 import { db, storage } from "../firebase";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { STORAGE_WISHLIST } from "../constants";
-import { ref as storageRef, deleteObject } from "firebase/storage";
+import {
+  ref as storageRef,
+  deleteObject,
+  uploadBytes,
+  getDownloadURL,
+} from "firebase/storage";
 
 export const STORAGE_WARDROBE = "fos_wardrobe";
+
+/** Filename segment safe for Firebase Storage object keys under wardrobe/{uid}/{itemId}/ */
+function safeImageStorageLeafName(filename) {
+  const base =
+    String(filename || "image.jpg")
+      .trim()
+      .replace(/\\/g, "/")
+      .split("/")
+      .pop() || "image.jpg";
+  const cleaned = base.replace(/[^a-zA-Z0-9._-]+/g, "_");
+  const leaf = cleaned.slice(0, 160) || "image.jpg";
+  return leaf.endsWith(".") ? `${leaf}x` : leaf;
+}
+
+/**
+ * Upload a wardrobe photo to Firebase Storage and return HTTPS URL + full object path for deletion.
+ * Path: wardrobe/{uid}/{itemId}/{filename}
+ */
+export async function uploadWardrobeImage(firebaseUser, file, itemId) {
+  if (!firebaseUser) throw new Error("Not authenticated");
+
+  const leaf = safeImageStorageLeafName(file?.name || "photo.jpg");
+  const path = `wardrobe/${firebaseUser.uid}/${itemId}/${leaf}`;
+  const fileRef = storageRef(storage, path);
+  await uploadBytes(fileRef, file);
+  const downloadURL = await getDownloadURL(fileRef);
+  return { downloadURL, path };
+}
+
+/** Drop stale `blob:` URLs from hydrated wardrobe items (URLs are session-only). */
+function stripBlobPreviewOnLoad(item) {
+  return {
+    ...item,
+    imagePreview: item.imagePreview?.startsWith("blob:") ? "" : (item.imagePreview ?? ""),
+  };
+}
 
 function loadWardrobeFromStorage() {
   try {
     const raw = localStorage.getItem(STORAGE_WARDROBE);
     if (!raw) return [];
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? normalizeWardrobeItems(parsed) : [];
+    if (!Array.isArray(parsed)) return [];
+    const normalized = normalizeWardrobeItems(parsed);
+    return normalized.map(stripBlobPreviewOnLoad);
   } catch {
     return [];
   }
 }
 
+/** Fields persisted to Firestore / localStorage. `imageUploading` must not be persisted. */
 function stripWardrobeForStorage(items) {
   return items.map((it) => ({
     id: it.id,
@@ -35,12 +79,15 @@ function stripWardrobeForStorage(items) {
     purchaseDate: it.purchaseDate,
     expectedLifespan: it.expectedLifespan,
     timesWorn: it.timesWorn,
-    imagePreview: it.imagePreview,
+    imagePreview: it.imagePreview?.startsWith("blob:") ? "" : (it.imagePreview ?? ""),
     imageFilename: it.imageFilename,
     mood: it.mood,
     occasion: Array.isArray(it.occasion) ? it.occasion : [],
     lastWorn: it.lastWorn ?? null,
     sourceUrl: it.sourceUrl ?? "",
+    source: it.source ?? "",
+    count: it.count ?? null,
+    colors: Array.isArray(it.colors) ? it.colors : [],
   }));
 }
 
@@ -54,18 +101,28 @@ export function useWardrobe(hydrated, firebaseUser) {
 
   // ── Load from Firestore when user signs in ──────────────────────
   useEffect(() => {
-    if (!firebaseUser) return;
-    getDoc(doc(db, "users", firebaseUser.uid))
-      .then((snap) => {
-        if (!snap.exists()) return;
+    if (!firebaseUser) return undefined;
+
+    let alive = true;
+    (async () => {
+      try {
+        const snap = await getDoc(doc(db, "users", firebaseUser.uid));
+        if (!alive || !snap.exists()) return;
         const w = snap.data().wardrobe ?? [];
-        if (Array.isArray(w) && w.length > 0) {
-          const norm = normalizeWardrobeItems(w);
-          setWardrobe(norm);
-          localStorage.setItem(STORAGE_WARDROBE, JSON.stringify(stripWardrobeForStorage(norm)));
-        }
-      })
-      .catch(() => {});
+        if (!Array.isArray(w) || w.length === 0) return;
+        const norm = normalizeWardrobeItems(w).map(stripBlobPreviewOnLoad);
+        setWardrobe(norm);
+        localStorage.setItem(STORAGE_WARDROBE, JSON.stringify(stripWardrobeForStorage(norm)));
+      } catch (e) {
+        // Extension-patched fetch (e.g. injectScriptAdjust/jackFetch) or SDK abort —
+        // do not spam the console / treat as hard failure for local wardrobe UX.
+        if (e?.name === "AbortError") return;
+      }
+    })();
+
+    return () => {
+      alive = false;
+    };
   }, [firebaseUser]);
 
   // ── Save to localStorage + Firestore on every change ───────────
@@ -78,7 +135,9 @@ export function useWardrobe(hydrated, firebaseUser) {
         doc(db, "users", firebaseUser.uid),
         { wardrobe: wardrobeForFirestore(stripped) },
         { merge: true }
-      ).catch(() => {});
+      ).catch((e) => {
+        if (e?.name === "AbortError") return;
+      });
     }
   }, [wardrobe, hydrated, firebaseUser]);
 
@@ -96,16 +155,20 @@ export function useWardrobe(hydrated, firebaseUser) {
   const removeItem = useCallback((id) => {
     setWardrobe((prev) => {
       const it = prev.find((x) => x.id === id);
-      if (it?.imageFilename) {
-        // Firebase Storage path (uploaded after auth was added)
-        if (it.imageFilename.startsWith("wardrobe/")) {
-          deleteObject(storageRef(storage, it.imageFilename)).catch(() => {});
-        } else {
-          // Legacy: local Express server
-          fetch(
-            resolveBackendApiPath(`/api/delete-image/${encodeURIComponent(it.imageFilename)}`),
-            { method: "DELETE" }
-          ).catch(() => {});
+      const fn = it?.imageFilename;
+      if (fn) {
+        const othersShare = prev.some((x) => x.id !== id && x.imageFilename === fn);
+        if (!othersShare) {
+          // Firebase Storage path (uploaded after auth was added)
+          if (fn.startsWith("wardrobe/")) {
+            deleteObject(storageRef(storage, fn)).catch(() => {});
+          } else {
+            // Legacy: local Express server
+            fetch(
+              resolveBackendApiPath(`/api/delete-image/${encodeURIComponent(fn)}`),
+              { method: "DELETE" }
+            ).catch(() => {});
+          }
         }
       }
       if (it?.imagePreview?.startsWith("blob:")) {
@@ -131,7 +194,9 @@ export function useWishlistFirestoreSync(hydrated, firebaseUser) {
           doc(db, "users", firebaseUser.uid),
           { wishlist: JSON.parse(JSON.stringify(parsed)) },
           { merge: true }
-        ).catch(() => {});
+        ).catch((e) => {
+          if (e?.name === "AbortError") return;
+        });
       } catch {
         /* ignore */
       }

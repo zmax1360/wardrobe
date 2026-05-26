@@ -63,8 +63,51 @@ if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
 
 app.set("trust proxy", 1);
 app.use(cors());
-app.use(express.json({ limit: "1mb" }));
+// Closet vision + other chat payloads send large JSON (base64 images).
+app.use(express.json({ limit: "20mb" }));
 app.use("/wardrobe-images", express.static(uploadDir));
+
+/** Anthropic proxy — matches `api/chat.js` (used by ClosetScanner via `/api/chat` in dev behind CRA proxy). */
+app.post("/api/chat", async (req, res) => {
+  const key = process.env.ANTHROPIC_API_KEY || process.env.REACT_APP_ANTHROPIC_API_KEY;
+  if (!key) {
+    return res.status(500).json({
+      type: "error",
+      error: {
+        message:
+          "Anthropic API key missing. Set ANTHROPIC_API_KEY (or REACT_APP_ANTHROPIC_API_KEY) in .env for local dev.",
+      },
+    });
+  }
+
+  try {
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": key,
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify(req.body),
+    });
+    const text = await response.text();
+    let data;
+    try {
+      data = text ? JSON.parse(text) : {};
+    } catch {
+      return res.status(502).json({
+        type: "error",
+        error: { message: text || `Anthropic returned non-JSON (${response.status})` },
+      });
+    }
+    res.status(response.status).json(data);
+  } catch (e) {
+    res.status(500).json({
+      type: "error",
+      error: { message: e.message || "Anthropic proxy error" },
+    });
+  }
+});
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, uploadDir),
