@@ -571,20 +571,6 @@ export default function LandingPage() {
           margin: 22px 0 22px;
         }
         .fos-lp-lead-strong { color: rgba(250,247,242,0.92); font-weight: 500; }
-        @media (max-width: 768px) {
-          .fos-lp-hero {
-            min-height: auto;
-            justify-content: flex-start;
-            padding-top: 80px;
-            padding-bottom: 60px;
-          }
-          .fos-lp-headline {
-            font-size: clamp(2rem, 8vw, 3.5rem);
-          }
-          .fos-lp-subheadline {
-            font-size: clamp(1.1rem, 5.2vw, 2rem);
-          }
-        }
         .fos-lp-btn-primary {
           display: inline-flex;
           align-items: center;
@@ -964,6 +950,162 @@ export default function LandingPage() {
             radial-gradient(circle at 12% 20%, rgba(196,129,58,0.06), transparent 46%),
             radial-gradient(circle at 92% 60%, rgba(196,129,58,0.05), transparent 48%),
             #140e09;
+        }
+
+        /* Mobile / small tablet: fluid layout (targets ~320px–430px phones) — desktop unchanged at 769px+ */
+        @media (max-width: 768px) {
+          .fos-lp img {
+            max-width: 100%;
+            height: auto;
+            display: block;
+          }
+
+          .fos-lp .phone-frame {
+            width: min(65vw, 280px) !important;
+            max-width: 100% !important;
+            margin: 0 auto;
+            display: block;
+          }
+
+          main .fos-lp-inner {
+            padding-left: 0;
+            padding-right: 0;
+          }
+          .fos-lp-hero .fos-lp-inner {
+            padding-left: clamp(16px, 5vw, 24px);
+            padding-right: clamp(16px, 5vw, 24px);
+          }
+
+          .fos-lp-section {
+            padding: clamp(40px, 10vw, 80px) clamp(16px, 5vw, 24px);
+          }
+          section#problem.fos-lp-section {
+            padding-top: 0;
+            padding-right: clamp(16px, 5vw, 24px);
+            padding-bottom: clamp(40px, 10vw, 80px);
+            padding-left: clamp(16px, 5vw, 24px);
+          }
+
+          .fos-lp-section-title {
+            font-size: clamp(1.4rem, 6vw, 2.2rem);
+          }
+          .fos-lp-card-heading {
+            font-size: clamp(1.1rem, 4.5vw, 1.5rem);
+          }
+          .fos-lp-lead {
+            font-size: clamp(0.875rem, 3.5vw, 1rem);
+          }
+
+          .fos-lp-hero {
+            min-height: auto;
+            justify-content: flex-start;
+            padding-top: clamp(4rem, 20.5vw, 5.5rem);
+            padding-bottom: clamp(2.75rem, 15.5vw, 3.75rem);
+          }
+          .fos-lp-headline {
+            font-size: clamp(2rem, 8vw, 3.5rem);
+          }
+          .fos-lp-subheadline {
+            font-size: clamp(1.1rem, 5.2vw, 2rem);
+          }
+          .fos-lp-hero .fos-lp-btn-primary {
+            width: 100%;
+            min-height: 52px;
+            font-size: clamp(0.9rem, 3.8vw, 1rem);
+          }
+
+          .fos-lp-hiw-inner {
+            flex-direction: column;
+            gap: clamp(28px, 7vw, 40px);
+            padding: clamp(32px, 8vw, 56px) 5vw;
+            align-items: center;
+          }
+          .fos-lp-hiw-visual {
+            order: -1;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+          }
+          .fos-lp-hiw-text {
+            order: 1;
+            width: 100%;
+            max-width: 100%;
+            text-align: center;
+          }
+          .fos-lp-hiw-num {
+            font-size: clamp(1.5rem, 6vw, 2rem);
+          }
+          .fos-lp-hiw-headline {
+            font-size: clamp(1.1rem, 4.5vw, 1.4rem);
+          }
+          .fos-lp-hiw-body {
+            font-size: clamp(0.875rem, 3.5vw, 1rem);
+          }
+
+          ul.fos-lp-feature-grid {
+            grid-template-columns: 1fr;
+          }
+          .fos-lp-feat {
+            padding: clamp(16px, 4vw, 24px);
+            min-height: auto;
+          }
+          .fos-lp-feat h3 {
+            font-size: clamp(0.9rem, 3.8vw, 1rem);
+          }
+          .fos-lp-feat p {
+            font-size: clamp(0.8rem, 3.2vw, 0.875rem);
+          }
+
+          ul.fos-lp-quote-grid {
+            grid-template-columns: 1fr;
+          }
+          .fos-lp-quote {
+            padding: clamp(16px, 4vw, 24px);
+          }
+          .fos-lp-quote-text {
+            font-size: clamp(0.85rem, 3.5vw, 0.95rem);
+            line-height: 1.6;
+          }
+
+          section#waitlist.fos-lp-section.fos-lp-inner.fos-lp-waitlist-section {
+            min-height: auto;
+            padding-top: clamp(40px, 10vw, 80px);
+            padding-bottom: clamp(40px, 10vw, 80px);
+            padding-left: clamp(16px, 5vw, 24px);
+            padding-right: clamp(16px, 5vw, 24px);
+          }
+          section#waitlist .fos-lp-dark-card.fos-lp-waitlist-card {
+            padding: 5vw;
+            width: 100%;
+            max-width: 100%;
+          }
+          section#waitlist .fos-lp-waitlist-title {
+            font-size: clamp(1.4rem, 6vw, 2rem);
+          }
+          section#waitlist .fos-lp-waitlist-sub {
+            font-size: clamp(0.9rem, 3.5vw, 1rem);
+          }
+          section#waitlist.fos-lp-waitlist-section .fos-lp-choice {
+            padding: clamp(10px, 3vw, 14px) clamp(12px, 4vw, 16px);
+            font-size: clamp(0.85rem, 3.5vw, 0.95rem);
+            width: 100%;
+            min-height: 44px;
+          }
+          section#waitlist .fos-lp-form-wrap .fos-lp-btn-primary,
+          section#waitlist .fos-lp-form-wrap .fos-lp-btn-secondary {
+            width: 100%;
+            min-height: 52px;
+            font-size: clamp(0.9rem, 3.8vw, 1rem);
+          }
+          section#waitlist .fos-lp-form-wrap .fos-lp-btn-primary.fos-lp-waitlist-cta {
+            min-height: 52px;
+            font-size: clamp(0.9rem, 3.8vw, 1rem);
+          }
+          section#waitlist .fos-lp-form-wrap div:has(> button.fos-lp-btn-secondary) {
+            flex-direction: column !important;
+            align-items: stretch !important;
+            gap: clamp(12px, 3vw, 16px);
+          }
         }
       `}</style>
 

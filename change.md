@@ -935,3 +935,17 @@ On narrow viewports the hero used full viewport height with bottom-aligned conte
 Desktop hero behavior unchanged; mobile hero height follows content so the H1 is visible sooner with less dead space.
 
 ---
+
+### [Date: 2026-05-29] - Landing page: mobile fluid layout (≤768px)
+
+**Background:**
+Phones (~320–430px wide) needed consistent relative units, stacked HIW/feature/testimonial grids, wider tap targets, and waitlist/card sizing without altering desktop layouts at 769px+.
+
+**Changed:**
+
+- `src/components/LandingPage.js` (single **`@media (max-width: 768px)`** block: **`img`** defaults, **`.phone-frame`**, section padding via **`clamp`/`vw`**, HIW column + centered copy + clamps, features/testimonials **`1fr`**, waitlist card + choices + buttons, typography clamps, **` :has()`** button-row stacking; merged prior hero compact rules using **`clamp`** for vertical padding)
+
+**Impact:**
+**`:has()`** is unsupported in very old browsers; waitlist **`120px`** vertical padding bypassed on narrow screens via higher-specificity overrides only inside the media query.
+
+---
