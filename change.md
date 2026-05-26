@@ -921,3 +921,59 @@ Waitlist steps 2 and 3 should allow multiple answers; Firestore should store **`
 Existing **`waitlist`** documents that expect scalar **`frustration`** / **`currentSystem`** now receive arrays from new submissions; analytics or queries should account for array types if needed.
 
 ---
+
+### [Date: 2026-05-29] - Landing hero: mobile layout (≤768px)
+
+**Background:**
+On narrow viewports the hero used full viewport height with bottom-aligned content, leaving a large empty band above the headline.
+
+**Changed:**
+
+- `src/components/LandingPage.js` (mobile **`@media (max-width: 768px)`**: **`min-height: auto`**, **`justify-content: flex-start`**, **`padding-top: 80px`**, **`padding-bottom: 60px`**; smaller **`fos-lp-headline`** / **`fos-lp-subheadline`** clamps)
+
+**Impact:**
+Desktop hero behavior unchanged; mobile hero height follows content so the H1 is visible sooner with less dead space.
+
+---
+
+### [Date: 2026-05-29] - Landing page: mobile fluid layout (≤768px)
+
+**Background:**
+Phones (~320–430px wide) needed consistent relative units, stacked HIW/feature/testimonial grids, wider tap targets, and waitlist/card sizing without altering desktop layouts at 769px+.
+
+**Changed:**
+
+- `src/components/LandingPage.js` (single **`@media (max-width: 768px)`** block: **`img`** defaults, **`.phone-frame`**, section padding via **`clamp`/`vw`**, HIW column + centered copy + clamps, features/testimonials **`1fr`**, waitlist card + choices + buttons, typography clamps, **` :has()`** button-row stacking; merged prior hero compact rules using **`clamp`** for vertical padding)
+
+**Impact:**
+**`:has()`** is unsupported in very old browsers; waitlist **`120px`** vertical padding bypassed on narrow screens via higher-specificity overrides only inside the media query.
+
+---
+
+### [Date: 2026-05-29] - Landing HIW: flat screenshot on mobile (no phone chrome)
+
+**Background:**
+On small screens the decorative phone bezel competes with content; screenshots read better as simple cards.
+
+**Changed:**
+
+- `src/components/LandingPage.js` (≤768px **`.phone-frame`**: no border, **`::before`** notch hidden, shadow + width; **`::before`** **`display: none`**)
+
+**Impact:**
+Desktop phone mockup unchanged; How-it-works images appear as flat rounded rectangles on mobile.
+
+---
+
+### [Date: 2026-05-29] - Landing mobile: problem/feature typography, screenshots, section rhythm
+
+**Background:**
+Problem card copy wrapping, feature density, screenshot size, and vertical section spacing needed refinement on narrow viewports without affecting desktop ≥769px.
+
+**Changed:**
+
+- `src/components/LandingPage.js` (≤768px: **`#problem`** card heading + **`fos-lp-card-num`**, **`#features`** **`ul.fos-lp-feature-grid`** padding/typography, **`min(88vw, 380px)`** phone mocks, **`!important`** **` fos-lp-section`** vertical **` clamp(48px, 12vw, 80px) `**, waitlist outer padding aligned to same rhythm; avoided **`[class\*="num"]`** so HIW step numerals unchanged)
+
+**Impact:**
+Selectors use existing **`fos-lp-feature-grid`** / **`fos-lp-card-*`** markup (no JSX edits).
+
+---
