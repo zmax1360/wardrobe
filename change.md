@@ -1011,16 +1011,16 @@ Deploy **`serviceAccountKey.json`** locally only; set **Vercel** **`FIREBASE_PRO
 
 ---
 
-### [Date: 2026-05-29] - **`api/chat`**: temporary 401 debug logs
+### [Date: 2026-05-29] - **`api/chat`**: temporary 401 debug logs (removed)
 
 **Background:**
  Diagnose production **401** responses on the Vercel serverless handler.
 
 **Changed:**
 
-- `api/chat.js` (invocation + env presence + token verify success/fail **`console.log`** — remove after debugging)
+- `api/chat.js` (temporary **`console.log`** lines added then **removed**; handler behavior unchanged)
 
 **Impact:**
- Logs may include auth header prefix length-20 and private key **char count only** (not the secret).
+No impact.
 
 ---
