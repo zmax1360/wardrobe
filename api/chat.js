@@ -12,6 +12,17 @@ if (!getApps().length) {
 }
 
 export default async function handler(req, res) {
+  console.log("[api/chat] invoked", {
+    method: req.method,
+    hasAuthHeader: !!req.headers.authorization,
+    authHeaderPrefix: req.headers.authorization?.slice(0, 20) || "MISSING",
+    FIREBASE_PROJECT_ID: process.env.FIREBASE_PROJECT_ID ? "SET" : "MISSING",
+    FIREBASE_CLIENT_EMAIL: process.env.FIREBASE_CLIENT_EMAIL ? "SET" : "MISSING",
+    FIREBASE_PRIVATE_KEY: process.env.FIREBASE_PRIVATE_KEY
+      ? `SET (${process.env.FIREBASE_PRIVATE_KEY.length} chars)`
+      : "MISSING",
+  });
+
   if (req.method !== "POST") return res.status(405).end();
 
   const authHeader = req.headers.authorization || "";
@@ -19,8 +30,10 @@ export default async function handler(req, res) {
   if (!token) return res.status(401).json({ error: "Unauthorized" });
 
   try {
-    await getAuth().verifyIdToken(token);
-  } catch {
+    const decoded = await getAuth().verifyIdToken(token);
+    console.log("[api/chat] token verified for uid:", decoded.uid);
+  } catch (err) {
+    console.log("[api/chat] token verify failed:", err.message);
     return res.status(401).json({ error: "Unauthorized" });
   }
 

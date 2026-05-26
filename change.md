@@ -1010,3 +1010,17 @@ Deploy **`serviceAccountKey.json`** locally only; set **Vercel** **`FIREBASE_PRO
  Signed-in requests get tokens after persistence restore; unauthenticated callers still resolve **`{}`** after timeout.
 
 ---
+
+### [Date: 2026-05-29] - **`api/chat`**: temporary 401 debug logs
+
+**Background:**
+ Diagnose production **401** responses on the Vercel serverless handler.
+
+**Changed:**
+
+- `api/chat.js` (invocation + env presence + token verify success/fail **`console.log`** — remove after debugging)
+
+**Impact:**
+ Logs may include auth header prefix length-20 and private key **char count only** (not the secret).
+
+---
