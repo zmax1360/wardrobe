@@ -907,3 +907,17 @@ The dashed drop area and duplicate “+ Add Photo” at the bottom of the wardro
 Page-level drag-and-drop for the AI catalog flow no longer appears in that footer area; header **Scan Closet Photo** / **+ Add piece** and the add modal (**Photo** tab) remain.
 
 ---
+
+### [Date: 2026-05-29] - Landing waitlist: multi-select for frustration and current system
+
+**Background:**
+Waitlist steps 2 and 3 should allow multiple answers; Firestore should store **`frustration`** and **`currentSystem`** as string arrays.
+
+**Changed:**
+
+- `src/components/LandingPage.js` (**`WaitlistFlow`**: array state, toggle **`onClick`**, **`.length`** validation / disabled **Next**, “Select all that apply” hints; **`hotLead`** unchanged)
+
+**Impact:**
+Existing **`waitlist`** documents that expect scalar **`frustration`** / **`currentSystem`** now receive arrays from new submissions; analytics or queries should account for array types if needed.
+
+---
