@@ -996,3 +996,17 @@ Express and Vercel chat proxy should reject unauthenticated calls; Shopify/inges
 Deploy **`serviceAccountKey.json`** locally only; set **Vercel** **`FIREBASE_PROJECT_ID`**, **`FIREBASE_CLIENT_EMAIL`**, **`FIREBASE_PRIVATE_KEY`**. Unsigned or expired tokens get **401**. **`DELETE /api/delete-image`** remains open unless tightened later.
 
 ---
+
+### [Date: 2026-05-29] - **`getFirebaseAuthHeader`**: wait for auth restoration
+
+**Background:**
+ **`currentUser`** can be null until **`onAuthStateChanged`** runs on cold load.
+
+**Changed:**
+
+- `src/firebase.js` (**Promise** + **`onAuthStateChanged`**, **5s** timeout)
+
+**Impact:**
+ Signed-in requests get tokens after persistence restore; unauthenticated callers still resolve **`{}`** after timeout.
+
+---
