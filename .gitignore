@@ -6,6 +6,9 @@ node_modules/
 .env.local
 .env.*.local
 
+# Firebase Admin (local API server) — use env vars on Vercel
+/serviceAccountKey.json
+
 # Build output
 build/
 
@@ -34,4 +37,4 @@ yarn-error.log*
 .eslintcache
 
 # Agent pipeline (dev-agent backups, local artifacts)
-agents/backups/
+agents/backups/serviceAccountKey.json

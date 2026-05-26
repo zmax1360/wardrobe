@@ -1,3 +1,8 @@
+import { getFirebaseAuthHeader } from "../firebase";
+
+const SERVER_BASE =
+  process.env.NODE_ENV === "production" ? "" : process.env.REACT_APP_SERVER_URL || "http://localhost:3001";
+
 export async function searchShopifyCatalog(query, filters = {}) {
   const params = new URLSearchParams({
     q: query,
@@ -11,15 +16,19 @@ export async function searchShopifyCatalog(query, filters = {}) {
     params.append("allow_secondhand", String(filters.allow_secondhand));
   }
 
-  const res = await fetch(
-    `http://localhost:3001/api/shopify/search?${params}`
-  );
+  const authHeader = await getFirebaseAuthHeader();
+  const res = await fetch(`${SERVER_BASE}/api/shopify/search?${params}`, {
+    headers: { ...authHeader },
+  });
   if (!res.ok) throw new Error(`Search failed: ${res.status}`);
   return res.json();
 }
 
 export async function getShopifyProductDetails(upid) {
-  const res = await fetch(`http://localhost:3001/api/shopify/product/${upid}`);
+  const authHeader = await getFirebaseAuthHeader();
+  const res = await fetch(`${SERVER_BASE}/api/shopify/product/${upid}`, {
+    headers: { ...authHeader },
+  });
   if (!res.ok) throw new Error(`Product lookup failed: ${res.status}`);
   return res.json();
 }

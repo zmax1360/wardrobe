@@ -18,3 +18,39 @@ const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const storage = getStorage(app);
+
+/** Bearer token for same-origin `/api/*` calls (Firebase ID token). */
+export async function getFirebaseAuthHeader() {
+  return new Promise((resolve) => {
+    // If already signed in, use immediately
+    if (auth.currentUser) {
+      auth.currentUser
+        .getIdToken()
+        .then((token) =>
+          resolve({
+            Authorization: `Bearer ${token}`,
+          })
+        )
+        .catch(() => resolve({}));
+      return;
+    }
+    // Wait for auth state to restore (max 5 seconds)
+    const timeout = setTimeout(() => resolve({}), 5000);
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      clearTimeout(timeout);
+      unsubscribe();
+      if (!user) {
+        resolve({});
+        return;
+      }
+      user
+        .getIdToken()
+        .then((token) =>
+          resolve({
+            Authorization: `Bearer ${token}`,
+          })
+        )
+        .catch(() => resolve({}));
+    });
+  });
+}

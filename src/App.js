@@ -23,7 +23,7 @@ import React, {
 import { Helmet } from "react-helmet-async";
 import { useLocation, Navigate } from "react-router-dom";
 
-import { auth, db } from "./firebase";
+import { auth, db, getFirebaseAuthHeader } from "./firebase";
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
@@ -572,11 +572,13 @@ export default function App() {
         ],
       };
 
+      const authHdr = await getFirebaseAuthHeader();
       const res = await fetch(ANTHROPIC_URL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "anthropic-version": "2023-06-01",
+          ...authHdr,
         },
         body: JSON.stringify(body),
       });

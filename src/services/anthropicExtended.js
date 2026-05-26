@@ -6,6 +6,7 @@ import {
   agentTraceHooks,
   resolveVisionCredentials,
 } from "./aiService";
+import { getFirebaseAuthHeader } from "../firebase";
 import { runAgent } from "../agents/agentOrchestrator";
 import { buildProfileSummary, anthropicTextFromMessage } from "./parsers";
 
@@ -25,11 +26,13 @@ export async function callAnthropicWithWebSearch(system, userText) {
       messages: [{ role: "user", content: userText }],
       tools: [{ type: "web_search_20250305", name: "web_search", max_uses: 5 }],
     };
+    const authHeader = await getFirebaseAuthHeader();
     const res = await fetch(ANTHROPIC_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "anthropic-version": "2023-06-01",
+        ...authHeader,
       },
       body: JSON.stringify(body),
     });
@@ -122,11 +125,13 @@ All score values must be numbers from 0 to 10.`;
         },
       ],
     };
+    const authHeader = await getFirebaseAuthHeader();
     const res = await fetch(ANTHROPIC_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "anthropic-version": "2023-06-01",
+        ...authHeader,
       },
       body: JSON.stringify(body),
     });

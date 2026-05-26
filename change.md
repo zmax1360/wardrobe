@@ -977,3 +977,50 @@ Problem card copy wrapping, feature density, screenshot size, and vertical secti
 Selectors use existing **`fos-lp-feature-grid`** / **`fos-lp-card-*`** markup (no JSX edits).
 
 ---
+
+### [Date: 2026-05-29] - API: Firebase ID token + CORS; Vercel **`api/chat`**; client Bearer headers
+
+**Background:**
+Express and Vercel chat proxy should reject unauthenticated calls; Shopify/ingest/upload/chat routes needed **`requireAuth`**; browsers must send ID tokens from signed-in Firebase users.
+
+**Changed:**
+
+- `server.js` (Firebase Admin via **`serviceAccountKey.json`** or **`FIREBASE_*`** env, **`requireAuth`**, tightened **CORS**, protected routes listed in task)
+- `api/chat.js` (Firebase Admin verify + unchanged Anthropic forward)
+- `src/firebase.js` (**`getFirebaseAuthHeader`**)
+- `src/services/aiService.js`, `src/App.js`, `src/services/anthropicExtended.js`, `src/hooks/useWardrobeAgent.js`, `src/services/shopify.js`, `src/screens/ShopperScreen.js` (**Bearer** on protected fetches)
+- `.gitignore` (**`/serviceAccountKey.json`**)
+- `README.md` (env / Vercel admin vars)
+
+**Impact:**
+Deploy **`serviceAccountKey.json`** locally only; set **Vercel** **`FIREBASE_PROJECT_ID`**, **`FIREBASE_CLIENT_EMAIL`**, **`FIREBASE_PRIVATE_KEY`**. Unsigned or expired tokens get **401**. **`DELETE /api/delete-image`** remains open unless tightened later.
+
+---
+
+### [Date: 2026-05-29] - **`getFirebaseAuthHeader`**: wait for auth restoration
+
+**Background:**
+ **`currentUser`** can be null until **`onAuthStateChanged`** runs on cold load.
+
+**Changed:**
+
+- `src/firebase.js` (**Promise** + **`onAuthStateChanged`**, **5s** timeout)
+
+**Impact:**
+ Signed-in requests get tokens after persistence restore; unauthenticated callers still resolve **`{}`** after timeout.
+
+---
+
+### [Date: 2026-05-29] - **`api/chat`**: temporary 401 debug logs (removed)
+
+**Background:**
+ Diagnose production **401** responses on the Vercel serverless handler.
+
+**Changed:**
+
+- `api/chat.js` (temporary **`console.log`** lines added then **removed**; handler behavior unchanged)
+
+**Impact:**
+No impact.
+
+---

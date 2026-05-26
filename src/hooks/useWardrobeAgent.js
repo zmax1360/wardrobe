@@ -1,6 +1,7 @@
 import { useState, useCallback } from "react";
 
-import { ANTHROPIC_URL, CLAUDE_MODEL, trimEnv } from "../services/aiService";
+import { ANTHROPIC_URL, CLAUDE_MODEL } from "../services/aiService";
+import { getFirebaseAuthHeader } from "../firebase";
 
 const STORAGE_WARDROBE = "fos_wardrobe";
 const STORAGE_PROFILE = "fos_profile";
@@ -69,11 +70,13 @@ export function useWardrobeAgent() {
     const system = buildSystemPrompt(profile, wardrobe);
 
     try {
+      const authHeader = await getFirebaseAuthHeader();
       const res = await fetch(ANTHROPIC_URL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "anthropic-version": "2023-06-01",
+          ...authHeader,
         },
         body: JSON.stringify({
           model: CLAUDE_MODEL,

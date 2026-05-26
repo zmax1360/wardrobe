@@ -34,6 +34,26 @@ function loadLocalEnv() {
 
 loadLocalEnv();
 
+const admin = require("firebase-admin");
+const serviceAccountPath = path.join(__dirname, "serviceAccountKey.json");
+if (fs.existsSync(serviceAccountPath)) {
+  const serviceAccount = require("./serviceAccountKey.json");
+  admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
+} else {
+  const projectId = process.env.FIREBASE_PROJECT_ID;
+  const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+  const rawKey = process.env.FIREBASE_PRIVATE_KEY;
+  const privateKey = typeof rawKey === "string" ? rawKey.replace(/\\n/g, "\n") : "";
+  if (!projectId || !clientEmail || !privateKey) {
+    throw new Error(
+      "Firebase Admin: add serviceAccountKey.json in project root or set FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY."
+    );
+  }
+  admin.initializeApp({
+    credential: admin.credential.cert({ projectId, clientEmail, privateKey }),
+  });
+}
+
 const searchCache = new Map();
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
@@ -58,17 +78,56 @@ function setCache(key, data) {
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+async function requireAuth(req, res, next) {
+  const authHeader = req.headers.authorization || "";
+  const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : null;
+
+  if (!token) {
+    return res.status(401).json({
+      error: "Unauthorized — no token provided",
+    });
+  }
+
+  try {
+    const decoded = await admin.auth().verifyIdToken(token);
+    req.user = decoded;
+    next();
+  } catch (_err) {
+    return res.status(401).json({
+      error: "Unauthorized — invalid token",
+    });
+  }
+}
+
 const uploadDir = path.join(__dirname, "public", "wardrobe-images");
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
 
 app.set("trust proxy", 1);
-app.use(cors());
+
+const allowedOrigins = [
+  "http://localhost:3000",
+  "https://fashionos.app",
+  "https://www.fashionos.app",
+];
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+      return callback(new Error("CORS not allowed"));
+    },
+    credentials: true,
+  })
+);
 // Closet vision + other chat payloads send large JSON (base64 images).
 app.use(express.json({ limit: "20mb" }));
 app.use("/wardrobe-images", express.static(uploadDir));
 
 /** Anthropic proxy — matches `api/chat.js` (used by ClosetScanner via `/api/chat` in dev behind CRA proxy). */
-app.post("/api/chat", async (req, res) => {
+app.post("/api/chat", requireAuth, async (req, res) => {
   const key = process.env.ANTHROPIC_API_KEY || process.env.REACT_APP_ANTHROPIC_API_KEY;
   if (!key) {
     return res.status(500).json({
@@ -444,7 +503,7 @@ async function scrapeProductPage(urlString) {
   };
 }
 
-app.post("/api/upload-image", upload.single("image"), (req, res) => {
+app.post("/api/upload-image", requireAuth, upload.single("image"), (req, res) => {
   if (!req.file) return res.status(400).json({ error: "No file" });
   const base = publicBase(req);
   res.json({
@@ -475,7 +534,7 @@ function getShopifyCredentials(res) {
 }
 
 // Shopify Catalog token endpoint
-app.post("/api/shopify/token", async (req, res) => {
+app.post("/api/shopify/token", requireAuth, async (req, res) => {
   try {
     const creds = getShopifyCredentials(res);
     if (!creds) return;
@@ -500,7 +559,7 @@ app.post("/api/shopify/token", async (req, res) => {
 });
 
 // Shopify Catalog search proxy
-app.get("/api/shopify/search", async (req, res) => {
+app.get("/api/shopify/search", requireAuth, async (req, res) => {
   try {
     const creds = getShopifyCredentials(res);
     if (!creds) return;
@@ -614,7 +673,7 @@ app.get("/api/shopify/search", async (req, res) => {
 });
 
 // Shopify product detail proxy
-app.get("/api/shopify/product/:upid", async (req, res) => {
+app.get("/api/shopify/product/:upid", requireAuth, async (req, res) => {
   try {
     const creds = getShopifyCredentials(res);
     if (!creds) return;
@@ -674,7 +733,7 @@ function buildIngestJsonBody(scraped, url, mockPrice, opts) {
 }
 
 /** Download og:image to wardrobe-images/ — used after fast preview or standalone. */
-app.post("/api/ingest-finalize", async (req, res) => {
+app.post("/api/ingest-finalize", requireAuth, async (req, res) => {
   const sourceUrl =
     req.body && typeof req.body.sourceUrl === "string" ? req.body.sourceUrl.trim() : "";
   const imageRemote =
@@ -700,7 +759,7 @@ app.post("/api/ingest-finalize", async (req, res) => {
   }
 });
 
-app.post("/api/ingest-link", async (req, res) => {
+app.post("/api/ingest-link", requireAuth, async (req, res) => {
   const url = req.body && typeof req.body.url === "string" ? req.body.url.trim() : "";
   if (!url) return res.status(400).json({ error: "url required" });
 
