@@ -1,6 +1,8 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { COLORS } from "../constants/colors";
+import { buildWardrobeItems } from "../utils/categoryMap";
+import { ClosetScanner } from "./ClosetScanner";
 
 async function parseStepWithAI(step, userText, currentDraft, brands) {
   const prompts = {
@@ -113,27 +115,6 @@ const BUDGET_EMOJI = {
   mixed: "🔄",
 };
 
-const CATEGORY_ICON = {
-  Tops: "👕",
-  Bottoms: "👖",
-  Outerwear: "🧥",
-  Shoes: "👟",
-  Accessories: "🧢",
-  Dresses: "👗",
-  Activewear: "🏃",
-  Formal: "🤵",
-  Bags: "👜",
-};
-
-function detectBrandFromCatalog(item, brands) {
-  const blob = `${item?.description || ""} ${Array.isArray(item?.tags) ? item.tags.join(" ") : ""}`.toLowerCase();
-  for (let i = 0; i < brands.length; i += 1) {
-    const b = String(brands[i]);
-    if (blob.includes(b.toLowerCase())) return b;
-  }
-  return null;
-}
-
 function tileBase(selected, transition) {
   return {
     cursor: "pointer",
@@ -152,6 +133,7 @@ export function Onboarding({
   goBackOnboarding,
   goNextOnboarding,
   uploadWardrobeItem,
+  addItem,
   baseTransition,
   GENDER_OPTIONS,
   BUDGET_OPTIONS,
@@ -160,11 +142,12 @@ export function Onboarding({
 }) {
   const isWardrobeStep = onboardingStep === 7;
   const profileUiStep = onboardingStep <= 6 ? onboardingStep : null;
-  const wardrobeFileRef = useRef(null);
   const [wardrobePhase, setWardrobePhase] = useState("pick");
   const [wardrobePreview, setWardrobePreview] = useState("");
   const [wardrobeItem, setWardrobeItem] = useState(null);
   const [wardrobeError, setWardrobeError] = useState("");
+  const [scannerOpen, setScannerOpen] = useState(false);
+  const [completedScans, setCompletedScans] = useState([]);
 
   const [answers, setAnswers] = useState(() => ({
     1: draft.name || "",
@@ -184,6 +167,14 @@ export function Onboarding({
 
   useEffect(() => {
     if (onboardingStep === 7) return;
+    setCompletedScans((prev) => {
+      prev.forEach((s) => {
+        const u = s?.thumbnail;
+        if (u && String(u).startsWith("blob:")) URL.revokeObjectURL(u);
+      });
+      return [];
+    });
+    setScannerOpen(false);
     setWardrobePhase("pick");
     setWardrobePreview("");
     setWardrobeItem(null);
@@ -205,10 +196,7 @@ export function Onboarding({
     [BUDGET_OPTIONS, draft.budget]
   );
 
-  const wardrobeDetectedBrand = useMemo(
-    () => (wardrobeItem ? detectBrandFromCatalog(wardrobeItem, BRANDS) : null),
-    [wardrobeItem, BRANDS]
-  );
+  const wardrobeTotalFound = completedScans.reduce((sum, s) => sum + s.itemCount, 0);
 
   const answer = profileUiStep != null ? answers[profileUiStep] || "" : "";
 
@@ -345,12 +333,16 @@ export function Onboarding({
     setWardrobePhase("result");
   };
 
-  const finishWardrobeStep = () => {
-    goNextOnboarding();
-  };
-
   const editFromStart = () => {
     for (let i = 1; i < onboardingStep; i += 1) goBackOnboarding();
+  };
+
+  const flushCompletedClosetScansToWardrobe = () => {
+    for (const scan of completedScans) {
+      const items = buildWardrobeItems(scan.rows, scan.thumbnail || "", "");
+      items.forEach((item) => addItem(item));
+    }
+    goNextOnboarding();
   };
 
   const stepChrome = {
@@ -425,10 +417,6 @@ export function Onboarding({
           from { opacity: 0; transform: translateX(14px); }
           to { opacity: 1; transform: translateX(0); }
         }
-        @keyframes wardScanShimmer {
-          0%, 100% { opacity: 0.65; }
-          50% { opacity: 1; }
-        }
       `}</style>
       <div style={{ width: "100%", maxWidth: 520 }}>
         <h1
@@ -445,7 +433,7 @@ export function Onboarding({
         </h1>
         <p style={{ color: COLORS.textMuted, margin: "0 0 28px", fontSize: "0.98rem", lineHeight: 1.5 }}>
           {isWardrobeStep
-            ? "One last step—show us a single piece so we can catalog your closet with AI."
+            ? "One last step—scan your closet and we'll catalogue what we see automatically."
             : "A warm welcome—seven quick steps to a wardrobe that feels like you."}
         </p>
 
@@ -508,22 +496,12 @@ export function Onboarding({
 
           {isWardrobeStep && (
             <>
-              <input
-                ref={wardrobeFileRef}
-                type="file"
-                accept="image/*"
-                style={{ display: "none" }}
-                onChange={(e) => {
-                  void handleWardrobeFiles(e.target.files);
-                  e.target.value = "";
-                }}
-              />
               <div style={{ color: COLORS.textMuted, fontSize: "0.72rem", marginBottom: 16, letterSpacing: "0.06em", textTransform: "uppercase" }}>
                 Step 7 of 7
               </div>
               <div style={{ textAlign: "center", marginBottom: 10 }}>
                 <div style={{ fontSize: 48, lineHeight: 1.1 }} aria-hidden>
-                  🧥
+                  👗
                 </div>
               </div>
               <h2
@@ -538,170 +516,137 @@ export function Onboarding({
               >
                 Now let&apos;s meet your wardrobe
               </h2>
-              <p style={{ color: COLORS.textMuted, fontSize: "0.95rem", margin: "0 auto 10px", textAlign: "center", maxWidth: 400, lineHeight: 1.5 }}>
-                Upload one photo of any clothing item.
+              <p style={{ color: COLORS.textMuted, fontSize: "0.95rem", margin: "0 auto 18px", textAlign: "center", maxWidth: 420, lineHeight: 1.5 }}>
+                Scan one or more photos of your closet.
                 <br />
-                Watch AI identify it instantly.
-              </p>
-              <p style={{ color: "#9a8a78", fontSize: "0.8rem", margin: "0 auto 22px", textAlign: "center", maxWidth: 420, lineHeight: 1.45, fontStyle: "italic" }}>
-                This photo becomes your first cataloged piece—every future add works the same way.
+                We&apos;ll identify everything automatically.
               </p>
 
-              {wardrobePhase === "pick" && (
-                <button
-                  type="button"
-                  onClick={() => wardrobeFileRef.current?.click()}
-                  onDragOver={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                  }}
-                  onDrop={(e) => {
-                    e.preventDefault();
-                    void handleWardrobeFiles(e.dataTransfer.files);
-                  }}
-                  style={{
-                    width: "100%",
-                    minHeight: 220,
-                    borderRadius: 16,
-                    border: `2px dashed ${COLORS.primary}`,
-                    background: COLORS.primarySoft,
-                    color: COLORS.text,
-                    cursor: "pointer",
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: 10,
-                    fontFamily: "'DM Sans', sans-serif",
-                    transition: baseTransition,
-                  }}
-                >
-                  <span style={{ fontSize: 44 }} aria-hidden>
-                    📷
-                  </span>
-                  <span style={{ fontWeight: 600, fontSize: "1.05rem" }}>Tap to upload or drag a photo</span>
-                  <span style={{ fontSize: "0.82rem", color: COLORS.textMuted }}>JPG or PNG · one item per photo</span>
-                </button>
-              )}
-
-              {wardrobePhase === "scanning" && wardrobePreview && (
-                <div style={{ position: "relative", borderRadius: 16, overflow: "hidden", marginBottom: 18 }}>
-                  <img
-                    src={wardrobePreview}
-                    alt=""
-                    style={{
-                      width: "100%",
-                      display: "block",
-                      maxHeight: 280,
-                      objectFit: "contain",
-                      background: COLORS.surface2,
-                    }}
-                  />
-                  <div
-                    style={{
-                      position: "absolute",
-                      inset: 0,
-                      background: "rgba(32, 26, 23, 0.35)",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      backdropFilter: "blur(1px)",
-                    }}
-                  >
-                    <span
-                      style={{
-                        color: "#fff",
-                        fontWeight: 600,
-                        fontSize: "1.05rem",
-                        textShadow: "0 1px 8px rgba(0,0,0,0.35)",
-                        animation: "wardScanShimmer 1.2s ease-in-out infinite",
-                      }}
-                    >
-                      AI scanning… ✨
-                    </span>
-                  </div>
-                </div>
-              )}
-
-              {wardrobePhase === "result" && wardrobePreview && wardrobeItem && (
-                <div style={{ position: "relative", borderRadius: 16, overflow: "hidden", marginBottom: 18 }}>
-                  <img
-                    src={wardrobePreview}
-                    alt=""
-                    style={{
-                      width: "100%",
-                      display: "block",
-                      maxHeight: 220,
-                      objectFit: "contain",
-                      background: COLORS.surface2,
-                    }}
-                  />
-                </div>
-              )}
-
-              {wardrobePhase === "result" && wardrobeItem && (
-                <>
-                  <div
-                    style={{
-                      borderRadius: 16,
-                      border: `1px solid ${COLORS.border}`,
-                      background: COLORS.surface2,
-                      padding: 18,
-                      marginBottom: 18,
-                    }}
-                  >
-                    <div style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 12 }}>
-                      <span style={{ fontSize: 28 }}>{CATEGORY_ICON[wardrobeItem.category] || "👔"}</span>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "1.25rem", fontWeight: 600, color: COLORS.text, lineHeight: 1.3 }}>
-                          {wardrobeItem.name}
-                        </div>
-                        <div style={{ fontSize: "0.82rem", color: COLORS.textMuted, marginTop: 6, lineHeight: 1.5 }}>
-                          <div>
-                            <strong style={{ color: COLORS.textMuted }}>Category:</strong> {wardrobeItem.category}
-                          </div>
-                          <div>
-                            <strong style={{ color: COLORS.textMuted }}>Color:</strong> {wardrobeItem.color || "—"}
-                          </div>
-                          <div>
-                            <strong style={{ color: COLORS.textMuted }}>Style:</strong> {wardrobeItem.style || "—"}
-                          </div>
-                          <div>
-                            <strong style={{ color: COLORS.textMuted }}>Brand:</strong>{" "}
-                            {wardrobeDetectedBrand ? (
-                              <>
-                                {wardrobeDetectedBrand}{" "}
-                                <span style={{ color: COLORS.accent, fontSize: "0.78rem" }}>(detected)</span>
-                              </>
-                            ) : (
-                              <span style={{ color: COLORS.textMuted }}>—</span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+              <div style={{ marginBottom: 14 }}>
+                {completedScans.length === 0 ? (
                   <p
                     style={{
-                      fontFamily: "'Cormorant Garamond', serif",
-                      fontSize: "1.2rem",
-                      fontWeight: 500,
-                      color: COLORS.text,
+                      color: COLORS.textMuted,
+                      fontSize: "0.92rem",
                       textAlign: "center",
-                      lineHeight: 1.45,
-                      margin: "0 0 6px",
+                      margin: "6px 0 6px",
+                      padding: "20px 12px",
+                      borderRadius: 12,
+                      border: `1px dashed ${COLORS.border}`,
+                      background: COLORS.surface2,
+                      lineHeight: 1.5,
                     }}
                   >
-                    That&apos;s the magic.
-                    <br />
-                    Your whole wardrobe, organized.
+                    No photos scanned yet
                   </p>
-                </>
-              )}
+                ) : (
+                  completedScans.map((scan, i) => (
+                    <div
+                      key={scan.id}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 12,
+                        padding: "12px 14px",
+                        borderRadius: 12,
+                        border: "1px solid rgba(196,129,58,0.3)",
+                        background: "rgba(12,8,4,0.06)",
+                        marginBottom: 10,
+                      }}
+                    >
+                      {scan.thumbnail ? (
+                        <img
+                          src={scan.thumbnail}
+                          alt={`Scan ${i + 1}`}
+                          style={{
+                            width: 56,
+                            height: 56,
+                            objectFit: "cover",
+                            borderRadius: 8,
+                            flexShrink: 0,
+                          }}
+                        />
+                      ) : null}
+                      <div>
+                        <div style={{ fontWeight: 600, fontSize: "0.95rem" }}>Scan {i + 1}</div>
+                        <div style={{ color: "#c4813a", fontSize: "0.85rem", fontWeight: 500 }}>{scan.itemCount} items found</div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
 
-              {wardrobeError && (
-                <p style={{ color: COLORS.danger, fontSize: "0.88rem", textAlign: "center", marginBottom: 12 }}>{wardrobeError}</p>
-              )}
+              <button
+                type="button"
+                onClick={() => setScannerOpen(true)}
+                style={{
+                  width: "100%",
+                  padding: "14px 20px",
+                  borderRadius: 10,
+                  border: "none",
+                  background: COLORS.primary,
+                  color: "#FFFFFF",
+                  cursor: "pointer",
+                  fontWeight: 600,
+                  transition: baseTransition,
+                  fontFamily: "'DM Sans', sans-serif",
+                  fontSize: "1rem",
+                }}
+              >
+                Scan a Photo
+              </button>
+              <button
+                type="button"
+                onClick={() => void goNextOnboarding()}
+                style={{
+                  width: "100%",
+                  marginTop: 12,
+                  padding: "10px 8px",
+                  border: "none",
+                  background: "none",
+                  color: COLORS.textMuted,
+                  fontSize: "0.93rem",
+                  fontWeight: 500,
+                  textDecoration: "underline",
+                  cursor: "pointer",
+                  fontFamily: "'DM Sans', sans-serif",
+                }}
+              >
+                Skip for now
+              </button>
+
+              {completedScans.length > 0 ? (
+                <div style={{ marginTop: 22, textAlign: "center" }}>
+                  <p style={{ color: "#c4813a", fontWeight: 700, margin: "0 0 16px", fontSize: "0.98rem" }}>
+                    {wardrobeTotalFound} items found across {completedScans.length} scan{completedScans.length > 1 ? "s" : ""}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => void flushCompletedClosetScansToWardrobe()}
+                    style={{
+                      width: "100%",
+                      padding: "14px 20px",
+                      borderRadius: 10,
+                      border: "none",
+                      background: COLORS.primary,
+                      color: "#FFFFFF",
+                      cursor: "pointer",
+                      fontWeight: 600,
+                      transition: baseTransition,
+                      fontFamily: "'DM Sans', sans-serif",
+                      fontSize: "1rem",
+                    }}
+                  >
+                    Continue →
+                  </button>
+                </div>
+              ) : null}
+
+              {wardrobeError ? (
+                <p style={{ color: COLORS.danger, fontSize: "0.88rem", textAlign: "center", marginTop: 16, marginBottom: 0 }}>
+                  {wardrobeError}
+                </p>
+              ) : null}
             </>
           )}
 
@@ -967,14 +912,14 @@ export function Onboarding({
                 <button
                   type="button"
                   onClick={goBackOnboarding}
-                  disabled={onboardingStep === 1 || wardrobePhase === "scanning"}
+                  disabled={onboardingStep === 1 || scannerOpen}
                   style={{
                     padding: "12px 20px",
                     borderRadius: 10,
                     border: `1px solid ${COLORS.border}`,
                     background: "transparent",
-                    color: onboardingStep === 1 || wardrobePhase === "scanning" ? COLORS.textMuted : COLORS.text,
-                    cursor: onboardingStep === 1 || wardrobePhase === "scanning" ? "default" : "pointer",
+                    color: onboardingStep === 1 || scannerOpen ? COLORS.textMuted : COLORS.text,
+                    cursor: onboardingStep === 1 || scannerOpen ? "default" : "pointer",
                     transition: baseTransition,
                     fontFamily: "'DM Sans', sans-serif",
                     fontWeight: 500,
@@ -982,28 +927,7 @@ export function Onboarding({
                 >
                   Back
                 </button>
-                {wardrobePhase === "result" ? (
-                  <button
-                    type="button"
-                    onClick={finishWardrobeStep}
-                    style={{
-                      padding: "12px 24px",
-                      borderRadius: 10,
-                      border: "none",
-                      background: COLORS.primary,
-                      color: "#FFFFFF",
-                      cursor: "pointer",
-                      fontWeight: 600,
-                      transition: baseTransition,
-                      fontFamily: "'DM Sans', sans-serif",
-                      marginLeft: "auto",
-                    }}
-                  >
-                    Continue to Fashion OS →
-                  </button>
-                ) : (
-                  <span style={{ flex: 1 }} />
-                )}
+                <span style={{ flex: 1 }} />
               </>
             ) : profileUiStep === 6 ? (
               <>
@@ -1092,6 +1016,23 @@ export function Onboarding({
           </div>
         </div>
       </div>
+      <ClosetScanner
+        isOpen={scannerOpen}
+        onClose={() => setScannerOpen(false)}
+        onScanComplete={(result) => {
+          const totalItems = result.rows.filter((r) => r.included).reduce((sum, r) => sum + r.count, 0);
+          setCompletedScans((prev) => [
+            ...prev,
+            {
+              id: Date.now(),
+              thumbnail: result.thumbnail,
+              itemCount: totalItems,
+              rows: result.rows,
+            },
+          ]);
+          setScannerOpen(false);
+        }}
+      />
     </div>
   );
 }

@@ -107,6 +107,7 @@ import {
   getTimesWorn,
   getPurchasePriceNum,
 } from "./utils/wardrobeFinance";
+import { buildWardrobeItems } from "./utils/categoryMap";
 // (kept minimal) apiBase still used elsewhere in the app
 import { placeholderRemoveBackground } from "./services/backgroundRemoval";
 
@@ -201,6 +202,7 @@ export default function App() {
   const [laundryFilter, setLaundryFilter] = useState("All");
   const [analyzing, setAnalyzing] = useState(false);
   const [uploadError, setUploadError] = useState("");
+  const [closetScanSaving, setClosetScanSaving] = useState(false);
 
   const [editItem, setEditItem] = useState(null);
   const [editForm, setEditForm] = useState({
@@ -808,6 +810,39 @@ export default function App() {
       }
     },
     [addItem, updateItem, firebaseUser]
+  );
+
+  const saveClosetScanToWardrobe = useCallback(
+    async ({ rows, photoBlob }) => {
+      const rowList = Array.isArray(rows) ? rows : [];
+      const effectiveRows = rowList.filter((r) => r && r.included !== false && (Number(r.count) || 0) > 0);
+      if (!effectiveRows.length) {
+        throw new Error("Nothing to save.");
+      }
+      if (!firebaseUser) {
+        throw new Error("Sign in to save closet scans.");
+      }
+
+      setClosetScanSaving(true);
+      try {
+        let imagePreview = "";
+        let imageFilename = "";
+
+        if (photoBlob && firebaseUser) {
+          const imageFile = new File([photoBlob], `closet-scan-${Date.now()}.jpg`, { type: "image/jpeg" });
+          const firstId = `scan-${Date.now()}`;
+          const { downloadURL, path } = await uploadWardrobeImage(firebaseUser, imageFile, firstId);
+          imagePreview = downloadURL;
+          imageFilename = path;
+        }
+
+        const items = buildWardrobeItems(effectiveRows, imagePreview, imageFilename);
+        items.forEach((item) => addItem(item));
+      } finally {
+        setClosetScanSaving(false);
+      }
+    },
+    [addItem, firebaseUser]
   );
 
   const openEdit = (it) => {
@@ -1421,6 +1456,7 @@ export default function App() {
           goNextOnboarding={goNextOnboarding}
           canAdvance={canAdvance}
           uploadWardrobeItem={addWardrobeFromFile}
+          addItem={addItem}
           baseTransition={baseTransition}
           GENDER_OPTIONS={GENDER_OPTIONS}
           BUDGET_OPTIONS={BUDGET_OPTIONS}
@@ -1543,6 +1579,8 @@ export default function App() {
                 categories: CATEGORIES,
                 addManualWardrobeItem,
                 addWardrobeFromFile,
+                saveClosetScanToWardrobe,
+                closetScanSaving,
               }}
             />
           )}

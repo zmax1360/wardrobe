@@ -11,7 +11,7 @@ A personal fashion web app built with **React** (Create React App). It includes 
 
 ```bash
 npm install
-```e
+```
 
 ## Environment variables
 
@@ -19,6 +19,9 @@ Create a `.env` file in the project root for AI features (vision catalog + text 
 
 ```env
 # Prefer one of these (Anthropic is tried first, then OpenAI)
+# For Closet scan + `/api/chat` on the Express server (`server.js`), also set server-side key:
+ANTHROPIC_API_KEY=sk-ant-...
+
 REACT_APP_ANTHROPIC_API_KEY=sk-ant-...
 REACT_APP_OPENAI_API_KEY=sk-...
 ```
@@ -36,7 +39,11 @@ npm start
 - **Web (CRA):** [http://localhost:3000](http://localhost:3000)
 - **Image API:** [http://localhost:3001](http://localhost:3001)
 
+`npm start` also enables **`POST /api/chat`** for AI (Closet photo scan, catalogue): Create React App proxies `/api/chat` → **Express on 3001** (`proxy` in `package.json`). Vercel uses `api/chat.js` for the same path in production.
+
 Wardrobe uploads POST to port **3001**. If the API is not running, the app falls back to in-memory blob URLs (images disappear on refresh).
+
+**`npm run start:client`** runs only CRA on 3000 — **`/api/chat` returns 404** unless you run `node server.js` separately and configure your own proxy, or browse with the full **`npm start`** stack.
 
 Other scripts:
 

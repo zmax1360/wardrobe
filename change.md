@@ -695,3 +695,215 @@ Adding items with camera/gallery previews used transient `blob:` URLs (and redun
 Requires deploying `storage.rules` (or equivalent) so users may read/write under `wardrobe/{uid}/**`. Legacy `imageFilename` values that are Express API filenames still delete via DELETE `/api/delete-image`; `removeItem` unchanged otherwise. Ephemeral UI flag `imageUploading` never persists to localStorage/Firestore.
 
 ---
+
+### [Date: 2026-05-24] - Wardrobe: bulk closet scan (Stage 1 — analyse & display only)
+
+**Background:**
+Add a staged bulk closet-photo flow: upload/compress preview, Claude vision JSON parse of counts by category with colours/style, editable results UI, and placeholders for persistence (Stage 2). Replaces the previous lightweight closet modal on the Wardrobe screen.
+
+**Changed:**
+
+- `src/components/ClosetScanner.js` (new modal: UPLOAD / ANALYZING / RESULTS, errors, spinner, toast for “Coming soon”, colour swatches)
+- `src/utils/compressImage.js` (canvas JPEG shrink to longest side ≤1200, quality 0.75; `blobToBase64`)
+- `src/services/aiService.js` (`callClosetPhotoVision` — `/api/chat` + image block, max_tokens 1000, CLAUDE_MODEL)
+- `src/screens/WardrobeScreen.js` (“Scan Closet Photo” opener; legacy inline closet scan UI removed)
+
+**Impact:**
+Depends on `/api/chat` forwarding to Anthropic with vision-compatible message bodies (`ANTHROPIC_API_KEY` on the server). Save to Wardrobe is stubbed (“Coming soon”) until Stage 2; no wardrobe item creation from this modal yet.
+
+---
+
+### [Date: 2026-05-24] - Wardrobe Firestore loads: AbortError swallow + effect cleanup
+
+**Background:**
+Browsers reporting `injectScriptAdjust.js` / `jackFetch` + `AbortError` on Firebase reads are usually extension-intercepted `fetch`; harden wardrobe sync so aborted reads stay quiet and rapid effect re-runs do not commit state after unmount.
+
+**Changed:**
+
+- `src/hooks/useWardrobe.js`
+
+**Impact:**
+`AbortError` from Firestore `getDoc` / `setDoc` is ignored silently; wardrobe load wrapped with an `alive` flag. If an extension rejects a patched fetch promise outside Firebase’s chain, the console warning may still appear until the extension is disabled.
+
+---
+
+### [Date: 2026-05-24] - Dev: `/api/chat` on Express + CRA proxy for Closet scan
+
+**Background:**
+Create React App on port 3000 had no `/api/chat` handler; ClosetScanner and Anthropic-backed calls POST to relative `/api/chat` → 404. Production uses `api/chat.js` on Vercel; locally we need the Express server plus a proxy hop.
+
+**Changed:**
+
+- `server.js` (`POST /api/chat` Anthropic forwarder, 20 MB JSON limit for vision payloads)
+- `package.json` (`"proxy": "http://localhost:3001"`)
+- `README.md` (runtime env + `npm start` vs `start:client`; fixed duplicate ``` typo)
+
+**Impact:**
+Restart dev after pulling: **`npm start`** must bring up both CRA and **`server.js`**. **`ANTHROPIC_API_KEY`** or **`REACT_APP_ANTHROPIC_API_KEY`** in `.env` for the Anthropic relay.
+
+---
+
+### [Date: 2026-05-25] - Wardrobe title copy + dev Anthropic URL absolute port
+
+**Background:**
+Marketing-style wardrobe header copy requested a simpler “My Wardrobe” line; local CRA still resolves relative `/api/chat` inconsistently versus an explicit dev API origin.
+
+**Changed:**
+
+- `src/screens/WardrobeScreen.js` (hero title + subtitle)
+- `src/services/aiService.js` (`ANTHROPIC_URL` → `http://localhost:3002/api/chat` in development, `/api/chat` otherwise)
+
+**Impact:**
+Ensure the Express API (with `POST /api/chat`) is reachable at **port 3002** in dev (e.g. `PORT=3002` / run `server.js` on 3002), or align the URL. Production unchanged.
+
+---
+
+### [Date: 2026-05-26] - Onboarding step 7: ClosetScanner multi-photo flow
+
+**Background:**
+Step 7 replaced a single-image `uploadWardrobeItem` UX with the existing bulk `ClosetScanner` modal so users can run one or more closet scans, review aggregated counts, skip, or continue—with persistence still deferred (scanner keeps the “Coming soon” toast).
+
+**Changed:**
+
+- `src/components/Onboarding.js`
+- `src/components/ClosetScanner.js`
+
+**Impact:**
+`ClosetScanner` optionally calls `onScanComplete` before the toast and passes a **fresh** blob URL for thumbnails (parent must revoke on step exit; leaving step 7 clears `completedScans` and closes the scanner). `uploadWardrobeItem` / legacy wardrobe state remains for a follow-up save wiring.
+
+---
+
+### [Date: 2026-05-26] - ClosetScanner: upload-phase tip copy
+
+**Background:**
+Users needed a short reminder to scan closets in sections and that multiple photos are supported.
+
+**Changed:**
+
+- `src/components/ClosetScanner.js`
+
+**Impact:**
+No impact beyond UI copy/styling on the scanner upload screen.
+
+---
+
+### [Date: 2026-05-26] - ClosetScanner: data URL thumbnails for `onScanComplete`
+
+**Background:**
+Blob URLs handed to onboarding were revoked when the scanner resets; thumbnails should use `FileReader.readAsDataURL` so previews stay valid without separate blob lifecycle handling.
+
+**Changed:**
+
+- `src/components/ClosetScanner.js` (Save to Wardrobe handler)
+
+**Impact:**
+Parents receive a data URL thumbnail when `compressedBlob` is present (`previewUrl` fallback otherwise). Larger in-memory payload vs blob URLs.
+
+---
+
+### [Date: 2026-05-27] - Wardrobe photos: Firebase Storage URL + hydrate strip / upload overlay
+
+**Background:**
+Photos must survive refresh: authenticated adds already upload via `uploadWardrobeImage` (`App.js`); persisted copies must omit transient `blob:` previews and ephemeral `imageUploading`, and gallery UI should show an amber spinner while uploads finish.
+
+**Changed:**
+
+- `src/hooks/useWardrobe.js` (documented hydrate + `stripWardrobeForStorage` shape — `imageUploading` omitted)
+- `src/screens/WardrobeScreen.js` (upload spinner overlay aligned with shared `spin` animation)
+
+**Impact:**
+Firestore/localStorage wardrobes store HTTPS `imagePreview` after upload succeeds; reloading clears any stale `blob:` paths on read. **`storage.rules`** in repo already match `wardrobe/{userId}/**` for authenticated read/write — deploy rules in Firebase Console if not synced.
+
+---
+
+### [Date: 2026-05-27] - Closet Scanner Stage 2: save scans to wardrobe + Firebase
+
+**Background:**
+Bulk closet scan results should become real wardrobe items with a persisted photo; onboarding still relies on **`onScanComplete`** only without writing to wardrobe.
+
+**Changed:**
+
+- `src/components/ClosetScanner.js` (`onSaveItems`, `isSaving`, primary-save flow; onboarding path unchanged via **`onScanComplete`**)
+- `src/App.js` (`saveClosetScanToWardrobe`, category mapping + single Storage upload shared across batch items)
+- `src/screens/WardrobeScreen.js` (wired modal to save handler + saving flag)
+- `src/hooks/useWardrobe.js` (**`removeItem`**: deletes Storage object only when no other item shares the same **`imageFilename`** — supports shared closet-scan image)
+
+**Impact:**
+Authenticated users append one wardrobe row per saved scan category (included rows only); **`useWardrobe`** still syncs the existing Firestore **`wardrobe`** array. Sign-in required — otherwise save throws an error surfaced as a toast.
+
+---
+
+### [Date: 2026-05-27] - Onboarding: closet scan save via `saveClosetScanToWardrobe` + UI callback
+
+**Background:**
+During step 7, closet scans should persist through the same handler as Wardrobe (`saveClosetScanToWardrobe`), while **`onScanComplete`** still fills the onboarding “completed scans” list.
+
+**Changed:**
+
+- `src/components/Onboarding.js` (props + **`ClosetScanner`** wiring; **Continue →** calls **`goNextOnboarding`** only — removed **`finishWardrobeStep`**)
+- `src/components/ClosetScanner.js` (**after **`onSaveItems`** success, invokes **`onScanComplete`** when provided** so onboarding can refresh summary)
+- `src/App.js` (pass **`saveClosetScanToWardrobe`** / **`closetScanSaving`** into **`Onboarding`**)
+
+**Impact:**
+If the save fails before **`onScanComplete`**, onboarding list is not updated — user sees the toaster error only.
+
+---
+
+### [Date: 2026-05-27] - Closet-scan wardrobe rows: `categoryMap`, save refactor, scanner card UI
+
+**Background:**
+Closet-scan saves should emit one richer wardrobe row per detected category (`source: closet_scan`), reuse a single uploaded photo path across the batch, and show a text-first card with a small corner thumbnail. Onboarding should commit those rows when the user taps **Continue →** (not during the modal) so we do not double-save if the modal also called Storage.
+
+**Changed:**
+
+- `src/utils/categoryMap.js` (new: **`mapToAppCategory`**, **`buildWardrobeItems`**)
+- `src/App.js` (**`saveClosetScanToWardrobe`** uses **`buildWardrobeItems`** + one **`uploadWardrobeImage`**; removed inline category builder; **`Onboarding`** receives **`addItem`** instead of closet save props)
+- `src/screens/WardrobeScreen.js` (**`resolveColorHex`**, closet-scan card layout; shared footer for both layouts)
+- `src/components/Onboarding.js` (**`flushCompletedClosetScansToWardrobe`** on **Continue →**; **`ClosetScanner`** only **`onScanComplete`**)
+
+**Impact:**
+Persisted items that lose `source`/`count`/`colors` (current `stripWardrobeForStorage` shape) still match closet-scan cards via **`tags` including `closet-scan`** and a **`N items · …`** description prefix.
+
+---
+
+### [Date: 2026-05-24] - Wardrobe: expandable full-width closet scan rows vs grid cards
+
+**Background:**
+Closet-scan wardrobe rows crowded the same two-column card grid as individual pieces; scan lines needed a denser summary row that expands for colors, wears, and the same Edit / Remove / Log wear behaviors.
+
+**Changed:**
+
+- `src/screens/WardrobeScreen.js` (**`expandedScanId`** / **`toggleScanRow`**; **`scanItems`** vs **`regularItems`**; scan list plus section labels; expandable row markup; **`handleLogWear`** / **`handleEdit`** mirroring grid card handlers)
+
+**Impact:**
+Regular wardrobe cards are unchanged; scan rows render above the gallery when filtered results include both kinds. Closet-scan rows no longer expose the laundry dots in-row (actions remain in expanded area and match prior footer actions aside from laundry quick-set).
+
+---
+
+### [Date: 2026-05-24] - Wardrobe expanded scan row: wears + count copy
+
+**Background:**
+The expanded closet-scan row should spell out aggregate wears with correct singular/plural and relate them to the scanned item count.
+
+**Changed:**
+
+- `src/screens/WardrobeScreen.js` (expanded panel wears line: **`timesWorn`** / **`count`** copy)
+
+**Impact:**
+No impact beyond copy in the scan row detail panel.
+
+---
+
+### [Date: 2026-05-24] - Wardrobe: remove bottom quick-add drop zone
+
+**Background:**
+The dashed drop area and duplicate “+ Add Photo” at the bottom of the wardrobe screen were redundant with header actions and modal photo add.
+
+**Changed:**
+
+- `src/screens/WardrobeScreen.js` (removed **`wardrobe-quickadd`** block and unused **`onDropWithUpload`**)
+
+**Impact:**
+Page-level drag-and-drop for the AI catalog flow no longer appears in that footer area; header **Scan Closet Photo** / **+ Add piece** and the add modal (**Photo** tab) remain.
+
+---

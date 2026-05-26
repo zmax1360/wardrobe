@@ -1,73 +1,11 @@
 import React, { useState, useRef } from "react";
 
+import { ClosetScanner } from "../components/ClosetScanner";
 import { FINANCE } from "../styles/financeTheme";
 import { COLORS, baseTransition } from "../styles/theme";
 import { calculateCPW, getPurchasePriceNum, getTimesWorn, WARDROBE_OCCASION_VALUES } from "../utils/wardrobeFinance";
 import { CHIC_WARDROBE_MOODS } from "../constants/chicMoods";
 import { useWardrobeAgent } from "../hooks/useWardrobeAgent";
-
-async function analyzeClosetPhoto(file, profile) {
-  return new Promise((resolve) => {
-    const reader = new FileReader();
-    reader.onload = async (e) => {
-      const base64 = e.target.result.split(",")[1];
-
-      try {
-        const { callTextCompletion } = await import("../services/aiService");
-
-        const result = await callTextCompletion(
-          `You are an expert fashion analyst scanning a closet photo. Analyze the visible clothing and return ONLY valid JSON (no markdown):
-           {
-             "totalItems": number,
-             "categories": {
-               "tops": number,
-               "bottoms": number,
-               "shoes": number,
-               "outerwear": number,
-               "dresses": number,
-               "accessories": number,
-               "other": number
-             },
-             "dominantColors": ["color1", "color2", "color3"],
-             "colorBalance": "neutral-heavy | colorful | monochrome | mixed",
-             "summary": "2 sentence description of what you see",
-             "recommendations": [
-               "specific actionable recommendation 1",
-               "specific actionable recommendation 2",
-               "specific actionable recommendation 3"
-             ],
-             "missingPieces": [
-               "item type missing from wardrobe 1",
-               "item type missing from wardrobe 2"
-             ]
-           }`,
-          `Analyze this closet photo for a ${profile?.gender || "person"} who likes ${profile?.styles?.join(", ") || "mixed"} style with a ${profile?.budget || "mixed"} budget.`,
-          "Closet scan analysis"
-        );
-
-        const clean = String(result || "")
-          .replace(/```json|```/g, "")
-          .trim();
-        resolve(JSON.parse(clean));
-      } catch {
-        resolve({
-          totalItems: "several",
-          categories: {},
-          dominantColors: ["neutrals"],
-          colorBalance: "mixed",
-          summary: "I can see your closet. Let me help you organize it better.",
-          recommendations: [
-            "Consider organizing by category",
-            "Add more versatile basics",
-            "Try a capsule wardrobe approach",
-          ],
-          missingPieces: ["Statement piece", "Versatile jacket"],
-        });
-      }
-    };
-    reader.readAsDataURL(file);
-  });
-}
 
 const GALLERY_BG = "#FFFFFF";
 const CARD_BG = "#FFFFFF";
@@ -118,6 +56,62 @@ function describeWardrobeCardText(raw) {
   return { kind: "text", text: t };
 }
 
+function resolveColorHex(name) {
+  const map = {
+    white: "#f5f5f5",
+    black: "#1a1a1a",
+    gray: "#9e9e9e",
+    grey: "#9e9e9e",
+    beige: "#d4b896",
+    navy: "#1a237e",
+    blue: "#1565c0",
+    "light blue": "#90caf9",
+    pink: "#f48fb1",
+    red: "#c62828",
+    green: "#2e7d32",
+    brown: "#4e342e",
+    cream: "#fff8e1",
+  };
+  const key = String(name || "")
+    .toLowerCase()
+    .trim();
+  for (const [k, v] of Object.entries(map)) {
+    if (key.includes(k)) return v;
+  }
+  return "#9e9e9e";
+}
+
+/** Closet-scan rows persisted without `source` still match via tags + description. */
+function isClosetScanWardrobeItem(it) {
+  if (it?.source === "closet_scan") return true;
+  return Boolean(
+    Array.isArray(it?.tags) && it.tags.includes("closet-scan") && /^\d+\s+items\b/u.test(String(it.description || ""))
+  );
+}
+
+function closetScanUiCount(it) {
+  if (typeof it.count === "number" && Number.isFinite(it.count)) return Math.max(0, Math.floor(it.count));
+  const m = String(it.description || "").match(/^(\d+)\s+items/u);
+  return m ? Math.max(0, parseInt(m[1], 10) || 0) : 0;
+}
+
+function closetScanUiColors(it) {
+  if (Array.isArray(it.colors) && it.colors.length) return it.colors.map(String);
+  const segments = String(it.description || "").split(" · ");
+  if (segments.length >= 2 && segments[1].trim()) {
+    return segments[1]
+      .split(",")
+      .map((x) => x.trim())
+      .filter(Boolean);
+  }
+  return [];
+}
+
+function closetScanStyleLabel(style) {
+  const s = String(style || "").trim();
+  return s && s !== "—" ? s : "";
+}
+
 export function WardrobeScreen({
   profile: _profile,
   wardrobe: _wardrobe,
@@ -147,11 +141,8 @@ export function WardrobeScreen({
   const [moreDetailsOpen, setMoreDetailsOpen] = useState(false);
   const [manualSaving, setManualSaving] = useState(false);
 
-  const [showClosetScan, setShowClosetScan] = useState(false);
-  const [closetScanPhase, setClosetScanPhase] = useState("idle");
-  const [closetScanImage, setClosetScanImage] = useState(null);
-  const [closetAnalysis, setClosetAnalysis] = useState(null);
-  const closetScanRef = useRef(null);
+  const [showClosetScanner, setShowClosetScanner] = useState(false);
+  const [expandedScanId, setExpandedScanId] = useState(null);
 
   const modalFileRef = useRef(null);
   const manualImageInputRef = useRef(null);
@@ -177,15 +168,31 @@ export function WardrobeScreen({
     categories,
     addManualWardrobeItem,
     addWardrobeFromFile,
+    saveClosetScanToWardrobe,
+    closetScanSaving,
   } = handlers;
+
+  const toggleScanRow = (id) => {
+    setExpandedScanId((prev) => (prev === id ? null : id));
+  };
+
+  const handleLogWear = (id) => {
+    const it = filteredWardrobe.find((x) => x.id === id);
+    if (!it) return;
+    const wc = getTimesWorn(it);
+    setPulseWearId(id);
+    updateItem(id, { timesWorn: wc + 1 });
+  };
+
+  const handleEdit = (item) => {
+    openEdit(item);
+  };
+
+  const scanItems = filteredWardrobe.filter(isClosetScanWardrobeItem);
+  const regularItems = filteredWardrobe.filter((item) => !isClosetScanWardrobeItem(item));
 
   const onFileChangeWithUpload = (e, opts) => {
     onFileChange(e, opts);
-  };
-
-  const onDropWithUpload = (e, opts = {}) => {
-    e.preventDefault();
-    onDrop(e, opts);
   };
 
   const resetManualForm = () => {
@@ -282,7 +289,7 @@ export function WardrobeScreen({
   return (
     <>
       <style>{`
-        @keyframes fosWardrobeUploadSpin {
+        @keyframes spin {
           to { transform: rotate(360deg); }
         }
       `}</style>
@@ -310,54 +317,35 @@ export function WardrobeScreen({
         >
           <div>
             <h1 className="wardrobe-page-title" style={{ margin: "0 0 6px" }}>
-              Financial Asset Gallery
+              My Wardrobe
             </h1>
             <p style={{ margin: 0, fontSize: "0.88rem", color: FINANCE.muted }}>
-              Wardrobe as balance sheet · CPW on every piece
+              Your clothes, organised.
             </p>
           </div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center" }}>
-            <>
-              <input
-                ref={closetScanRef}
-                type="file"
-                accept="image/*"
-                style={{ display: "none" }}
-                onChange={async (e) => {
-                  const file = e.target.files[0];
-                  e.target.value = "";
-                  if (!file) return;
-                  setClosetScanImage(URL.createObjectURL(file));
-                  setClosetScanPhase("scanning");
-                  setShowClosetScan(true);
-                  const analysis = await analyzeClosetPhoto(file, _profile);
-                  setClosetAnalysis(analysis);
-                  setClosetScanPhase("confirm");
-                }}
-              />
-              <button
-                type="button"
-                onClick={() => closetScanRef.current?.click()}
-                style={{
-                  padding: "12px 18px",
-                  borderRadius: 999,
-                  border: "1.5px solid #c4813a",
-                  background: "transparent",
-                  color: "#c4813a",
-                  fontSize: "0.85rem",
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  fontFamily: "'Inter', sans-serif",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 6,
-                  minHeight: 44,
-                  whiteSpace: "nowrap",
-                }}
-              >
-                📸 Scan My Closet
-              </button>
-            </>
+            <button
+              type="button"
+              onClick={() => setShowClosetScanner(true)}
+              style={{
+                padding: "12px 18px",
+                borderRadius: 999,
+                border: "1.5px solid #c4813a",
+                background: "transparent",
+                color: "#c4813a",
+                fontSize: "0.85rem",
+                fontWeight: 600,
+                cursor: "pointer",
+                fontFamily: "'Inter', sans-serif",
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                minHeight: 44,
+                whiteSpace: "nowrap",
+              }}
+            >
+              Scan Closet Photo
+            </button>
             <button
               type="button"
               onClick={() => {
@@ -465,183 +453,246 @@ export function WardrobeScreen({
         {filteredWardrobe.length === 0 ? (
           <p style={{ color: FINANCE.muted }}>No pieces match these filters.</p>
         ) : (
-          <div className="wardrobe-gallery-grid">
-            {filteredWardrobe.map((it) => {
-              const pp = getPurchasePriceNum(it);
-              const wc = getTimesWorn(it);
-              const cpwFormatted = pp > 0 ? calculateCPW(pp, wc).toFixed(2) : null;
-
-              const statusDotColor =
-                it.laundryStatus === "clean"
-                  ? "#2D6A4F"
-                  : it.laundryStatus === "dirty"
-                    ? "#D4A017"
-                    : "#8B8B8B";
-
+          <>
+            {scanItems.length > 0 && regularItems.length > 0 && (
+              <p
+                style={{
+                  fontSize: "0.78rem",
+                  color: "var(--color-text-secondary, #64748B)",
+                  margin: "0 0 8px",
+                }}
+              >
+                Closet scans
+              </p>
+            )}
+            {scanItems.map((item) => {
+              const rowColors = closetScanUiColors(item);
+              const displayColors =
+                Array.isArray(item.colors) && item.colors.length ? item.colors.map(String) : rowColors;
+              const styleLabel = closetScanStyleLabel(item.style);
+              const scanCount = closetScanUiCount(item);
               return (
                 <div
-                  key={it.id}
-                  className="wardrobe-gallery-card"
+                  key={item.id}
                   style={{
-                    position: "relative",
+                    background: "var(--color-background-primary, #FFFFFF)",
+                    border: "0.5px solid var(--color-border-tertiary, #E2E8F0)",
+                    borderRadius: "var(--border-radius-md, 10px)",
+                    marginBottom: 8,
                     overflow: "hidden",
-                    display: "flex",
-                    flexDirection: "column",
+                    cursor: "pointer",
                   }}
+                  onClick={() => toggleScanRow(item.id)}
                 >
-                  <div className="wardrobe-card-inner">
-                    <div
-                      className="wardrobe-card-image-frame"
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      padding: "12px 16px",
+                      gap: 12,
+                    }}
+                  >
+                    <span
                       style={{
-                        position: "relative",
-                        aspectRatio: "3 / 4",
-                        width: "100%",
-                        boxSizing: "border-box",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        background: CARD_BG,
-                        minHeight: 0,
+                        fontWeight: 500,
+                        fontSize: "0.95rem",
+                        flex: "1 1 140px",
+                        minWidth: 0,
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
                       }}
                     >
-                      {it.imagePreview ? (
-                        <img
-                          className="wardrobe-card-image"
-                          src={it.imagePreview}
-                          alt=""
-                          style={{ display: "block" }}
-                        />
-                      ) : (
-                        <div className="wardrobe-card-placeholder" aria-hidden>
-                          {(it.name || "?").trim().charAt(0).toUpperCase()}
-                        </div>
-                      )}
-                      {it.imageUploading ? (
-                        <div
-                          role="status"
-                          aria-label="Uploading photo"
+                      {item.name}
+                    </span>
+
+                    <div style={{ display: "flex", gap: 3, flex: "0 0 auto" }}>
+                      {displayColors.slice(0, 4).map((c, idx) => (
+                        <span
+                          key={`${String(c)}-${idx}`}
                           style={{
-                            position: "absolute",
-                            inset: 0,
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            background: "rgba(26, 18, 8, 0.42)",
-                            zIndex: 2,
-                            pointerEvents: "none",
+                            width: 10,
+                            height: 10,
+                            borderRadius: "50%",
+                            background: resolveColorHex(c),
+                            border: "0.5px solid rgba(0,0,0,0.12)",
+                            display: "inline-block",
+                            flexShrink: 0,
                           }}
-                        >
-                          <span
-                            className="fos-wardrobe-upload-spinner"
-                            style={{
-                              width: 38,
-                              height: 38,
-                              borderRadius: "50%",
-                              border: "3px solid rgba(196,129,58,0.22)",
-                              borderTopColor: "#c4813a",
-                              animation: "fosWardrobeUploadSpin 0.82s linear infinite",
-                            }}
-                          />
-                        </div>
-                      ) : null}
+                          title={String(c)}
+                        />
+                      ))}
                     </div>
 
-                    <div
-                      className="wardrobe-card-text-block"
-                      style={{
-                        paddingTop: 20,
-                        display: "flex",
-                        flexDirection: "column",
-                        flex: 1,
-                        minHeight: 0,
-                      }}
-                    >
-                      <div
-                        className="wardrobe-card-category-row"
+                    {styleLabel ? (
+                      <span
                         style={{
-                          marginBottom: 8,
-                          display: "flex",
-                          flexWrap: "wrap",
-                          alignItems: "baseline",
-                          gap: "4px 10px",
+                          fontSize: "0.72rem",
+                          padding: "2px 8px",
+                          borderRadius: 99,
+                          background: "rgba(196,129,58,0.1)",
+                          color: "#c4813a",
+                          fontWeight: 600,
+                          whiteSpace: "nowrap",
+                          flex: "0 0 auto",
                         }}
                       >
-                        <span className="wardrobe-card-category">{it.category || "Uncategorized"}</span>
-                        {it.mood ? (
-                          <span className="wardrobe-card-mood" aria-label={`Mood: ${it.mood}`}>
-                            {it.mood}
-                          </span>
-                        ) : null}
-                      </div>
+                        {styleLabel}
+                      </span>
+                    ) : null}
 
-                      <div className="wardrobe-card-title-row">
-                        <div className="wardrobe-card-name-group">
-                          <span
-                            style={{
-                              width: 6,
-                              height: 6,
-                              borderRadius: "50%",
-                              background: statusDotColor,
-                              flexShrink: 0,
-                              opacity: 0.85,
-                            }}
-                            title={
-                              it.laundryStatus === "clean"
-                                ? "Clean"
-                                : it.laundryStatus === "dirty"
-                                  ? "Dirty"
-                                  : "In wash"
-                            }
-                            aria-label={
-                              it.laundryStatus === "clean"
-                                ? "Clean"
-                                : it.laundryStatus === "dirty"
-                                  ? "Dirty"
-                                  : "In wash"
-                            }
-                          />
-                          <div className="wardrobe-card-name">{it.name}</div>
-                        </div>
-                        <div className="wardrobe-card-cpw">
-                          {cpwFormatted != null ? (
-                            <>${cpwFormatted}</>
-                          ) : (
-                            <span className="wardrobe-card-cpw-empty">—</span>
-                          )}
-                        </div>
-                      </div>
+                    <span
+                      style={{
+                        fontSize: "0.78rem",
+                        fontWeight: 700,
+                        padding: "2px 8px",
+                        borderRadius: 99,
+                        background: "rgba(196,129,58,0.15)",
+                        color: "#c4813a",
+                        flex: "0 0 auto",
+                      }}
+                    >
+                      ×{scanCount}
+                    </span>
 
-                      {(it.color || it.season) && (
-                        <div style={{ fontSize: "0.75rem", color: FINANCE.muted, marginTop: 0 }}>
-                          {it.color}
-                          {it.season ? ` · ${it.season}` : ""}
-                        </div>
-                      )}
-                      {(() => {
-                        const desc = describeWardrobeCardText(it.description);
-                        if (!desc) return null;
-                        if (desc.kind === "link") {
-                          return (
-                            <div className="wardrobe-card-desc">
-                              <a
-                                href={desc.href}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                style={{ fontSize: "10px", color: "#999", textDecoration: "underline" }}
-                              >
-                                View Product Page
-                              </a>
-                            </div>
-                          );
-                        }
-                        return (
-                          <div className="wardrobe-card-desc">
-                            <span className="wardrobe-card-desc-text">{desc.text}</span>
-                          </div>
-                        );
-                      })()}
+                    <span
+                      style={{
+                        fontSize: "0.75rem",
+                        color: "var(--color-text-secondary, #64748B)",
+                        flex: "0 0 auto",
+                        transform: expandedScanId === item.id ? "rotate(180deg)" : "rotate(0deg)",
+                        transition: "transform 0.2s ease",
+                      }}
+                      aria-hidden
+                    >
+                      ▾
+                    </span>
+                  </div>
+
+                  {expandedScanId === item.id && (
+                    <div
+                      style={{
+                        borderTop: "0.5px solid var(--color-border-tertiary, #E2E8F0)",
+                        padding: "12px 16px",
+                        background: "var(--color-background-secondary, #F1F5F9)",
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <p
+                        style={{
+                          margin: "0 0 12px",
+                          fontSize: "0.82rem",
+                          color: "var(--color-text-secondary, #64748B)",
+                        }}
+                      >
+                        {displayColors.join(", ")}
+                      </p>
+
+                      <p
+                        style={{
+                          margin: "0 0 12px",
+                          fontSize: "0.82rem",
+                          color: "var(--color-text-secondary)",
+                        }}
+                      >
+                        {item.timesWorn || 0} wear{item.timesWorn !== 1 ? "s" : ""} across {item.count || 1}{" "}
+                        item{item.count !== 1 ? "s" : ""}
+                      </p>
+
+                      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                        <button
+                          type="button"
+                          className={pulseWearId === item.id ? "fos-wear-count--pulse" : undefined}
+                          onClick={() => {
+                            handleLogWear(item.id);
+                          }}
+                          onAnimationEnd={(e) => {
+                            e.stopPropagation();
+                            setPulseWearId((p) => (p === item.id ? null : p));
+                          }}
+                          style={{
+                            padding: "7px 14px",
+                            borderRadius: 99,
+                            border: "0.5px solid var(--color-border-secondary, rgba(0,0,0,0.12))",
+                            background: "transparent",
+                            fontSize: "0.82rem",
+                            fontWeight: 500,
+                            cursor: "pointer",
+                          }}
+                        >
+                          + Log wear
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            handleEdit(item);
+                          }}
+                          style={{
+                            padding: "7px 14px",
+                            borderRadius: 99,
+                            border: "0.5px solid var(--color-border-secondary, rgba(0,0,0,0.12))",
+                            background: "transparent",
+                            fontSize: "0.82rem",
+                            fontWeight: 500,
+                            cursor: "pointer",
+                          }}
+                        >
+                          Edit
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            removeItem(item.id);
+                          }}
+                          style={{
+                            padding: "7px 14px",
+                            borderRadius: 99,
+                            border: "0.5px solid rgba(198,92,92,0.4)",
+                            background: "transparent",
+                            color: "#c62828",
+                            fontSize: "0.82rem",
+                            fontWeight: 500,
+                            cursor: "pointer",
+                          }}
+                        >
+                          Remove
+                        </button>
+                      </div>
                     </div>
+                  )}
+                </div>
+              );
+            })}
 
+            {regularItems.length > 0 && scanItems.length > 0 && (
+              <p
+                style={{
+                  fontSize: "0.78rem",
+                  color: "var(--color-text-secondary, #64748B)",
+                  margin: "16px 0 8px",
+                }}
+              >
+                Individual items
+              </p>
+            )}
+
+            {regularItems.length > 0 && (
+              <div className="wardrobe-gallery-grid">
+                {regularItems.map((it) => {
+                  const pp = getPurchasePriceNum(it);
+                  const wc = getTimesWorn(it);
+                  const cpwFormatted = pp > 0 ? calculateCPW(pp, wc).toFixed(2) : null;
+
+                  const statusDotColor =
+                    it.laundryStatus === "clean"
+                      ? "#2D6A4F"
+                      : it.laundryStatus === "dirty"
+                        ? "#D4A017"
+                        : "#8B8B8B";
+
+                  const cardFooter = (
                     <div className="wardrobe-card-footer">
                       <div className="wardrobe-card-wear-label" aria-label={`${wc} wears`}>
                         {wc} wears
@@ -745,11 +796,180 @@ export function WardrobeScreen({
                         </button>
                       </div>
                     </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+                  );
+
+                  return (
+                    <div
+                      key={it.id}
+                      className="wardrobe-gallery-card"
+                      style={{
+                        position: "relative",
+                        overflow: "hidden",
+                        display: "flex",
+                        flexDirection: "column",
+                      }}
+                    >
+                      <div className="wardrobe-card-inner">
+                        <div
+                          className="wardrobe-card-image-frame"
+                          style={{
+                            position: "relative",
+                            aspectRatio: "3 / 4",
+                            width: "100%",
+                            boxSizing: "border-box",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            background: CARD_BG,
+                            minHeight: 0,
+                          }}
+                        >
+                          {it.imagePreview ? (
+                            <img
+                              className="wardrobe-card-image"
+                              src={it.imagePreview}
+                              alt=""
+                              style={{ display: "block" }}
+                            />
+                          ) : (
+                            <div className="wardrobe-card-placeholder" aria-hidden>
+                              {(it.name || "?").trim().charAt(0).toUpperCase()}
+                            </div>
+                          )}
+                          {it.imageUploading ? (
+                            <div
+                              role="status"
+                              aria-label="Uploading photo"
+                              style={{
+                                position: "absolute",
+                                inset: 0,
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                background: "rgba(26,18,8,0.6)",
+                                borderRadius: "inherit",
+                                zIndex: 2,
+                                pointerEvents: "none",
+                              }}
+                            >
+                              <div
+                                style={{
+                                  width: 24,
+                                  height: 24,
+                                  borderRadius: "50%",
+                                  border: "2px solid rgba(196,129,58,0.3)",
+                                  borderTopColor: "#c4813a",
+                                  animation: "spin 0.8s linear infinite",
+                                }}
+                              />
+                            </div>
+                          ) : null}
+                        </div>
+
+                        <div
+                          className="wardrobe-card-text-block"
+                          style={{
+                            paddingTop: 20,
+                            display: "flex",
+                            flexDirection: "column",
+                            flex: 1,
+                            minHeight: 0,
+                          }}
+                        >
+                          <div
+                            className="wardrobe-card-category-row"
+                            style={{
+                              marginBottom: 8,
+                              display: "flex",
+                              flexWrap: "wrap",
+                              alignItems: "baseline",
+                              gap: "4px 10px",
+                            }}
+                          >
+                            <span className="wardrobe-card-category">{it.category || "Uncategorized"}</span>
+                            {it.mood ? (
+                              <span className="wardrobe-card-mood" aria-label={`Mood: ${it.mood}`}>
+                                {it.mood}
+                              </span>
+                            ) : null}
+                          </div>
+
+                          <div className="wardrobe-card-title-row">
+                            <div className="wardrobe-card-name-group">
+                              <span
+                                style={{
+                                  width: 6,
+                                  height: 6,
+                                  borderRadius: "50%",
+                                  background: statusDotColor,
+                                  flexShrink: 0,
+                                  opacity: 0.85,
+                                }}
+                                title={
+                                  it.laundryStatus === "clean"
+                                    ? "Clean"
+                                    : it.laundryStatus === "dirty"
+                                      ? "Dirty"
+                                      : "In wash"
+                                }
+                                aria-label={
+                                  it.laundryStatus === "clean"
+                                    ? "Clean"
+                                    : it.laundryStatus === "dirty"
+                                      ? "Dirty"
+                                      : "In wash"
+                                }
+                              />
+                              <div className="wardrobe-card-name">{it.name}</div>
+                            </div>
+                            <div className="wardrobe-card-cpw">
+                              {cpwFormatted != null ? (
+                                <>${cpwFormatted}</>
+                              ) : (
+                                <span className="wardrobe-card-cpw-empty">—</span>
+                              )}
+                            </div>
+                          </div>
+
+                          {(it.color || it.season) && (
+                            <div style={{ fontSize: "0.75rem", color: FINANCE.muted, marginTop: 0 }}>
+                              {it.color}
+                              {it.season ? ` · ${it.season}` : ""}
+                            </div>
+                          )}
+                          {(() => {
+                            const desc = describeWardrobeCardText(it.description);
+                            if (!desc) return null;
+                            if (desc.kind === "link") {
+                              return (
+                                <div className="wardrobe-card-desc">
+                                  <a
+                                    href={desc.href}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    style={{ fontSize: "10px", color: "#999", textDecoration: "underline" }}
+                                  >
+                                    View Product Page
+                                  </a>
+                                </div>
+                              );
+                            }
+                            return (
+                              <div className="wardrobe-card-desc">
+                                <span className="wardrobe-card-desc-text">{desc.text}</span>
+                              </div>
+                            );
+                          })()}
+                        </div>
+
+                        {cardFooter}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </>
         )}
       </div>
 
@@ -1045,53 +1265,6 @@ export function WardrobeScreen({
         </div>
       )}
 
-      <div
-        className="wardrobe-quickadd"
-        onDragOver={(e) => e.preventDefault()}
-        onDrop={(e) => onDropWithUpload(e, {})}
-        style={{
-          marginTop: 32,
-          padding: "20px 24px",
-          borderRadius: 14,
-          border: `1px dashed ${FINANCE.border}`,
-          textAlign: "center",
-          fontSize: "0.82rem",
-          color: FINANCE.muted,
-          background: FINANCE.accentSoft,
-        }}
-      >
-        <p className="wardrobe-quickadd-hint" style={{ margin: "0 0 14px", lineHeight: 1.45 }}>
-          Drop an image here for quick add (same AI catalog flow)
-        </p>
-        <div className="wardrobe-quickadd-actions" style={{ display: "flex", justifyContent: "center", gap: 10, flexWrap: "wrap" }}>
-          <button
-            type="button"
-            onClick={() => fileRef.current?.click()}
-            className="wardrobe-quickadd-btn"
-            onDragOver={(e) => e.preventDefault()}
-            onDrop={(e) => onDropWithUpload(e, {})}
-            style={{
-              padding: "12px 22px",
-              borderRadius: 999,
-              border: `1px solid ${FINANCE.slate}`,
-              background: "#fff",
-              color: FINANCE.text,
-              fontSize: "0.85rem",
-              fontWeight: 600,
-              cursor: "pointer",
-              fontFamily: "'Inter', sans-serif",
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 10,
-              minWidth: 220,
-            }}
-          >
-            + Add Photo
-          </button>
-        </div>
-      </div>
-
       <div className="wardrobe-agent-wrap">
         <form className="wardrobe-agent-form" onSubmit={onWardrobeAgentSubmit}>
           <div className="wardrobe-agent-bar">
@@ -1124,410 +1297,12 @@ export function WardrobeScreen({
         ) : null}
       </div>
 
-      {showClosetScan && (
-        <div
-          className="closet-scan-backdrop"
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(0,0,0,0.7)",
-            zIndex: 1000,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: 24,
-          }}
-        >
-          <div
-            className="closet-scan-dialog"
-            style={{
-              background: "#fff",
-              borderRadius: 20,
-              width: "100%",
-              maxWidth: 520,
-              maxHeight: "90vh",
-              overflowY: "auto",
-              padding: 32,
-            }}
-          >
-            {closetScanPhase === "scanning" && (
-              <div style={{ textAlign: "center" }}>
-                <div
-                  style={{
-                    fontSize: 48,
-                    marginBottom: 16,
-                    animation: "spin 2s linear infinite",
-                  }}
-                >
-                  ✨
-                </div>
-                <h2
-                  style={{
-                    fontFamily: "'Cormorant Garamond', serif",
-                    fontSize: "1.6rem",
-                    margin: "0 0 8px",
-                  }}
-                >
-                  Analyzing your closet...
-                </h2>
-                <p
-                  style={{
-                    color: "#888",
-                    margin: 0,
-                    fontSize: "0.9rem",
-                  }}
-                >
-                  AI is counting items, identifying colors and categories
-                </p>
-                {closetScanImage && (
-                  <img
-                    className="closet-scan-preview-img"
-                    src={closetScanImage}
-                    alt="Your closet"
-                  />
-                )}
-              </div>
-            )}
-
-            {closetScanPhase === "confirm" && closetAnalysis && (
-              <div>
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "flex-start",
-                    gap: 16,
-                    marginBottom: 24,
-                  }}
-                >
-                  {closetScanImage && (
-                    <img
-                      src={closetScanImage}
-                      alt="Your closet"
-                      style={{
-                        width: 100,
-                        height: 100,
-                        objectFit: "cover",
-                        borderRadius: 12,
-                        flexShrink: 0,
-                      }}
-                    />
-                  )}
-                  <div>
-                    <h2
-                      style={{
-                        fontFamily: "'Cormorant Garamond', serif",
-                        fontSize: "1.5rem",
-                        margin: "0 0 8px",
-                      }}
-                    >
-                      Here&apos;s what I see
-                    </h2>
-                    <p
-                      style={{
-                        color: "#666",
-                        fontSize: "0.9rem",
-                        margin: 0,
-                        lineHeight: 1.5,
-                      }}
-                    >
-                      {closetAnalysis.summary}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="closet-scan-stats-grid">
-                  <div
-                    style={{
-                      background: "#faf7f2",
-                      borderRadius: 12,
-                      padding: "16px 12px",
-                      textAlign: "center",
-                    }}
-                  >
-                    <p
-                      style={{
-                        fontSize: "1.8rem",
-                        fontWeight: 700,
-                        margin: "0 0 4px",
-                        color: "#1a1208",
-                      }}
-                    >
-                      {closetAnalysis.totalItems}
-                    </p>
-                    <p
-                      style={{
-                        fontSize: "0.75rem",
-                        color: "#888",
-                        margin: 0,
-                      }}
-                    >
-                      Total items
-                    </p>
-                  </div>
-                  <div
-                    style={{
-                      background: "#faf7f2",
-                      borderRadius: 12,
-                      padding: "16px 12px",
-                      textAlign: "center",
-                    }}
-                  >
-                    <p
-                      style={{
-                        fontSize: "1rem",
-                        fontWeight: 600,
-                        margin: "0 0 4px",
-                        color: "#1a1208",
-                      }}
-                    >
-                      {closetAnalysis.dominantColors?.slice(0, 2).join(", ")}
-                    </p>
-                    <p
-                      style={{
-                        fontSize: "0.75rem",
-                        color: "#888",
-                        margin: 0,
-                      }}
-                    >
-                      Main colors
-                    </p>
-                  </div>
-                  <div
-                    style={{
-                      background: "#faf7f2",
-                      borderRadius: 12,
-                      padding: "16px 12px",
-                      textAlign: "center",
-                    }}
-                  >
-                    <p
-                      style={{
-                        fontSize: "1rem",
-                        fontWeight: 600,
-                        margin: "0 0 4px",
-                        color: "#1a1208",
-                        textTransform: "capitalize",
-                      }}
-                    >
-                      {closetAnalysis.colorBalance?.replace("-", " ")}
-                    </p>
-                    <p
-                      style={{
-                        fontSize: "0.75rem",
-                        color: "#888",
-                        margin: 0,
-                      }}
-                    >
-                      Color balance
-                    </p>
-                  </div>
-                </div>
-
-                {closetAnalysis.categories && (
-                  <div style={{ marginBottom: 20 }}>
-                    <p
-                      style={{
-                        fontSize: "0.75rem",
-                        color: "#888",
-                        textTransform: "uppercase",
-                        letterSpacing: "0.06em",
-                        margin: "0 0 10px",
-                      }}
-                    >
-                      Breakdown
-                    </p>
-                    <div
-                      style={{
-                        display: "flex",
-                        flexWrap: "wrap",
-                        gap: 8,
-                      }}
-                    >
-                      {Object.entries(closetAnalysis.categories)
-                        .filter(([, v]) => v > 0)
-                        .map(([cat, count]) => (
-                          <span
-                            key={cat}
-                            style={{
-                              background: "#f0ebe2",
-                              borderRadius: 100,
-                              padding: "4px 12px",
-                              fontSize: "0.8rem",
-                              color: "#7a5c2e",
-                              textTransform: "capitalize",
-                            }}
-                          >
-                            {count} {cat}
-                          </span>
-                        ))}
-                    </div>
-                  </div>
-                )}
-
-                {closetAnalysis.recommendations?.length > 0 && (
-                  <div style={{ marginBottom: 20 }}>
-                    <p
-                      style={{
-                        fontSize: "0.75rem",
-                        color: "#888",
-                        textTransform: "uppercase",
-                        letterSpacing: "0.06em",
-                        margin: "0 0 10px",
-                      }}
-                    >
-                      Recommendations
-                    </p>
-                    <div
-                      style={{
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: 8,
-                      }}
-                    >
-                      {closetAnalysis.recommendations.map((rec, i) => (
-                        <div
-                          key={i}
-                          style={{
-                            display: "flex",
-                            gap: 10,
-                            alignItems: "flex-start",
-                            padding: "10px 12px",
-                            background: "#faf7f2",
-                            borderRadius: 10,
-                            border: "0.5px solid #e8e0d4",
-                          }}
-                        >
-                          <span
-                            style={{
-                              color: "#c4813a",
-                              fontWeight: 700,
-                              flexShrink: 0,
-                            }}
-                          >
-                            {i + 1}
-                          </span>
-                          <p
-                            style={{
-                              margin: 0,
-                              fontSize: "0.88rem",
-                              color: "#3a2e22",
-                              lineHeight: 1.5,
-                            }}
-                          >
-                            {rec}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {closetAnalysis.missingPieces?.length > 0 && (
-                  <div style={{ marginBottom: 24 }}>
-                    <p
-                      style={{
-                        fontSize: "0.75rem",
-                        color: "#888",
-                        textTransform: "uppercase",
-                        letterSpacing: "0.06em",
-                        margin: "0 0 10px",
-                      }}
-                    >
-                      You might be missing
-                    </p>
-                    <div
-                      style={{
-                        display: "flex",
-                        flexWrap: "wrap",
-                        gap: 8,
-                      }}
-                    >
-                      {closetAnalysis.missingPieces.map((item, i) => (
-                        <span
-                          key={i}
-                          style={{
-                            background: "transparent",
-                            border: "1px dashed #c4813a",
-                            borderRadius: 100,
-                            padding: "4px 12px",
-                            fontSize: "0.8rem",
-                            color: "#c4813a",
-                          }}
-                        >
-                          + {item}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                <div className="closet-scan-actions">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (closetScanImage && String(closetScanImage).startsWith("blob:")) {
-                        URL.revokeObjectURL(closetScanImage);
-                      }
-                      setShowClosetScan(false);
-                      setClosetScanPhase("idle");
-                      setClosetAnalysis(null);
-                      setClosetScanImage(null);
-                    }}
-                    style={{
-                      flex: 1,
-                      padding: "12px",
-                      borderRadius: 10,
-                      border: "1px solid #e8e0d4",
-                      background: "transparent",
-                      color: "#888",
-                      cursor: "pointer",
-                      fontSize: "0.9rem",
-                      minHeight: 48,
-                    }}
-                  >
-                    Close
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (closetScanImage && String(closetScanImage).startsWith("blob:")) {
-                        URL.revokeObjectURL(closetScanImage);
-                      }
-                      setShowClosetScan(false);
-                      setClosetScanPhase("idle");
-                      setClosetAnalysis(null);
-                      setClosetScanImage(null);
-                      resetManualForm();
-                      setShowAddModal(true);
-                    }}
-                    style={{
-                      flex: 2,
-                      padding: "12px",
-                      borderRadius: 10,
-                      border: "none",
-                      background: "#c4813a",
-                      color: "white",
-                      cursor: "pointer",
-                      fontWeight: 600,
-                      fontSize: "0.9rem",
-                      minHeight: 48,
-                    }}
-                  >
-                    Start Adding Items →
-                  </button>
-                </div>
-              </div>
-            )}
-
-            <style>{`
-        @keyframes spin {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-      `}</style>
-          </div>
-        </div>
-      )}
+      <ClosetScanner
+        isOpen={showClosetScanner}
+        onClose={() => setShowClosetScanner(false)}
+        onSaveItems={saveClosetScanToWardrobe}
+        isSaving={closetScanSaving}
+      />
     </>
   );
 }

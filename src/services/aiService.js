@@ -1,4 +1,5 @@
-export const ANTHROPIC_URL = "/api/chat";
+export const ANTHROPIC_URL =
+  process.env.NODE_ENV === "development" ? "http://localhost:3002/api/chat" : "/api/chat";
 export const CLAUDE_MODEL = "claude-sonnet-4-20250514";
 export const OPENAI_VISION_URL = "https://api.openai.com/v1/chat/completions";
 export const OPENAI_VISION_MODEL = "gpt-4o";
@@ -61,6 +62,51 @@ export const agentTraceHooks = {
   failAgentRun: () => {},
   getActiveNav: () => "wardrobe",
 };
+
+const CLOSET_SCAN_MAX_TOKENS = 1000;
+
+/**
+ * Vision call via `/api/chat` (Anthropic). Uses JPEG base64 — same transport as `callTextCompletion` anthropic branch.
+ */
+export async function callClosetPhotoVision(base64Jpeg, userPromptText) {
+  const body = {
+    model: CLAUDE_MODEL,
+    max_tokens: CLOSET_SCAN_MAX_TOKENS,
+    messages: [
+      {
+        role: "user",
+        content: [
+          {
+            type: "image",
+            source: {
+              type: "base64",
+              media_type: "image/jpeg",
+              data: base64Jpeg,
+            },
+          },
+          { type: "text", text: userPromptText },
+        ],
+      },
+    ],
+  };
+  const res = await fetch(ANTHROPIC_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "anthropic-version": "2023-06-01",
+    },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new Error(errText || `Anthropic error ${res.status}`);
+  }
+  const data = await res.json();
+  const text = Array.isArray(data?.content)
+    ? data.content.filter((c) => c.type === "text").map((c) => c.text).join("")
+    : data?.content?.[0]?.text;
+  return String(text || "").trim();
+}
 
 export async function callTextCompletion(system, user, explicitTaskLabel) {
   const inferredTaskLabel =
