@@ -961,10 +961,14 @@ export default function LandingPage() {
           }
 
           .fos-lp .phone-frame {
-            width: min(65vw, 280px) !important;
-            max-width: 100% !important;
-            margin: 0 auto;
-            display: block;
+            border: none !important;
+            border-radius: 12px !important;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25) !important;
+            width: min(85vw, 360px) !important;
+          }
+
+          .fos-lp .phone-frame::before {
+            display: none !important;
           }
 
           main .fos-lp-inner {

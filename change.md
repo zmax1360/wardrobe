@@ -949,3 +949,17 @@ Phones (~320–430px wide) needed consistent relative units, stacked HIW/feature
 **`:has()`** is unsupported in very old browsers; waitlist **`120px`** vertical padding bypassed on narrow screens via higher-specificity overrides only inside the media query.
 
 ---
+
+### [Date: 2026-05-29] - Landing HIW: flat screenshot on mobile (no phone chrome)
+
+**Background:**
+On small screens the decorative phone bezel competes with content; screenshots read better as simple cards.
+
+**Changed:**
+
+- `src/components/LandingPage.js` (≤768px **`.phone-frame`**: no border, **`::before`** notch hidden, shadow + width; **`::before`** **`display: none`**)
+
+**Impact:**
+Desktop phone mockup unchanged; How-it-works images appear as flat rounded rectangles on mobile.
+
+---
