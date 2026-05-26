@@ -170,8 +170,8 @@ function HiWPhoneScreenshot({ src, alt, width, height }) {
 function WaitlistFlow() {
   const [step, setStep] = useState(1);
   const [email, setEmail] = useState("");
-  const [frustration, setFrustration] = useState("");
-  const [currentSystem, setCurrentSystem] = useState("");
+  const [frustration, setFrustration] = useState([]);
+  const [currentSystem, setCurrentSystem] = useState([]);
   const [willingToPay, setWillingToPay] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
@@ -185,7 +185,7 @@ function WaitlistFlow() {
   };
 
   const handleSubmit = useCallback(async () => {
-    if (!emailOk || !frustration || !currentSystem || !willingToPay) return;
+    if (!emailOk || !frustration.length || !currentSystem.length || !willingToPay) return;
     setSubmitting(true);
     setSubmitError("");
     try {
@@ -318,13 +318,25 @@ function WaitlistFlow() {
           <p style={{ color: BRAND_WARM, fontSize: "1.1rem", margin: "0 0 18px", lineHeight: 1.45, fontFamily: "Georgia, serif" }}>
             What&apos;s your biggest wardrobe frustration?
           </p>
+          <p
+            style={{
+              fontSize: "0.8rem",
+              color: "rgba(250,247,242,0.5)",
+              margin: "-8px 0 12px",
+              fontStyle: "italic",
+            }}
+          >
+            Select all that apply
+          </p>
           <div className="fos-lp-cards">
             {FRUSTRATION_OPTIONS.map((label) => (
               <button
                 key={label}
                 type="button"
-                className={`fos-lp-choice${frustration === label ? " fos-lp-choice--on" : ""}`}
-                onClick={() => setFrustration(label)}
+                className={`fos-lp-choice${frustration.includes(label) ? " fos-lp-choice--on" : ""}`}
+                onClick={() =>
+                  setFrustration((prev) => (prev.includes(label) ? prev.filter((x) => x !== label) : [...prev, label]))
+                }
               >
                 {label}
               </button>
@@ -337,8 +349,8 @@ function WaitlistFlow() {
             <button
               type="button"
               className="fos-lp-btn-primary fos-lp-waitlist-cta"
-              disabled={!frustration}
-              onClick={() => frustration && setStep(3)}
+              disabled={!frustration.length}
+              onClick={() => frustration.length && setStep(3)}
             >
               Next
             </button>
@@ -351,13 +363,25 @@ function WaitlistFlow() {
           <p style={{ color: BRAND_WARM, fontSize: "1.1rem", margin: "0 0 18px", lineHeight: 1.45, fontFamily: "Georgia, serif" }}>
             How do you currently keep track of your clothes?
           </p>
+          <p
+            style={{
+              fontSize: "0.8rem",
+              color: "rgba(250,247,242,0.5)",
+              margin: "-8px 0 12px",
+              fontStyle: "italic",
+            }}
+          >
+            Select all that apply
+          </p>
           <div className="fos-lp-cards">
             {CURRENT_SYSTEM_OPTIONS.map((label) => (
               <button
                 key={label}
                 type="button"
-                className={`fos-lp-choice${currentSystem === label ? " fos-lp-choice--on" : ""}`}
-                onClick={() => setCurrentSystem(label)}
+                className={`fos-lp-choice${currentSystem.includes(label) ? " fos-lp-choice--on" : ""}`}
+                onClick={() =>
+                  setCurrentSystem((prev) => (prev.includes(label) ? prev.filter((x) => x !== label) : [...prev, label]))
+                }
               >
                 {label}
               </button>
@@ -370,8 +394,8 @@ function WaitlistFlow() {
             <button
               type="button"
               className="fos-lp-btn-primary fos-lp-waitlist-cta"
-              disabled={!currentSystem}
-              onClick={() => currentSystem && setStep(4)}
+              disabled={!currentSystem.length}
+              onClick={() => currentSystem.length && setStep(4)}
             >
               Next
             </button>
