@@ -1,47 +1,12 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
-
-import { calculateCPW, getPurchasePriceNum, getTimesWorn } from "../utils/wardrobeFinance";
-
-/** Alive copy; when an agent run is active, surface it. */
-function agentCrewStatusLine(agentActivity) {
-  if (agentActivity?.status === "running") {
-    return "Agent Crew: Active — orchestrating your request";
-  }
-  return "Agent Crew: Monitoring Gaps";
-}
-
-function useDashboardKpis(wardrobe) {
-  return useMemo(() => {
-    const totalValue = wardrobe.reduce((sum, it) => sum + getPurchasePriceNum(it), 0);
-    const priced = wardrobe.filter((it) => getPurchasePriceNum(it) > 0);
-    const avgCPW =
-      priced.length > 0
-        ? priced.reduce((sum, it) => sum + calculateCPW(getPurchasePriceNum(it), getTimesWorn(it)), 0) /
-          priced.length
-        : 0;
-
-    const wornCount = wardrobe.filter((it) => getTimesWorn(it) > 0).length;
-    const utilityPct =
-      wardrobe.length > 0 ? Math.round((wornCount / wardrobe.length) * 100) : null;
-
-    return { totalValue, avgCPW, utilityPct, pricedCount: priced.length, wornCount, totalCount: wardrobe.length };
-  }, [wardrobe]);
-}
+import React, { useCallback, useEffect, useState } from "react";
 
 function useLocalWeather() {
   const [weather, setWeather] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
 
   const refresh = useCallback(async () => {
     setLoading(true);
-    setError("");
     try {
-      if (!navigator.geolocation) {
-        setError("Geolocation is not supported.");
-        setLoading(false);
-        return;
-      }
       const pos = await new Promise((res, rej) =>
         navigator.geolocation.getCurrentPosition(res, rej, {
           timeout: 15000,
@@ -51,181 +16,378 @@ function useLocalWeather() {
       );
       const { latitude, longitude } = pos.coords;
 
-      let city = "Toronto";
+      let city = "your city";
       try {
         const geoRes = await fetch(
           `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`,
-          {
-            headers: {
-              Accept: "application/json",
-              "User-Agent": "FashionOS/1.0 (local wardrobe app)",
-            },
-          }
+          { headers: { "User-Agent": "FashionOS/1.0" } }
         );
         if (geoRes.ok) {
-          const geoData = await geoRes.json();
-          city =
-            geoData.address?.city ||
-            geoData.address?.town ||
-            geoData.address?.village ||
-            geoData.address?.suburb ||
-            geoData.address?.municipality ||
-            city;
+          const d = await geoRes.json();
+          city = d.address?.city || d.address?.town || d.address?.suburb || city;
         }
-      } catch {
-        /* CORS / rate limits — keep default Toronto */
-      }
+      } catch {}
 
-      const weatherRes = await fetch(
+      const wRes = await fetch(
         `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,weathercode&temperature_unit=celsius`
       );
-      if (!weatherRes.ok) throw new Error("weather");
-      const weatherData = await weatherRes.json();
-      const current = weatherData.current;
-      if (!current || current.temperature_2m == null) throw new Error("no data");
-
-      const weatherCodes = {
-        0: "clear",
-        1: "mainly clear",
-        2: "partly cloudy",
-        3: "overcast",
-        45: "foggy",
-        51: "light drizzle",
-        61: "light rain",
-        63: "rain",
-        71: "snow",
-        80: "showers",
-        95: "thunderstorm",
+      const wData = await wRes.json();
+      const temp = Math.round(wData.current.temperature_2m);
+      const codes = {
+        0: "☀️",
+        1: "🌤",
+        2: "⛅️",
+        3: "☁️",
+        45: "🌫",
+        51: "🌦",
+        61: "🌧",
+        63: "🌧",
+        71: "🌨",
+        80: "🌦",
+        95: "⛈",
       };
-      const condition = weatherCodes[current.weathercode] || "mixed conditions";
-      const temp = Math.round(current.temperature_2m);
-      setWeather({ temp, condition, city });
-    } catch (e) {
-      const code = e && typeof e.code === "number" ? e.code : null;
-      if (code === 1) setError("Allow location for weather-aware briefings.");
-      else setError("Could not load weather.");
-      setWeather(null);
-    }
+      const icon = codes[wData.current.weathercode] || "🌡";
+      setWeather({ temp, city, icon });
+    } catch {}
     setLoading(false);
   }, []);
 
   useEffect(() => {
     void refresh();
   }, [refresh]);
-
-  return { weather, loading, error, refresh };
+  return { weather, loading };
 }
 
-function pickSpotlightItem(wardrobe, weather) {
-  if (!wardrobe.length) return null;
-  const clean = wardrobe.filter((it) => it.laundryStatus === "clean");
-  const pool = clean.length ? clean : wardrobe;
-  let list = [...pool].sort((a, b) => getTimesWorn(a) - getTimesWorn(b));
-
-  if (weather && typeof weather.temp === "number") {
-    const cat = (it) => String(it.category || "").toLowerCase();
-    if (weather.temp < 11) {
-      const outer = list.filter((it) => cat(it).includes("outer"));
-      if (outer.length) list = outer.sort((a, b) => getTimesWorn(a) - getTimesWorn(b));
-    } else if (weather.temp > 24) {
-      const light = list.filter((it) => /top|dress|shirt|tee|tank|skirt|short/i.test(cat(it) + (it.name || "")));
-      if (light.length) list = light.sort((a, b) => getTimesWorn(a) - getTimesWorn(b));
-    }
-  }
-
-  return list[0] || null;
+function getGreeting() {
+  const h = new Date().getHours();
+  if (h < 12) return "Good morning";
+  if (h < 17) return "Good afternoon";
+  return "Good evening";
 }
 
-export function DashboardScreen({ wardrobe, setActiveNav, agentActivity }) {
-  const kpis = useDashboardKpis(wardrobe);
-  const { weather, loading: weatherLoading, error: weatherError, refresh } = useLocalWeather();
-  const spotlight = useMemo(() => pickSpotlightItem(wardrobe, weather), [wardrobe, weather]);
+function wardrobeSummary(wardrobe) {
+  const total = wardrobe.length;
+  const clean = wardrobe.filter((it) => it.laundryStatus === "clean").length;
+  const categories = [...new Set(wardrobe.map((it) => it.category).filter(Boolean))];
+  return { total, clean, categories };
+}
+
+function getUpcomingEvents(events) {
+  const today = new Date().toISOString().slice(0, 10);
+  return events
+    .filter((e) => e?.date >= today)
+    .sort((a, b) => (a.date < b.date ? -1 : 1))
+    .slice(0, 2);
+}
+
+function formatEventDate(dateStr) {
+  const date = new Date(dateStr + "T00:00:00");
+  const today = new Date();
+  const tomorrow = new Date(today);
+  tomorrow.setDate(today.getDate() + 1);
+  const diffDays = Math.round((date - today) / (1000 * 60 * 60 * 24));
+  if (diffDays === 0) return "Today";
+  if (diffDays === 1) return "Tomorrow";
+  if (diffDays < 7) return date.toLocaleDateString("en-CA", { weekday: "long" });
+  return date.toLocaleDateString("en-CA", { month: "short", day: "numeric" });
+}
+
+export function DashboardScreen({ wardrobe, setActiveNav, profile, events = [] }) {
+  const { weather, loading: weatherLoading } = useLocalWeather();
+  const summary = wardrobeSummary(wardrobe);
+  const upcomingEvents = getUpcomingEvents(events);
+  const greeting = getGreeting();
+  const rawName = profile?.name?.split(" ")[0] || profile?.displayName?.split(" ")[0] || "";
+  const firstName = rawName ? rawName.charAt(0).toUpperCase() + rawName.slice(1) : "";
+
+  const hasWardrobe = wardrobe.length > 0;
 
   return (
-    <div className="dashboard-page">
-      <h1 className="dashboard-page-title">The Daily Briefing</h1>
-      <p className="dashboard-page-lede">
-        Value, cost-per-wear, and utility — one calm view of your collection.
-      </p>
-      <p className="dashboard-agent-status" role="status">
-        {agentCrewStatusLine(agentActivity)}
-      </p>
+    <div style={{ maxWidth: 640, margin: "0 auto", padding: "0 0 48px" }}>
+      <div style={{ marginBottom: 32 }}>
+        <h1
+          style={{
+            fontFamily: "var(--font-serif)",
+            fontSize: "2rem",
+            fontWeight: 700,
+            color: "var(--color-text-primary)",
+            margin: "0 0 6px",
+            lineHeight: 1.2,
+          }}
+        >
+          {greeting}
+          {firstName ? `, ${firstName}` : ""}
+        </h1>
 
-      <div className="dashboard-kpi-row">
-        <div className="dashboard-kpi">
-          <div className="dashboard-kpi-label">Total value</div>
-          <div className="dashboard-kpi-value">${kpis.totalValue.toFixed(0)}</div>
-          <div className="dashboard-kpi-hint">Sum of purchase prices (incl. catalog value)</div>
-        </div>
-        <div className="dashboard-kpi">
-          <div className="dashboard-kpi-label">Average CPW</div>
-          <div className="dashboard-kpi-value">{kpis.pricedCount ? `$${kpis.avgCPW.toFixed(2)}` : "—"}</div>
-          <div className="dashboard-kpi-hint">Priced items only</div>
-        </div>
-        <div className="dashboard-kpi">
-          <div className="dashboard-kpi-label">Utility</div>
-          <div className="dashboard-kpi-value">{kpis.utilityPct != null ? `${kpis.utilityPct}%` : "—"}</div>
-          <div className="dashboard-kpi-hint">
-            {kpis.totalCount ? `${kpis.wornCount} / ${kpis.totalCount} pieces worn ≥1×` : "—"}
-          </div>
+        <div
+          style={{
+            fontSize: "var(--text-sm)",
+            color: "var(--color-text-secondary)",
+            minHeight: 22,
+          }}
+        >
+          {weatherLoading ? "Checking weather…" : weather ? `${weather.icon} ${weather.temp}°C in ${weather.city}` : null}
         </div>
       </div>
 
-      {wardrobe.length === 0 ? (
-        <section className="dashboard-empty-cta" aria-labelledby="dashboard-empty-heading">
-          <h2 id="dashboard-empty-heading" className="dashboard-empty-cta-title">
-            Your Collection Begins Here
-          </h2>
-          <p className="dashboard-empty-cta-copy">
-            Catalog one piece to unlock CPW, equity, and planner intelligence — your closet as a balance sheet.
-          </p>
-          <button type="button" className="dashboard-empty-cta-button" onClick={() => setActiveNav("wardrobe")}>
-            Import your first piece
+      <button
+        type="button"
+        onClick={() => setActiveNav("planner")}
+        style={{
+          width: "100%",
+          padding: "18px 24px",
+          background: "var(--color-text-primary)",
+          color: "var(--color-bg)",
+          border: "none",
+          borderRadius: "var(--radius-lg)",
+          fontFamily: "var(--font-serif)",
+          fontSize: "1.15rem",
+          fontWeight: 600,
+          cursor: "pointer",
+          marginBottom: 12,
+          textAlign: "left",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          transition: "opacity var(--transition)",
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.opacity = "0.88";
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.opacity = "1";
+        }}
+      >
+        <span>What should I wear today?</span>
+        <span style={{ fontSize: "1.3rem" }}>→</span>
+      </button>
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 32 }}>
+        {[
+          { label: "My Wardrobe", icon: "👗", nav: "wardrobe" },
+          { label: "Gap Analysis", icon: "🔍", nav: "gaps" },
+        ].map(({ label, icon, nav }) => (
+          <button
+            key={nav}
+            type="button"
+            onClick={() => setActiveNav(nav)}
+            style={{
+              padding: "14px 16px",
+              background: "var(--color-bg-secondary)",
+              border: "1px solid var(--color-border)",
+              borderRadius: "var(--radius-md)",
+              fontSize: "var(--text-sm)",
+              fontWeight: 500,
+              color: "var(--color-text-primary)",
+              cursor: "pointer",
+              textAlign: "left",
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              transition: "background var(--transition)",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = "#e8e1d6";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "var(--color-bg-secondary)";
+            }}
+          >
+            <span>{icon}</span>
+            <span>{label}</span>
           </button>
-        </section>
-      ) : (
-        <section className="dashboard-spotlight">
-          <div className="dashboard-spotlight-eyebrow">Asset spotlight</div>
-          {weatherLoading ? (
-            <p className="dashboard-spotlight-copy">Fetching weather…</p>
-          ) : (
-            <p className="dashboard-spotlight-copy">
-              {weather ? (
-                <>
-                  It&apos;s <strong>{weather.temp}°</strong> in <strong>{weather.city || "Toronto"}</strong>.
-                </>
-              ) : (
-                <span className="dashboard-spotlight-muted">Local weather unavailable — </span>
-              )}
-              {spotlight ? (
-                <>
-                  {" "}
-                  Your <strong>{spotlight.name || "piece"}</strong>
-                  {spotlight.category ? ` (${spotlight.category})` : ""} is due for a wear to lower its CPW.
-                </>
-              ) : (
-                <> Add a clean item or log wears to personalize this line.</>
-              )}
-              {weatherError ? <span className="dashboard-spotlight-muted"> {weatherError}</span> : null}
-            </p>
-          )}
-          {weatherError ? (
-            <button type="button" className="dashboard-text-link dashboard-spotlight-retry" onClick={() => void refresh()}>
-              Retry location
-            </button>
-          ) : null}
-          <div className="dashboard-spotlight-links">
-            <button type="button" className="dashboard-text-link" onClick={() => setActiveNav("wardrobe")}>
-              Asset Gallery
-            </button>
-            <span className="dashboard-action-sep" aria-hidden>
-              ·
-            </span>
-            <button type="button" className="dashboard-text-link" onClick={() => setActiveNav("planner")}>
-              Planner
+        ))}
+      </div>
+
+      {/* Upcoming events */}
+      {upcomingEvents.length > 0 && (
+        <div style={{
+          marginBottom: 32,
+          padding: "20px 22px",
+          background: "var(--color-bg-secondary)",
+          borderRadius: "var(--radius-lg)",
+          border: "1px solid var(--color-border)",
+        }}>
+          <div style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            marginBottom: 14,
+          }}>
+            <div style={{
+              fontSize: "var(--text-xs)",
+              fontWeight: 600,
+              letterSpacing: "0.08em",
+              textTransform: "uppercase",
+              color: "var(--color-text-muted)",
+            }}>
+              Upcoming
+            </div>
+            <button
+              type="button"
+              onClick={() => setActiveNav("calendar")}
+              style={{
+                fontSize: "var(--text-xs)",
+                color: "var(--color-amber)",
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                padding: 0,
+                fontWeight: 500,
+              }}
+            >
+              View all
             </button>
           </div>
-        </section>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {upcomingEvents.map((ev) => (
+              <div
+                key={ev.id || ev.date}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 12,
+                }}
+              >
+                <div>
+                  <div style={{
+                    fontSize: "var(--text-sm)",
+                    fontWeight: 600,
+                    color: "var(--color-text-primary)",
+                    marginBottom: 2,
+                  }}>
+                    {ev.title}
+                  </div>
+                  <div style={{
+                    fontSize: "var(--text-xs)",
+                    color: "var(--color-text-muted)",
+                  }}>
+                    {ev.dressCode && `${ev.dressCode} · `}{ev.occasionType}
+                  </div>
+                </div>
+                <div style={{
+                  fontSize: "var(--text-xs)",
+                  fontWeight: 600,
+                  color: "var(--color-amber)",
+                  whiteSpace: "nowrap",
+                  background: "rgba(196, 129, 58, 0.1)",
+                  padding: "4px 10px",
+                  borderRadius: "var(--radius-full)",
+                }}>
+                  {formatEventDate(ev.date)}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Wardrobe status */}
+      {hasWardrobe ? (
+        <div
+          style={{
+            padding: "20px 22px",
+            background: "var(--color-bg-secondary)",
+            borderRadius: "var(--radius-lg)",
+            border: "1px solid var(--color-border)",
+          }}
+        >
+          <div
+            style={{
+              fontSize: "var(--text-xs)",
+              fontWeight: 600,
+              letterSpacing: "0.08em",
+              textTransform: "uppercase",
+              color: "var(--color-text-muted)",
+              marginBottom: 14,
+            }}
+          >
+            Your Wardrobe
+          </div>
+          <div style={{ display: "flex", gap: 24 }}>
+            <div>
+              <div style={{ fontSize: "1.6rem", fontWeight: 700, color: "var(--color-text-primary)", lineHeight: 1 }}>
+                {summary.total}
+              </div>
+              <div style={{ fontSize: "var(--text-xs)", color: "var(--color-text-muted)", marginTop: 4 }}>pieces</div>
+            </div>
+            <div>
+              <div style={{ fontSize: "1.6rem", fontWeight: 700, color: "var(--color-text-primary)", lineHeight: 1 }}>
+                {summary.clean}
+              </div>
+              <div style={{ fontSize: "var(--text-xs)", color: "var(--color-text-muted)", marginTop: 4 }}>clean & ready</div>
+            </div>
+            <div>
+              <div style={{ fontSize: "1.6rem", fontWeight: 700, color: "var(--color-text-primary)", lineHeight: 1 }}>
+                {summary.categories.length}
+              </div>
+              <div style={{ fontSize: "var(--text-xs)", color: "var(--color-text-muted)", marginTop: 4 }}>categories</div>
+            </div>
+          </div>
+          {summary.clean === 0 && summary.total > 0 && (
+            <div
+              style={{
+                marginTop: 14,
+                paddingTop: 14,
+                borderTop: "1px solid var(--color-border)",
+                fontSize: "var(--text-sm)",
+                color: "var(--color-text-secondary)",
+              }}
+            >
+              🧺 All items marked dirty — update laundry status in your wardrobe.
+            </div>
+          )}
+        </div>
+      ) : (
+        <div
+          style={{
+            padding: "28px 24px",
+            background: "var(--color-bg-secondary)",
+            borderRadius: "var(--radius-lg)",
+            border: "1px solid var(--color-border)",
+            textAlign: "center",
+          }}
+        >
+          <div style={{ fontSize: "2rem", marginBottom: 12 }}>👗</div>
+          <div
+            style={{
+              fontFamily: "var(--font-serif)",
+              fontSize: "1.1rem",
+              fontWeight: 600,
+              color: "var(--color-text-primary)",
+              marginBottom: 8,
+            }}
+          >
+            Start with your wardrobe
+          </div>
+          <div
+            style={{
+              fontSize: "var(--text-sm)",
+              color: "var(--color-text-secondary)",
+              marginBottom: 20,
+              lineHeight: 1.5,
+            }}
+          >
+            Scan your closet or add pieces manually to get outfit suggestions.
+          </div>
+          <button
+            type="button"
+            onClick={() => setActiveNav("wardrobe")}
+            style={{
+              padding: "10px 24px",
+              background: "var(--color-amber)",
+              color: "#fff",
+              border: "none",
+              borderRadius: "var(--radius-full)",
+              fontSize: "var(--text-sm)",
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
+            Scan my closet
+          </button>
+        </div>
       )}
     </div>
   );

@@ -5,8 +5,6 @@ import { FINANCE } from "../styles/financeTheme";
 import { COLORS, baseTransition } from "../styles/theme";
 import { calculateCPW, getPurchasePriceNum, getTimesWorn, WARDROBE_OCCASION_VALUES } from "../utils/wardrobeFinance";
 import { CHIC_WARDROBE_MOODS } from "../constants/chicMoods";
-import { useWardrobeAgent } from "../hooks/useWardrobeAgent";
-
 const GALLERY_BG = "#FFFFFF";
 const CARD_BG = "#FFFFFF";
 
@@ -21,6 +19,15 @@ const MANUAL_CATEGORIES = [
   "Formal",
 ];
 const SEASON_OPTIONS = ["Spring", "Summer", "Fall", "Winter", "All"];
+
+const COVERAGE_CATEGORIES = [
+  { id: "Tops", label: "Tops", emoji: "👕" },
+  { id: "Bottoms", label: "Bottoms", emoji: "👖" },
+  { id: "Outerwear", label: "Outerwear", emoji: "🧥" },
+  { id: "Dresses", label: "Dresses", emoji: "👗" },
+  { id: "Shoes", label: "Shoes", emoji: "👟" },
+  { id: "Accessories", label: "Accessories", emoji: "👜" },
+];
 
 /** Hide noisy raw URLs and long uncleaned blobs on cards. */
 const DESCRIPTION_MAX_CHARS = 200;
@@ -112,19 +119,25 @@ function closetScanStyleLabel(style) {
   return s && s !== "—" ? s : "";
 }
 
+function truncateStyle(style) {
+  if (!style) return "";
+  const words = style.trim().split(/\s+/);
+  if (words.length <= 3) return style;
+  return words.slice(0, 3).join(" ");
+}
+
 export function WardrobeScreen({
   profile: _profile,
-  wardrobe: _wardrobe,
+  wardrobe,
   agentActivity: _agentActivity,
   agentInsights: _agentInsights,
   handlers,
+  onNavigate,
 }) {
   const [showAddModal, setShowAddModal] = useState(false);
   const [addTab, setAddTab] = useState("photo");
   const [removeBgNext, setRemoveBgNext] = useState(false);
   const [pulseWearId, setPulseWearId] = useState(null);
-  const [agentQuery, setAgentQuery] = useState("");
-
   const [manualName, setManualName] = useState("");
   const [manualCategory, setManualCategory] = useState("");
   const [manualPurchasePrice, setManualPurchasePrice] = useState("");
@@ -142,13 +155,11 @@ export function WardrobeScreen({
   const [manualSaving, setManualSaving] = useState(false);
 
   const [showClosetScanner, setShowClosetScanner] = useState(false);
+  const [scannerCategory, setScannerCategory] = useState(null);
   const [expandedScanId, setExpandedScanId] = useState(null);
 
   const modalFileRef = useRef(null);
   const manualImageInputRef = useRef(null);
-
-  const { ask: askWardrobeAgent, response: agentResponse, loading: agentLoading, error: agentError } =
-    useWardrobeAgent();
 
   const {
     fileRef,
@@ -190,6 +201,12 @@ export function WardrobeScreen({
 
   const scanItems = filteredWardrobe.filter(isClosetScanWardrobeItem);
   const regularItems = filteredWardrobe.filter((item) => !isClosetScanWardrobeItem(item));
+
+  const coveredCategories = new Set(wardrobe.map((item) => item.category));
+  const coverageScore = Math.round(
+    (COVERAGE_CATEGORIES.filter((cat) => coveredCategories.has(cat.id)).length / COVERAGE_CATEGORIES.length) *
+      100
+  );
 
   const onFileChangeWithUpload = (e, opts) => {
     onFileChange(e, opts);
@@ -279,11 +296,6 @@ export function WardrobeScreen({
     }
     setShowAddModal(false);
     setRemoveBgNext(false);
-  };
-
-  const onWardrobeAgentSubmit = (e) => {
-    e.preventDefault();
-    askWardrobeAgent(agentQuery);
   };
 
   return (
@@ -446,6 +458,190 @@ export function WardrobeScreen({
           })}
         </div>
 
+        {wardrobe.length > 0 && (
+          <div
+            style={{
+              margin: "0 0 var(--space-6)",
+              padding: "var(--space-4)",
+              background: "var(--color-bg-secondary)",
+              borderRadius: "var(--radius-lg)",
+              border: "0.5px solid var(--color-border)",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: "var(--space-3)",
+              }}
+            >
+              <span
+                style={{
+                  fontSize: "var(--text-sm)",
+                  fontWeight: 600,
+                  color: "var(--color-text-primary)",
+                }}
+              >
+                Wardrobe coverage
+              </span>
+              <span
+                style={{
+                  fontSize: "var(--text-sm)",
+                  fontWeight: 700,
+                  color: coverageScore === 100 ? "var(--color-success)" : "var(--color-amber)",
+                }}
+              >
+                {coverageScore}%
+              </span>
+            </div>
+
+            <div
+              style={{
+                height: 4,
+                borderRadius: "var(--radius-full)",
+                background: "var(--color-border)",
+                marginBottom: "var(--space-4)",
+                overflow: "hidden",
+              }}
+            >
+              <div
+                style={{
+                  height: "100%",
+                  width: `${coverageScore}%`,
+                  borderRadius: "var(--radius-full)",
+                  background: coverageScore === 100 ? "var(--color-success)" : "var(--color-amber)",
+                  transition: "width 0.6s ease",
+                }}
+              />
+            </div>
+
+            <div
+              style={{
+                display: "flex",
+                flexWrap: "wrap",
+                gap: "var(--space-2)",
+              }}
+            >
+              {COVERAGE_CATEGORIES.map((cat) => {
+                const covered = coveredCategories.has(cat.id);
+                return (
+                  <div
+                    key={cat.id}
+                    role={covered ? undefined : "button"}
+                    tabIndex={covered ? undefined : 0}
+                    onClick={() => {
+                      if (!covered) {
+                        setScannerCategory(cat.id.toLowerCase());
+                        setShowClosetScanner(true);
+                      }
+                    }}
+                    onKeyDown={(e) => {
+                      if (!covered && (e.key === "Enter" || e.key === " ")) {
+                        e.preventDefault();
+                        setScannerCategory(cat.id.toLowerCase());
+                        setShowClosetScanner(true);
+                      }
+                    }}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "var(--space-1)",
+                      padding: "var(--space-1) var(--space-3)",
+                      borderRadius: "var(--radius-full)",
+                      fontSize: "var(--text-xs)",
+                      fontWeight: 500,
+                      cursor: covered ? "default" : "pointer",
+                      background: covered ? "rgba(46,125,50,0.1)" : "var(--color-bg)",
+                      color: covered ? "var(--color-success)" : "var(--color-text-muted)",
+                      border: covered ? "0.5px solid rgba(46,125,50,0.2)" : "0.5px solid var(--color-border)",
+                      transition: "var(--transition)",
+                    }}
+                  >
+                    <span>{cat.emoji}</span>
+                    <span>{cat.label}</span>
+                    <span>{covered ? "✓" : "+"}</span>
+                  </div>
+                );
+              })}
+            </div>
+
+            {coverageScore < 100 && (
+              <p
+                style={{
+                  margin: "var(--space-3) 0 0",
+                  fontSize: "var(--text-xs)",
+                  color: "var(--color-text-muted)",
+                }}
+              >
+                Tap a missing category to scan it now
+              </p>
+            )}
+          </div>
+        )}
+
+        {wardrobe.length > 0 && coverageScore >= 33 && (
+          <div
+            onClick={() => onNavigate("planner", { autoplan: true })}
+            style={{
+              margin: "0 0 var(--space-6)",
+              padding: "var(--space-5)",
+              background: "linear-gradient(135deg, #1a1208, #2a1f0e)",
+              borderRadius: "var(--radius-lg)",
+              border: "0.5px solid var(--color-amber-border)",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: "var(--space-4)",
+              transition: "var(--transition)",
+            }}
+          >
+            <div>
+              <p
+                style={{
+                  margin: "0 0 var(--space-1)",
+                  fontSize: "var(--text-xs)",
+                  color: "var(--color-amber)",
+                  fontWeight: 600,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.05em",
+                }}
+              >
+                Ready to get dressed?
+              </p>
+              <p
+                style={{
+                  margin: 0,
+                  fontSize: "var(--text-lg)",
+                  fontWeight: 700,
+                  color: "#faf7f2",
+                  fontFamily: "var(--font-serif)",
+                }}
+              >
+                What should I wear today?
+              </p>
+              <p
+                style={{
+                  margin: "var(--space-1) 0 0",
+                  fontSize: "var(--text-xs)",
+                  color: "rgba(250,247,242,0.5)",
+                }}
+              >
+                AI picks an outfit from your wardrobe based on today&apos;s weather
+              </p>
+            </div>
+            <div
+              style={{
+                fontSize: "2rem",
+                flexShrink: 0,
+              }}
+            >
+              🌤
+            </div>
+          </div>
+        )}
+
         {uploadError && (
           <div style={{ color: "#c45c5c", fontSize: "0.88rem", marginBottom: 16 }}>{uploadError}</div>
         )}
@@ -469,7 +665,7 @@ export function WardrobeScreen({
               const rowColors = closetScanUiColors(item);
               const displayColors =
                 Array.isArray(item.colors) && item.colors.length ? item.colors.map(String) : rowColors;
-              const styleLabel = closetScanStyleLabel(item.style);
+              const styleLabel = truncateStyle(closetScanStyleLabel(item.style));
               const scanCount = closetScanUiCount(item);
               return (
                 <div
@@ -1265,41 +1461,13 @@ export function WardrobeScreen({
         </div>
       )}
 
-      <div className="wardrobe-agent-wrap">
-        <form className="wardrobe-agent-form" onSubmit={onWardrobeAgentSubmit}>
-          <div className="wardrobe-agent-bar">
-            <input
-              className="wardrobe-agent-input"
-              type="search"
-              enterKeyHint="send"
-              placeholder="Ask your wardrobe agent..."
-              value={agentQuery}
-              onChange={(e) => setAgentQuery(e.target.value)}
-              disabled={agentLoading}
-              aria-label="Ask your wardrobe agent"
-            />
-            <button
-              type="submit"
-              className="wardrobe-agent-send"
-              disabled={agentLoading}
-              aria-label="Send question"
-            >
-              →
-            </button>
-          </div>
-        </form>
-        {agentLoading ? (
-          <p className="wardrobe-agent-reply wardrobe-agent-reply--loading">Thinking...</p>
-        ) : agentError ? (
-          <p className="wardrobe-agent-reply wardrobe-agent-reply--error">{agentError}</p>
-        ) : agentResponse ? (
-          <p className="wardrobe-agent-reply">{agentResponse}</p>
-        ) : null}
-      </div>
-
       <ClosetScanner
         isOpen={showClosetScanner}
-        onClose={() => setShowClosetScanner(false)}
+        initialCategory={scannerCategory}
+        onClose={() => {
+          setShowClosetScanner(false);
+          setScannerCategory(null);
+        }}
         onSaveItems={saveClosetScanToWardrobe}
         isSaving={closetScanSaving}
       />

@@ -1,0 +1,60 @@
+:root {
+  /* Colors */
+  --color-bg: #faf7f2;
+  --color-bg-secondary: #f0ece4;
+  --color-bg-dark: #1a1208;
+  --color-amber: #c4813a;
+  --color-amber-light: rgba(196, 129, 58, 0.1);
+  --color-amber-border: rgba(196, 129, 58, 0.3);
+  --color-text-primary: #1a1208;
+  --color-text-secondary: #6b5c4a;
+  --color-text-muted: rgba(26, 18, 8, 0.45);
+  --color-white: #ffffff;
+  --color-border: rgba(26, 18, 8, 0.1);
+  --color-border-strong: rgba(26, 18, 8, 0.2);
+  --color-error: #c62828;
+  --color-error-bg: rgba(198, 40, 40, 0.08);
+  --color-success: #2e7d32;
+
+  /* Typography */
+  --font-sans: "Inter", "DM Sans", system-ui, sans-serif;
+  --font-serif: "Georgia", serif;
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.25rem;
+  --text-2xl: 1.5rem;
+  --text-3xl: 2rem;
+  --text-4xl: 2.5rem;
+
+  /* Spacing */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* Border radius */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-full: 999px;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.12);
+
+  /* Touch targets */
+  --touch-target: 44px;
+
+  /* Transitions */
+  --transition: 0.2s ease;
+}

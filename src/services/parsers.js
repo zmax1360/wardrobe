@@ -35,7 +35,15 @@ export function buildCleanWardrobeList(items) {
       const wc = getTimesWorn(it);
       const cpw = calculateCPW(pp, wc);
       const cpwHint = pp > 0 ? ` · CPW $${cpw.toFixed(2)} (priority ${i + 1})` : "";
-      return `- ${it.name} (${it.category}): ${it.color}, style: ${it.style || "—"}, season: ${it.season || "—"}${cpwHint}`;
+      const colorDesc = [
+        ...(Array.isArray(it.colors) && it.colors.length ? it.colors : []),
+        it.color,
+      ]
+        .filter(Boolean)
+        .filter((v, i, a) => a.indexOf(v) === i)
+        .join(", ");
+      const nameWithColor = colorDesc ? `${colorDesc} ${it.name}` : it.name;
+      return `- ${nameWithColor} (${it.category}): style: ${it.style || "—"}, season: ${it.season || "—"}${cpwHint}`;
     })
     .join("\n");
 }

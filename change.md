@@ -1024,3 +1024,268 @@ Deploy **`serviceAccountKey.json`** locally only; set **Vercel** **`FIREBASE_PRO
 No impact.
 
 ---
+
+### [Date: 2026-05-29] - Design system foundation (tokens + UI primitives)
+
+**Background:**
+Establish shared CSS variables and reusable UI building blocks before migrating existing screens.
+
+**Changed:**
+
+- `src/styles/tokens.css` (new)
+- `src/components/ui/Button.js`, `Card.js`, `Badge.js`, `index.js` (new)
+- `src/index.css` (`@import "./styles/tokens.css"` at top)
+
+**Impact:**
+Tokens are global once `index.css` loads; existing components unchanged until adopted. Import via `import { Button, Card, Badge } from "../components/ui"`.
+
+---
+
+### [Date: 2026-05-24] - ClosetScanner category selection first step
+
+**Background:**
+Users need to pick a wardrobe category before uploading a closet photo so scans can be scoped one category at a time for better accuracy.
+
+**Changed:**
+
+- `src/components/ClosetScanner.js`
+
+**Impact:**
+Opening the scanner shows a category grid first; upload/analyze/results flows unchanged. `selectedCategory` is stored in state but not yet passed to vision or save logic. `Badge` is imported per spec but unused in this step.
+
+---
+
+### [Date: 2026-05-24] - ClosetScanner upload screen wired to category
+
+**Background:**
+After category selection, the upload step should reflect the chosen category (badge, headline, subtitle, and photo tips) and allow returning to the picker without losing the selection.
+
+**Changed:**
+
+- `src/components/ClosetScanner.js`
+
+**Impact:**
+Upload phase shows category-specific copy; ← Back returns to category step with selection preserved. Analyzing, results, and save logic unchanged.
+
+---
+
+### [Date: 2026-05-24] - ClosetScanner dynamic AI prompt by category
+
+**Background:**
+Vision analysis should scope to the user’s selected scan category and pass that category through save/complete callbacks.
+
+**Changed:**
+
+- `src/components/ClosetScanner.js`
+
+**Impact:**
+`getCategoryPrompt(selectedCategory)` replaces static `CLOSET_SCAN_PROMPT`. `onSaveItems` and `onScanComplete` payloads include `category`. Parent handlers may ignore the new field until they use it. Results UI unchanged (`normalizeRows` still maps API fields).
+
+---
+
+### [Date: 2026-05-24] - ClosetScanner post-upload category validation
+
+**Background:**
+Before full closet analysis, a quick vision check should confirm the photo matches the user’s selected scan category (e.g. reject non-clothing images).
+
+**Changed:**
+
+- `src/components/ClosetScanner.js`
+
+**Impact:**
+`runAnalysis` runs `getValidationPrompt` first; invalid photos return to upload with a banner. Validation parse/API errors are non-blocking (analysis continues). Extra vision API call per scan.
+
+---
+
+### [Date: 2026-05-24] - ClosetScanner tap-to-continue category selection
+
+**Background:**
+Category selection should advance immediately on card tap instead of requiring a separate Continue step.
+
+**Changed:**
+
+- `src/components/ClosetScanner.js`
+
+**Impact:**
+Tapping a category goes straight to upload; Continue button removed. Unused `Button` import removed. Cancel unchanged.
+
+---
+
+### [Date: 2026-05-24] - ClosetScanner photo tips and subcategory prompt
+
+**Background:**
+Sharper upload guidance and vision prompts should return per-subcategory rows (e.g. Jeans vs Dress Pants) for more accurate counts.
+
+**Changed:**
+
+- `src/components/ClosetScanner.js`
+
+**Impact:**
+`PHOTO_TIPS` and `getCategoryPrompt` updated only; results UI still uses `category` per row from API.
+
+---
+
+### [Date: 2026-05-24] - ClosetScanner optional subcategory step
+
+**Background:**
+Users should pick a specific type (e.g. Jeans) before upload for tighter vision prompts, with a Mix option and direct upload for Other.
+
+**Changed:**
+
+- `src/components/ClosetScanner.js`
+
+**Impact:**
+Flow: category → subcategory (when defined) → upload → analyzing → results. `getCategoryPrompt` accepts `subcategoryId`; `all-*` uses mixed category focus. Save/analyzing/results UI unchanged.
+
+---
+
+### [Date: 2026-05-24] - Wardrobe coverage tracker
+
+**Background:**
+Wardrobe screen should show which of the six main categories have been scanned and let users open the scanner pre-filled for missing categories.
+
+**Changed:**
+
+- `src/screens/WardrobeScreen.js`
+- `src/components/ClosetScanner.js` (`initialCategory` prop)
+
+**Impact:**
+Coverage card appears when wardrobe is non-empty; uncovered pills open scanner at subcategory or upload step. Score counts only the six tracker categories.
+
+---
+
+### [Date: 2026-05-24] - Filter bad scan rows and truncate style badge
+
+**Background:**
+Vision rows with junk category labels (partial/edge/background) should not be saved; long style strings should fit scan row badges.
+
+**Changed:**
+
+- `src/utils/categoryMap.js`
+- `src/screens/WardrobeScreen.js`
+
+**Impact:**
+`buildWardrobeItems` drops zero-count and noisy category names. Scan item style badge shows at most three words.
+
+---
+
+### [Date: 2026-05-24] - Scan filter and style truncation (refined)
+
+**Background:**
+Restore `included` guard on scan rows; block curtain/wall/floor labels; truncate style badges via shared helper after `closetScanStyleLabel`.
+
+**Changed:**
+
+- `src/utils/categoryMap.js`
+- `src/screens/WardrobeScreen.js`
+
+**Impact:**
+Junk categories like "Partially Visible Shirt" are filtered at save. Style badges capped at three words (e.g. "casual and formal").
+
+---
+
+### [Date: 2026-05-24] - Wardrobe "What should I wear today?" prompt card
+
+**Background:**
+Once the user has enough wardrobe coverage, surface a CTA to open the outfit planner from the wardrobe screen.
+
+**Changed:**
+
+- `src/screens/WardrobeScreen.js`
+- `src/App.js` (`onNavigate={setActiveNav}`)
+
+**Impact:**
+Card shows when wardrobe is non-empty and coverage ≥ 33%; tap navigates to planner. Planner and grid unchanged.
+
+---
+
+### [Date: 2026-05-24] - Auto-trigger planner from wardrobe CTA
+
+**Background:**
+Tapping "What should I wear today?" should open the planner and start outfit planning after weather loads.
+
+**Changed:**
+
+- `src/screens/WardrobeScreen.js` (CTA passes `{ autoplan: true }`)
+- `src/App.js` (`plannerAutoplan`, `handleNavigate`)
+- `src/screens/PlannerScreen.js` (`autoplan` effect)
+
+**Impact:**
+CTA navigates with autoplan flag; planner sets occasion to "everyday" and calls `planOutfit` after 1.5s. Manual planner use unchanged.
+
+---
+
+### [Date: 2026-05-24] - Remove OpenAI from aiService.js
+
+**Background:**
+All client AI should go through Anthropic via `/api/chat`; OpenAI paths in `aiService` are unused.
+
+**Changed:**
+
+- `src/services/aiService.js`
+
+**Impact:**
+`callTextCompletion` is Anthropic-only. `OPENAI_VISION_*` exports removed — `App.js` and `anthropicExtended.js` still import those until updated separately.
+
+---
+
+### [Date: 2026-05-24] - Remove OpenAI from App.js and anthropicExtended.js
+
+**Background:**
+Complete Anthropic-only client AI after `aiService.js` cleanup; fix broken imports and duplicate vision paths.
+
+**Changed:**
+
+- `src/App.js` — catalog vision via `callClosetPhotoVision`
+- `src/services/anthropicExtended.js` — OpenAI branches and `runAgent` fallback removed
+
+**Impact:**
+No `OPENAI_*` references under `src/`. `npm run build` passes. Shopper and evaluator use Anthropic `/api/chat` only.
+
+---
+
+### [Date: 2026-05-24] - Planner outfit list color labels
+
+**Background:**
+Planner main outfit item names should show wardrobe color in text and as dots beside each line.
+
+**Changed:**
+
+- `src/utils/colorUtils.js` (new, `resolveColorHex`)
+- `src/screens/PlannerScreen.js`
+
+**Impact:**
+Main `plannerPlan.items` list shows `displayLabel` and up to two color dots when matched in `cleanItems`. Alternate outfit list unchanged.
+
+---
+
+### [Date: 2026-05-24] - Dashboard home screen rewrite
+
+**Background:**
+Replace agent-heavy dashboard with a warm, action-focused home: greeting, weather, planner CTA, and wardrobe summary.
+
+**Changed:**
+
+- `src/screens/DashboardScreen.js` (full rewrite)
+- `src/App.js` (`profile` prop on `DashboardScreen`)
+
+**Impact:**
+Home shows personalized greeting, local weather, primary planner CTA, wardrobe/gap shortcuts, and empty or populated wardrobe stats. `agentActivity` no longer passed to dashboard.
+
+---
+
+### [Date: 2026-05-24] - PostScanNamingScreen after closet scan
+
+**Background:**
+After saving a closet scan, users should name individual items per category before using the wardrobe in the planner.
+
+**Changed:**
+
+- `src/screens/PostScanNamingScreen.js` (new)
+- `src/services/aiService.js` (`suggestItemNames`)
+- `src/App.js` (`postScanNaming` nav, `saveClosetScanToWardrobe` redirect)
+
+**Impact:**
+Successful scan save navigates to naming screen; Done splits `count > 1` rows into named items; Skip keeps aggregates and goes to wardrobe.
+
+---

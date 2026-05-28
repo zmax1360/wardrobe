@@ -23,7 +23,7 @@ import React, {
 import { Helmet } from "react-helmet-async";
 import { useLocation, Navigate } from "react-router-dom";
 
-import { auth, db, getFirebaseAuthHeader } from "./firebase";
+import { auth, db } from "./firebase";
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
@@ -77,14 +77,7 @@ import {
   searchShopifyCatalog,
   getShopifyProductDetails,
 } from "./services/shopify";
-import {
-  ANTHROPIC_URL,
-  CLAUDE_MODEL,
-  OPENAI_VISION_URL,
-  OPENAI_VISION_MODEL,
-  resolveVisionCredentials,
-  parseCatalogJson,
-} from "./services/aiService";
+import { callClosetPhotoVision, parseCatalogJson } from "./services/aiService";
 import { runAgent } from "./agents/agentOrchestrator";
 import { useAgentActivity } from "./hooks/useAgentActivity";
 import { useAgentInsights } from "./hooks/useAgentInsights";
@@ -100,6 +93,7 @@ import { ProfileScreen } from "./screens/ProfileScreen";
 import { GapAnalysisScreen } from "./screens/GapAnalysisScreen";
 import { WardrobeEquityScreen } from "./screens/WardrobeEquityScreen";
 import { DashboardScreen } from "./screens/DashboardScreen";
+import { PostScanNamingScreen } from "./screens/PostScanNamingScreen";
 import { AgentPanel } from "./components/AgentPanel";
 import { Onboarding } from "./components/Onboarding";
 import LandingPage from "./components/LandingPage";
@@ -189,6 +183,8 @@ export default function App() {
 
   /** Default landing: Home / Dashboard (`currentScreen` equivalent). */
   const [activeNav, setActiveNav] = useState("dashboard");
+  const [plannerAutoplan, setPlannerAutoplan] = useState(false);
+  const [postScanNamingItems, setPostScanNamingItems] = useState([]);
   const { wardrobe, setWardrobe, addItem, updateItem, removeItem } = useWardrobe(hydrated, firebaseUser);
   const [events, setEvents] = useState(() => {
     const e = loadJson(STORAGE_EVENTS, []);
@@ -203,6 +199,13 @@ export default function App() {
   const [analyzing, setAnalyzing] = useState(false);
   const [uploadError, setUploadError] = useState("");
   const [closetScanSaving, setClosetScanSaving] = useState(false);
+
+  const handleNavigate = (screen, options = {}) => {
+    setActiveNav(screen);
+    if (options.autoplan) {
+      setPlannerAutoplan(true);
+    }
+  };
 
   const [editItem, setEditItem] = useState(null);
   const [editForm, setEditForm] = useState({
@@ -546,95 +549,14 @@ export default function App() {
   const onboardingBottomSizes = useMemo(() => bottomSizesForGender(draft.gender), [draft.gender]);
   const onboardingShoeSizes = useMemo(() => shoeSizesForGender(draft.gender), [draft.gender]);
 
-  const catalogImageWithVision = async (base64, mediaType) => {
+  const catalogImageWithVision = async (base64, _mediaType) => {
     const agentRunStartedAt = startAgentRun("Wardrobe Agent", "Image analysis");
     try {
-      const creds = resolveVisionCredentials();
-      if (!creds || creds.provider === "anthropic") {
-      const body = {
-        model: CLAUDE_MODEL,
-        max_tokens: 1024,
-        system: CATALOG_SYSTEM,
-        messages: [
-          {
-            role: "user",
-            content: [
-              {
-                type: "image",
-                source: { type: "base64", media_type: mediaType, data: base64 },
-              },
-              {
-                type: "text",
-                text: 'Reply with one raw JSON object only (keys: name, category, color, style, season, tags, material, description). No other text.',
-              },
-            ],
-          },
-        ],
-      };
-
-      const authHdr = await getFirebaseAuthHeader();
-      const res = await fetch(ANTHROPIC_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "anthropic-version": "2023-06-01",
-          ...authHdr,
-        },
-        body: JSON.stringify(body),
-      });
-
-      if (!res.ok) {
-        const errText = await res.text();
-        throw new Error(errText || `Anthropic error ${res.status}`);
-      }
-
-      const data = await res.json();
-      const text = Array.isArray(data?.content)
-        ? data.content.filter((c) => c.type === "text").map((c) => c.text).join("")
-        : data?.content?.[0]?.text;
-      const outAnthropic = parseCatalogJson(text);
+      const prompt = `${CATALOG_SYSTEM}\n\nReply with one raw JSON object only (keys: name, category, color, style, season, tags, material, description). No other text.`;
+      const text = await callClosetPhotoVision(base64, prompt);
+      const out = parseCatalogJson(text);
       finishAgentRun("Wardrobe Agent", "Image analysis", agentRunStartedAt, { status: "success" });
-      return outAnthropic;
-    }
-
-    const dataUrl = `data:${mediaType};base64,${base64}`;
-    const body = {
-      model: OPENAI_VISION_MODEL,
-      max_tokens: 1024,
-      messages: [
-        { role: "system", content: CATALOG_SYSTEM },
-        {
-          role: "user",
-          content: [
-            {
-              type: "text",
-              text: 'Reply with one raw JSON object only (keys: name, category, color, style, season, tags, material, description). No other text.',
-            },
-            { type: "image_url", image_url: { url: dataUrl } },
-          ],
-        },
-      ],
-    };
-
-    const res = await fetch(OPENAI_VISION_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${creds.key}`,
-      },
-      body: JSON.stringify(body),
-    });
-
-    if (!res.ok) {
-      const errText = await res.text();
-      throw new Error(errText || `OpenAI error ${res.status}`);
-    }
-
-    const data = await res.json();
-    const text = data?.choices?.[0]?.message?.content;
-    const outOpenai = parseCatalogJson(text);
-    finishAgentRun("Wardrobe Agent", "Image analysis", agentRunStartedAt, { status: "success" });
-    return outOpenai;
+      return out;
     } catch (error) {
       failAgentRun("Wardrobe Agent", "Image analysis", agentRunStartedAt, error);
       throw error;
@@ -840,12 +762,24 @@ export default function App() {
 
         const items = buildWardrobeItems(effectiveRows, imagePreview, imageFilename);
         items.forEach((item) => addItem(item));
+        setPostScanNamingItems(items);
+        setActiveNav("postScanNaming");
       } finally {
         setClosetScanSaving(false);
       }
     },
     [addItem, firebaseUser]
   );
+
+  const finishPostScanNaming = useCallback(() => {
+    setPostScanNamingItems([]);
+    setActiveNav("wardrobe");
+  }, []);
+
+  const skipPostScanNaming = useCallback(() => {
+    setPostScanNamingItems([]);
+    setActiveNav("wardrobe");
+  }, []);
 
   const openEdit = (it) => {
     setEditItem(it);
@@ -905,6 +839,8 @@ export default function App() {
       ? "Home"
       : activeNav === "wardrobe"
         ? "Wardrobe"
+        : activeNav === "postScanNaming"
+          ? "Name your items"
         : activeNav === "equity"
         ? "Wardrobe Equity"
         : activeNav === "calendar"
@@ -921,61 +857,6 @@ export default function App() {
                     ? "Gap Analysis"
                     : "Profile";
   const userName = profile?.name || "";
-
-  const styleIntelligence = useMemo(() => {
-    const issues = Array.isArray(agentInsights?.frequentIssues) ? agentInsights.frequentIssues : [];
-    let mostCommonIssue = "—";
-    if (issues.length) {
-      const counts = new Map();
-      for (const s of issues) {
-        const k = String(s).trim().toLowerCase();
-        if (!k) continue;
-        counts.set(k, (counts.get(k) || 0) + 1);
-      }
-      let bestKey = "";
-      let bestN = 0;
-      for (const [k, n] of counts) {
-        if (n > bestN) {
-          bestN = n;
-          bestKey = k;
-        }
-      }
-      if (bestKey) {
-        const orig = issues.find((x) => String(x).trim().toLowerCase() === bestKey);
-        mostCommonIssue = orig != null ? String(orig).trim() : bestKey;
-      } else {
-        mostCommonIssue = String(issues[issues.length - 1]).trim();
-      }
-    }
-
-    let mostUsedItem = "—";
-    if (wardrobe.length) {
-      let maxW = -1;
-      for (const it of wardrobe) {
-        const w = getTimesWorn(it);
-        if (w > maxW) maxW = w;
-      }
-      if (maxW > 0) {
-        const top = wardrobe.filter((it) => getTimesWorn(it) === maxW);
-        top.sort((a, b) => String(a.name || "").localeCompare(String(b.name || "")));
-        mostUsedItem = top[0].name || "Untitled";
-      } else {
-        mostUsedItem = "No wear counts yet — log wears in Wardrobe.";
-      }
-    }
-
-    let suggestedFocus = "—";
-    if (mostCommonIssue !== "—") {
-      const short = mostCommonIssue.split(/[.!?]/)[0].trim().slice(0, 120);
-      suggestedFocus = short ? `Focus on: ${short}` : "Refine fit and balance using evaluator feedback.";
-    } else if (issues.length) {
-      suggestedFocus = "Keep logging outfits in the Evaluator to sharpen recommendations.";
-    } else {
-      suggestedFocus = "Run the Outfit Evaluator to surface your first improvement themes.";
-    }
-
-    return { mostCommonIssue, mostUsedItem, suggestedFocus };
-  }, [agentInsights, wardrobe]);
 
   if (!hydrated) {
     return (
@@ -1514,47 +1395,30 @@ export default function App() {
           </div>
         </header>
 
-        <div className="app-style-intel-wrap" style={{ padding: "0 32px 20px", flexShrink: 0 }}>
-          <div
-            style={mergeStyles(ui.panel, {
-              padding: "22px 24px",
-              display: "grid",
-              gap: 18,
-            })}
-          >
-            <div
-              className="app-style-intel-title"
-              style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "1.4rem", fontWeight: 600, color: COLORS.text }}
-            >
-              Your Style Intelligence
-            </div>
-            <div
-              className="app-style-intel-cards"
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
-                gap: 14,
-              }}
-            >
-              <div style={mergeStyles(ui.softPanel, { padding: "16px 18px" })}>
-                <div style={type.meta}>Most common issue</div>
-                <div style={{ ...type.bodyStrong, marginTop: 10, lineHeight: 1.45 }}>{styleIntelligence.mostCommonIssue}</div>
-              </div>
-              <div style={mergeStyles(ui.softPanel, { padding: "16px 18px" })}>
-                <div style={type.meta}>Most used item</div>
-                <div style={{ ...type.bodyStrong, marginTop: 10, lineHeight: 1.45 }}>{styleIntelligence.mostUsedItem}</div>
-              </div>
-              <div style={mergeStyles(ui.softPanel, { padding: "16px 18px" })}>
-                <div style={type.meta}>Suggested improvement focus</div>
-                <div style={{ ...type.bodyStrong, marginTop: 10, lineHeight: 1.45 }}>{styleIntelligence.suggestedFocus}</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
         <main style={mergeStyles(ui.contentWrap, { flex: 1, padding: "32px 32px 48px", minWidth: 0 })}>
           {activeNav === "dashboard" && (
-            <DashboardScreen wardrobe={wardrobe} setActiveNav={setActiveNav} agentActivity={agentActivity} />
+            <DashboardScreen wardrobe={wardrobe} setActiveNav={setActiveNav} profile={profile} events={events} />
+          )}
+
+          {activeNav === "postScanNaming" && (
+            <div
+              style={{
+                background: "var(--color-bg-dark)",
+                margin: "-32px -32px -48px",
+                padding: "32px 32px 48px",
+                minHeight: "calc(100vh - 120px)",
+                borderRadius: "var(--radius-lg)",
+              }}
+            >
+              <PostScanNamingScreen
+                scanItems={postScanNamingItems}
+                onDone={finishPostScanNaming}
+                onSkip={skipPostScanNaming}
+                addItem={addItem}
+                removeItem={removeItem}
+                updateItem={updateItem}
+              />
+            </div>
           )}
 
           {activeNav === "wardrobe" && (
@@ -1563,6 +1427,7 @@ export default function App() {
               wardrobe={wardrobe}
               agentActivity={agentActivity}
               agentInsights={agentInsights}
+              onNavigate={handleNavigate}
               handlers={{
                 fileRef,
                 onFileChange,
@@ -1608,6 +1473,8 @@ export default function App() {
               wardrobe={wardrobe}
               events={events}
               setActiveNav={setActiveNav}
+              autoplan={plannerAutoplan}
+              onAutoPlanConsumed={() => setPlannerAutoplan(false)}
               baseTransition={baseTransition}
               agentInsights={agentInsights}
               todayYmdLocal={todayYmdLocal}
