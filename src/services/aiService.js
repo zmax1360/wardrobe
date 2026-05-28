@@ -3,17 +3,9 @@ import { getFirebaseAuthHeader } from "../firebase";
 export const ANTHROPIC_URL =
   process.env.NODE_ENV === "development" ? "http://localhost:3001/api/chat" : "/api/chat";
 export const CLAUDE_MODEL = "claude-sonnet-4-20250514";
-export const OPENAI_VISION_URL = "https://api.openai.com/v1/chat/completions";
-export const OPENAI_VISION_MODEL = "gpt-4o";
 
-/** Prefer Anthropic if present; else first OpenAI key found (CRA: use REACT_APP_*). */
 export function resolveVisionCredentials() {
-  const openai =
-    trimEnv(process.env.REACT_APP_OPENAI_API_KEY) ||
-    trimEnv(process.env.OPENAI_API_KEY) ||
-    trimEnv(process.env.OPEN_AI_KEY);
-  if (openai) return { provider: "openai", key: openai };
-  // Anthropic runs through `/api/chat` (server-side key), so the client does not need a key to proceed.
+  // Anthropic only — API key handled server-side via /api/chat proxy
   return { provider: "anthropic", key: "" };
 }
 
@@ -112,6 +104,48 @@ export async function callClosetPhotoVision(base64Jpeg, userPromptText) {
   return String(text || "").trim();
 }
 
+function parseNameArray(rawText, count, fallbackLabel) {
+  let s = String(rawText || "")
+    .replace(/```json|```/gi, "")
+    .trim();
+  const tryParse = (x) => {
+    try {
+      const parsed = JSON.parse(x);
+      return Array.isArray(parsed) ? parsed.map((v) => String(v).trim()).filter(Boolean) : null;
+    } catch {
+      return null;
+    }
+  };
+  let arr = tryParse(s);
+  if (!arr) {
+    const start = s.indexOf("[");
+    const end = s.lastIndexOf("]");
+    if (start !== -1 && end > start) arr = tryParse(s.slice(start, end + 1));
+  }
+  if (arr?.length) {
+    while (arr.length < count) arr.push(`${fallbackLabel} ${arr.length + 1}`);
+    return arr.slice(0, count);
+  }
+  return Array.from({ length: count }, (_, i) => `${fallbackLabel} ${i + 1}`);
+}
+
+export async function suggestItemNames(scanItem) {
+  const { name, colors = [], style = "", count = 1 } = scanItem || {};
+  const n = Math.max(1, Math.min(99, Math.floor(Number(count)) || 1));
+  const colorsList = Array.isArray(colors) ? colors : [];
+  const prompt = `Given a wardrobe scan result: category="${name}", colors=${colorsList.join(", ")}, style="${style}", count=${n}. Return ONLY a JSON array of ${n} short specific item names (2-4 words each). Example: ["White Oxford Shirt","Blue Stripe Button-up"]. No explanation, no markdown.`;
+  try {
+    const text = await callTextCompletion(
+      "You return only valid JSON arrays of short clothing item names.",
+      prompt,
+      "Suggest scan item names"
+    );
+    return parseNameArray(text, n, name || "Item");
+  } catch {
+    return Array.from({ length: n }, (_, i) => `${name || "Item"} ${i + 1}`);
+  }
+}
+
 export async function callTextCompletion(system, user, explicitTaskLabel) {
   const inferredTaskLabel =
     (typeof explicitTaskLabel === "string" && explicitTaskLabel.trim()) ||
@@ -140,67 +174,31 @@ export async function callTextCompletion(system, user, explicitTaskLabel) {
   const agentRunStartedAt = agentTraceHooks.startAgentRun(inferredAgentName, inferredTaskLabel);
 
   try {
-    const creds = resolveVisionCredentials();
-    if (!creds) {
-      throw new Error(
-        "No AI key: set REACT_APP_ANTHROPIC_API_KEY or REACT_APP_OPENAI_API_KEY (or OPENAI_API_KEY / OPEN_AI_KEY)."
-      );
-    }
-
-    if (creds.provider === "anthropic") {
-      const body = {
-        model: CLAUDE_MODEL,
-        max_tokens: 2048,
-        system,
-        messages: [{ role: "user", content: user }],
-      };
-      const authHeader = await getFirebaseAuthHeader();
-      const res = await fetch(ANTHROPIC_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "anthropic-version": "2023-06-01",
-          ...authHeader,
-        },
-        body: JSON.stringify(body),
-      });
-      if (!res.ok) {
-        const errText = await res.text();
-        throw new Error(errText || `Anthropic error ${res.status}`);
-      }
-      const data = await res.json();
-      const text = Array.isArray(data?.content)
-        ? data.content.filter((c) => c.type === "text").map((c) => c.text).join("")
-        : data?.content?.[0]?.text;
-      const out = String(text || "").trim();
-      agentTraceHooks.finishAgentRun(inferredAgentName, inferredTaskLabel, agentRunStartedAt, {
-        status: "success",
-      });
-      return out;
-    }
-
     const body = {
-      model: OPENAI_VISION_MODEL,
+      model: CLAUDE_MODEL,
       max_tokens: 2048,
-      messages: [
-        { role: "system", content: system },
-        { role: "user", content: user },
-      ],
+      system,
+      messages: [{ role: "user", content: user }],
     };
-    const res = await fetch(OPENAI_VISION_URL, {
+    const authHeader = await getFirebaseAuthHeader();
+    const res = await fetch(ANTHROPIC_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${creds.key}`,
+        "anthropic-version": "2023-06-01",
+        ...authHeader,
       },
       body: JSON.stringify(body),
     });
     if (!res.ok) {
       const errText = await res.text();
-      throw new Error(errText || `OpenAI error ${res.status}`);
+      throw new Error(errText || `Anthropic error ${res.status}`);
     }
     const data = await res.json();
-    const out = String(data?.choices?.[0]?.message?.content || "").trim();
+    const text = Array.isArray(data?.content)
+      ? data.content.filter((c) => c.type === "text").map((c) => c.text).join("")
+      : data?.content?.[0]?.text;
+    const out = String(text || "").trim();
     agentTraceHooks.finishAgentRun(inferredAgentName, inferredTaskLabel, agentRunStartedAt, {
       status: "success",
     });

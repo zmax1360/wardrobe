@@ -5,8 +5,6 @@ import { FINANCE } from "../styles/financeTheme";
 import { COLORS, baseTransition } from "../styles/theme";
 import { calculateCPW, getPurchasePriceNum, getTimesWorn, WARDROBE_OCCASION_VALUES } from "../utils/wardrobeFinance";
 import { CHIC_WARDROBE_MOODS } from "../constants/chicMoods";
-import { useWardrobeAgent } from "../hooks/useWardrobeAgent";
-
 const GALLERY_BG = "#FFFFFF";
 const CARD_BG = "#FFFFFF";
 
@@ -140,8 +138,6 @@ export function WardrobeScreen({
   const [addTab, setAddTab] = useState("photo");
   const [removeBgNext, setRemoveBgNext] = useState(false);
   const [pulseWearId, setPulseWearId] = useState(null);
-  const [agentQuery, setAgentQuery] = useState("");
-
   const [manualName, setManualName] = useState("");
   const [manualCategory, setManualCategory] = useState("");
   const [manualPurchasePrice, setManualPurchasePrice] = useState("");
@@ -164,9 +160,6 @@ export function WardrobeScreen({
 
   const modalFileRef = useRef(null);
   const manualImageInputRef = useRef(null);
-
-  const { ask: askWardrobeAgent, response: agentResponse, loading: agentLoading, error: agentError } =
-    useWardrobeAgent();
 
   const {
     fileRef,
@@ -303,11 +296,6 @@ export function WardrobeScreen({
     }
     setShowAddModal(false);
     setRemoveBgNext(false);
-  };
-
-  const onWardrobeAgentSubmit = (e) => {
-    e.preventDefault();
-    askWardrobeAgent(agentQuery);
   };
 
   return (
@@ -594,7 +582,7 @@ export function WardrobeScreen({
 
         {wardrobe.length > 0 && coverageScore >= 33 && (
           <div
-            onClick={() => onNavigate("planner")}
+            onClick={() => onNavigate("planner", { autoplan: true })}
             style={{
               margin: "0 0 var(--space-6)",
               padding: "var(--space-5)",
@@ -1472,38 +1460,6 @@ export function WardrobeScreen({
           </div>
         </div>
       )}
-
-      <div className="wardrobe-agent-wrap">
-        <form className="wardrobe-agent-form" onSubmit={onWardrobeAgentSubmit}>
-          <div className="wardrobe-agent-bar">
-            <input
-              className="wardrobe-agent-input"
-              type="search"
-              enterKeyHint="send"
-              placeholder="Ask your wardrobe agent..."
-              value={agentQuery}
-              onChange={(e) => setAgentQuery(e.target.value)}
-              disabled={agentLoading}
-              aria-label="Ask your wardrobe agent"
-            />
-            <button
-              type="submit"
-              className="wardrobe-agent-send"
-              disabled={agentLoading}
-              aria-label="Send question"
-            >
-              →
-            </button>
-          </div>
-        </form>
-        {agentLoading ? (
-          <p className="wardrobe-agent-reply wardrobe-agent-reply--loading">Thinking...</p>
-        ) : agentError ? (
-          <p className="wardrobe-agent-reply wardrobe-agent-reply--error">{agentError}</p>
-        ) : agentResponse ? (
-          <p className="wardrobe-agent-reply">{agentResponse}</p>
-        ) : null}
-      </div>
 
       <ClosetScanner
         isOpen={showClosetScanner}

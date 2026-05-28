@@ -12,6 +12,8 @@ export function PlannerScreen({
   wardrobe,
   events,
   setActiveNav,
+  autoplan = false,
+  onAutoPlanConsumed,
   baseTransition,
   agentInsights,
   todayYmdLocal,
@@ -175,7 +177,7 @@ export function PlannerScreen({
     setMatchedItems([]);
   };
 
-  const planOutfit = async () => {
+  const planOutfit = async (occasionOverride = null) => {
     setError("");
     setResult("");
     if (wardrobe.length === 0) {
@@ -186,7 +188,8 @@ export function PlannerScreen({
       setError("All your clothes are dirty or in the wash!");
       return;
     }
-    if (mode === "everyday" && !occasion.trim()) {
+    const occasionValue = occasionOverride || occasion.trim();
+    if (mode === "everyday" && !occasionValue) {
       setError("Describe the occasion or context.");
       return;
     }
@@ -210,7 +213,7 @@ export function PlannerScreen({
 
     let occasionText = "";
     if (mode === "everyday") {
-      occasionText = occasion.trim();
+      occasionText = occasionValue;
     } else if (selectedEvent) {
       occasionText = `Event "${selectedEvent.title}" on ${formatDisplayDate(selectedEvent.date)} (${daysRelativeLabel(selectedEvent.date)}). Occasion: ${selectedEvent.occasionType}. Dress code: ${selectedEvent.dressCode}.`;
       if (selectedEvent.location) occasionText += ` Location: ${selectedEvent.location}.`;
@@ -218,32 +221,43 @@ export function PlannerScreen({
       occasionText += " The outfit must respect the stated dress code.";
     }
 
-    const system = `You are a personal fashion stylist.
-Suggest ONE high-confidence outfit that avoids past mistakes.
+    const system = `You are a personal fashion stylist. Suggest ONE outfit from the wardrobe list below.
 
-Weather:
-${weatherBlock}
+WEATHER: ${weatherBlock}
 
-Upcoming events:
-${eventsBlock}
+TEMPERATURE RULES — follow these strictly, they override style preferences:
+- Below 5°C: heavy coat or parka required. Sweater or thermal underneath.
+- 5–10°C: jacket or coat required. Layering expected.
+- 10–15°C: light jacket, blazer, or cardigan appropriate but optional.
+- 16–20°C: no jacket needed. A single light layer (cardigan, thin long-sleeve) is fine but not required. Do NOT suggest structured blazers, wool coats, or heavy outerwear.
+- 21–25°C: lightweight clothing only. T-shirts, light tops, chinos, summer dresses.
+- Above 25°C: minimal layers. Shorts, linen, breathable fabrics. No jackets.
 
-User profile:
+OCCASION: ${occasionText}
+
+USER PROFILE:
 ${profileSummary}
 
-Agent insights:
-${plannerAgentInsightsBlock}
-
-Wardrobe items (clean pieces only — use exact names from this list). Items are ordered by cost-per-wear priority (highest CPW first): prefer including these when they fit the occasion so the wearer gets more value from expensive, under-worn pieces.
+WARDROBE (clean pieces only — use exact names from this list):
 ${wardrobeItems}
 
-Occasion / context:
-${occasionText}
+UPCOMING EVENTS:
+${eventsBlock}
+
+AGENT INSIGHTS:
+${plannerAgentInsightsBlock}
+
+Rules:
+- Pick items whose combined warmth matches the temperature rules above.
+- Prefer items with high cost-per-wear (expensive, under-worn pieces come first in the list).
+- Use exact item names from the wardrobe list — do not invent names.
+- Do NOT suggest a blazer, coat, or jacket if temperature is above 16°C unless the occasion explicitly requires formal dress.
 
 Respond with ONLY valid JSON (no markdown):
 {
   "primary_outfit": {
-    "name": "short title",
-    "items": ["names exactly as in wardrobe list"],
+    "name": "short evocative title",
+    "items": ["exact names from wardrobe list"],
     "why": "one line"
   },
   "alternate_outfit": null
@@ -279,6 +293,37 @@ Set alternate_outfit to a second option only if clearly useful; otherwise null.`
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (autoplan && !loading) {
+      const hour = new Date().getHours();
+      let smartOccasion = "";
+
+      if (hour >= 5 && hour < 9) {
+        smartOccasion = "morning commute";
+      } else if (hour >= 9 && hour < 12) {
+        smartOccasion = "casual workday";
+      } else if (hour >= 12 && hour < 14) {
+        smartOccasion = "lunch outing";
+      } else if (hour >= 14 && hour < 17) {
+        smartOccasion = "afternoon errands";
+      } else if (hour >= 17 && hour < 20) {
+        smartOccasion = "casual evening out";
+      } else {
+        smartOccasion = "relaxed evening";
+      }
+
+      setOccasion(smartOccasion);
+
+      const timer = setTimeout(() => {
+        void planOutfit(smartOccasion);
+        onAutoPlanConsumed?.();
+      }, 3000);
+
+      return () => clearTimeout(timer);
+    }
+    return undefined;
+  }, [autoplan]);
 
   function matchOutfitItems(responseText, wardrobe) {
     return wardrobe.filter((item) =>
@@ -526,7 +571,7 @@ Set alternate_outfit to a second option only if clearly useful; otherwise null.`
             loading ||
             wardrobe.length === 0 ||
             cleanItems.length === 0 ||
-            (mode === "everyday" && !occasion.trim()) ||
+            (mode === "everyday" && !occasion.trim() && !autoplan) ||
             (mode === "event" && (upcomingSorted.length === 0 || !selectedEventId))
           }
           style={{
@@ -537,7 +582,7 @@ Set alternate_outfit to a second option only if clearly useful; otherwise null.`
               loading ||
               wardrobe.length === 0 ||
               cleanItems.length === 0 ||
-              (mode === "everyday" && !occasion.trim()) ||
+              (mode === "everyday" && !occasion.trim() && !autoplan) ||
               (mode === "event" && (upcomingSorted.length === 0 || !selectedEventId))
                 ? COLORS.border
                 : COLORS.primary,
@@ -547,7 +592,7 @@ Set alternate_outfit to a second option only if clearly useful; otherwise null.`
               loading ||
               wardrobe.length === 0 ||
               cleanItems.length === 0 ||
-              (mode === "everyday" && !occasion.trim()) ||
+              (mode === "everyday" && !occasion.trim() && !autoplan) ||
               (mode === "event" && (upcomingSorted.length === 0 || !selectedEventId))
                 ? "default"
                 : "pointer",

@@ -1198,3 +1198,94 @@ Once the user has enough wardrobe coverage, surface a CTA to open the outfit pla
 Card shows when wardrobe is non-empty and coverage ≥ 33%; tap navigates to planner. Planner and grid unchanged.
 
 ---
+
+### [Date: 2026-05-24] - Auto-trigger planner from wardrobe CTA
+
+**Background:**
+Tapping "What should I wear today?" should open the planner and start outfit planning after weather loads.
+
+**Changed:**
+
+- `src/screens/WardrobeScreen.js` (CTA passes `{ autoplan: true }`)
+- `src/App.js` (`plannerAutoplan`, `handleNavigate`)
+- `src/screens/PlannerScreen.js` (`autoplan` effect)
+
+**Impact:**
+CTA navigates with autoplan flag; planner sets occasion to "everyday" and calls `planOutfit` after 1.5s. Manual planner use unchanged.
+
+---
+
+### [Date: 2026-05-24] - Remove OpenAI from aiService.js
+
+**Background:**
+All client AI should go through Anthropic via `/api/chat`; OpenAI paths in `aiService` are unused.
+
+**Changed:**
+
+- `src/services/aiService.js`
+
+**Impact:**
+`callTextCompletion` is Anthropic-only. `OPENAI_VISION_*` exports removed — `App.js` and `anthropicExtended.js` still import those until updated separately.
+
+---
+
+### [Date: 2026-05-24] - Remove OpenAI from App.js and anthropicExtended.js
+
+**Background:**
+Complete Anthropic-only client AI after `aiService.js` cleanup; fix broken imports and duplicate vision paths.
+
+**Changed:**
+
+- `src/App.js` — catalog vision via `callClosetPhotoVision`
+- `src/services/anthropicExtended.js` — OpenAI branches and `runAgent` fallback removed
+
+**Impact:**
+No `OPENAI_*` references under `src/`. `npm run build` passes. Shopper and evaluator use Anthropic `/api/chat` only.
+
+---
+
+### [Date: 2026-05-24] - Planner outfit list color labels
+
+**Background:**
+Planner main outfit item names should show wardrobe color in text and as dots beside each line.
+
+**Changed:**
+
+- `src/utils/colorUtils.js` (new, `resolveColorHex`)
+- `src/screens/PlannerScreen.js`
+
+**Impact:**
+Main `plannerPlan.items` list shows `displayLabel` and up to two color dots when matched in `cleanItems`. Alternate outfit list unchanged.
+
+---
+
+### [Date: 2026-05-24] - Dashboard home screen rewrite
+
+**Background:**
+Replace agent-heavy dashboard with a warm, action-focused home: greeting, weather, planner CTA, and wardrobe summary.
+
+**Changed:**
+
+- `src/screens/DashboardScreen.js` (full rewrite)
+- `src/App.js` (`profile` prop on `DashboardScreen`)
+
+**Impact:**
+Home shows personalized greeting, local weather, primary planner CTA, wardrobe/gap shortcuts, and empty or populated wardrobe stats. `agentActivity` no longer passed to dashboard.
+
+---
+
+### [Date: 2026-05-24] - PostScanNamingScreen after closet scan
+
+**Background:**
+After saving a closet scan, users should name individual items per category before using the wardrobe in the planner.
+
+**Changed:**
+
+- `src/screens/PostScanNamingScreen.js` (new)
+- `src/services/aiService.js` (`suggestItemNames`)
+- `src/App.js` (`postScanNaming` nav, `saveClosetScanToWardrobe` redirect)
+
+**Impact:**
+Successful scan save navigates to naming screen; Done splits `count > 1` rows into named items; Skip keeps aggregates and goes to wardrobe.
+
+---
