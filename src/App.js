@@ -1563,6 +1563,7 @@ export default function App() {
               wardrobe={wardrobe}
               agentActivity={agentActivity}
               agentInsights={agentInsights}
+              onNavigate={setActiveNav}
               handlers={{
                 fileRef,
                 onFileChange,

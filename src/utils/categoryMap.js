@@ -26,7 +26,12 @@ function nextScanRowId() {
 
 export function buildWardrobeItems(rows, imagePreview, imageFilename) {
   return rows
-    .filter((r) => r.included && r.count > 0)
+    .filter(
+      (r) =>
+        r.included &&
+        r.count > 0 &&
+        !/(partial|visible|edge|corner|background|curtain|wall|floor)/i.test(String(r.category || ""))
+    )
     .map((row) => ({
       id: nextScanRowId(),
       name: row.category

@@ -1138,3 +1138,63 @@ Users should pick a specific type (e.g. Jeans) before upload for tighter vision 
 Flow: category → subcategory (when defined) → upload → analyzing → results. `getCategoryPrompt` accepts `subcategoryId`; `all-*` uses mixed category focus. Save/analyzing/results UI unchanged.
 
 ---
+
+### [Date: 2026-05-24] - Wardrobe coverage tracker
+
+**Background:**
+Wardrobe screen should show which of the six main categories have been scanned and let users open the scanner pre-filled for missing categories.
+
+**Changed:**
+
+- `src/screens/WardrobeScreen.js`
+- `src/components/ClosetScanner.js` (`initialCategory` prop)
+
+**Impact:**
+Coverage card appears when wardrobe is non-empty; uncovered pills open scanner at subcategory or upload step. Score counts only the six tracker categories.
+
+---
+
+### [Date: 2026-05-24] - Filter bad scan rows and truncate style badge
+
+**Background:**
+Vision rows with junk category labels (partial/edge/background) should not be saved; long style strings should fit scan row badges.
+
+**Changed:**
+
+- `src/utils/categoryMap.js`
+- `src/screens/WardrobeScreen.js`
+
+**Impact:**
+`buildWardrobeItems` drops zero-count and noisy category names. Scan item style badge shows at most three words.
+
+---
+
+### [Date: 2026-05-24] - Scan filter and style truncation (refined)
+
+**Background:**
+Restore `included` guard on scan rows; block curtain/wall/floor labels; truncate style badges via shared helper after `closetScanStyleLabel`.
+
+**Changed:**
+
+- `src/utils/categoryMap.js`
+- `src/screens/WardrobeScreen.js`
+
+**Impact:**
+Junk categories like "Partially Visible Shirt" are filtered at save. Style badges capped at three words (e.g. "casual and formal").
+
+---
+
+### [Date: 2026-05-24] - Wardrobe "What should I wear today?" prompt card
+
+**Background:**
+Once the user has enough wardrobe coverage, surface a CTA to open the outfit planner from the wardrobe screen.
+
+**Changed:**
+
+- `src/screens/WardrobeScreen.js`
+- `src/App.js` (`onNavigate={setActiveNav}`)
+
+**Impact:**
+Card shows when wardrobe is non-empty and coverage ≥ 33%; tap navigates to planner. Planner and grid unchanged.
+
+---

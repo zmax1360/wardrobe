@@ -267,6 +267,7 @@ export function ClosetScanner({
   onScanComplete,
   onSaveItems,
   isSaving = false,
+  initialCategory = null,
 }) {
   const [phase, setPhase] = useState("category");
   const [selectedCategory, setSelectedCategory] = useState(null);
@@ -315,10 +316,25 @@ export function ClosetScanner({
       resetFlow();
       return undefined;
     }
-    setSelectedCategory(null);
-    setSelectedSubcategory(null);
+    if (!initialCategory) {
+      setSelectedCategory(null);
+      setSelectedSubcategory(null);
+    }
     return undefined;
-  }, [isOpen, resetFlow]);
+  }, [isOpen, resetFlow, initialCategory]);
+
+  useEffect(() => {
+    if (isOpen && initialCategory) {
+      const categoryId = String(initialCategory).toLowerCase();
+      setSelectedCategory(categoryId);
+      const subs = SCAN_SUBCATEGORIES[categoryId];
+      if (subs && subs.length > 0) {
+        setPhase("subcategory");
+      } else {
+        setPhase("upload");
+      }
+    }
+  }, [isOpen, initialCategory]);
 
   useEffect(() => () => revokeSafe(previewUrl), [previewUrl, revokeSafe]);
 
