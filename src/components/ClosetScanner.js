@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { callClosetPhotoVision } from "../services/aiService";
 import { blobToBase64, compressImage } from "../utils/compressImage";
+import { Badge } from "./ui";
 
 const BRAND_BG = "#1a1208";
 const BRAND_AMBER = "#c4813a";
@@ -11,13 +12,12 @@ const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
 const ACCEPT_ATTR = "image/jpeg,image/png,image/webp";
 
 const ANALYSIS_MESSAGES = [
+  "Checking your photo…",
   "Scanning your closet…",
   "Counting items…",
   "Identifying colours…",
   "Categorising styles…",
 ];
-
-const CLOSET_SCAN_PROMPT = `Analyze this closet photo carefully. Count and categorize every visible clothing item you can see. Be specific about counts — look carefully at each hanger or folded item. Return ONLY a valid JSON array with no explanation, no markdown, no backticks. Format: [{"category": string, "count": number, "colors": string[], "style": string}]`;
 
 const COLOR_LOOKUP = [
   [["white"], "#f5f5f5"],
@@ -63,7 +63,10 @@ function parseResultsArray(rawText) {
   };
 
   let parsed = tryParse(s);
+
   if (Array.isArray(parsed)) return parsed;
+
+  if (parsed && Array.isArray(parsed.results)) return parsed.results;
 
   const start = s.indexOf("[");
   const end = s.lastIndexOf("]");
@@ -71,6 +74,14 @@ function parseResultsArray(rawText) {
     parsed = tryParse(s.slice(start, end + 1));
     if (Array.isArray(parsed)) return parsed;
   }
+
+  const objStart = s.indexOf("{");
+  const objEnd = s.lastIndexOf("}");
+  if (objStart !== -1 && objEnd > objStart) {
+    parsed = tryParse(s.slice(objStart, objEnd + 1));
+    if (parsed && Array.isArray(parsed.results)) return parsed.results;
+  }
+
   throw new Error("parse");
 }
 
@@ -84,6 +95,168 @@ function normalizeRows(arr) {
   });
 }
 
+const SCAN_CATEGORIES = [
+  { id: "tops", label: "Tops", emoji: "👕", tip: "Shirts, blouses, sweaters, knitwear" },
+  { id: "bottoms", label: "Bottoms", emoji: "👖", tip: "Pants, jeans, skirts, shorts" },
+  { id: "outerwear", label: "Outerwear", emoji: "🧥", tip: "Coats, blazers, vests" },
+  { id: "dresses", label: "Dresses", emoji: "👗", tip: "Dresses, jumpsuits, rompers" },
+  { id: "shoes", label: "Shoes", emoji: "👟", tip: "All footwear" },
+  { id: "accessories", label: "Accessories", emoji: "👜", tip: "Bags, belts, scarves, hats, jewelry" },
+  { id: "other", label: "Other", emoji: "📦", tip: "Activewear, swimwear, anything else" },
+];
+
+const SCAN_SUBCATEGORIES = {
+  tops: [
+    { id: "t-shirts", label: "T-Shirts", emoji: "👕" },
+    { id: "shirts", label: "Shirts & Blouses", emoji: "👔" },
+    { id: "sweaters", label: "Sweaters & Knitwear", emoji: "🧶" },
+    { id: "hoodies", label: "Hoodies & Sweatshirts", emoji: "🫙" },
+    { id: "tanks", label: "Tanks & Camisoles", emoji: "🎽" },
+    { id: "all-tops", label: "Mix of Tops", emoji: "📦" },
+  ],
+  bottoms: [
+    { id: "jeans", label: "Jeans", emoji: "👖" },
+    { id: "dress-pants", label: "Dress Pants", emoji: "👔" },
+    { id: "shorts", label: "Shorts", emoji: "🩳" },
+    { id: "skirts", label: "Skirts", emoji: "👗" },
+    { id: "joggers", label: "Joggers & Athletic", emoji: "🏃" },
+    { id: "all-bottoms", label: "Mix of Bottoms", emoji: "📦" },
+  ],
+  outerwear: [
+    { id: "blazers", label: "Blazers", emoji: "🧥" },
+    { id: "coats", label: "Coats", emoji: "🥼" },
+    { id: "jackets", label: "Jackets", emoji: "🫰" },
+    { id: "vests", label: "Vests", emoji: "🦺" },
+    { id: "all-outerwear", label: "Mix of Outerwear", emoji: "📦" },
+  ],
+  dresses: [
+    { id: "casual-dresses", label: "Casual Dresses", emoji: "👗" },
+    { id: "formal-dresses", label: "Formal Dresses", emoji: "🎀" },
+    { id: "jumpsuits", label: "Jumpsuits & Rompers", emoji: "🧑" },
+    { id: "all-dresses", label: "Mix of Dresses", emoji: "📦" },
+  ],
+  shoes: [
+    { id: "sneakers", label: "Sneakers", emoji: "👟" },
+    { id: "boots", label: "Boots", emoji: "🥾" },
+    { id: "heels", label: "Heels & Dress Shoes", emoji: "👠" },
+    { id: "sandals", label: "Sandals & Flats", emoji: "🩴" },
+    { id: "all-shoes", label: "Mix of Shoes", emoji: "📦" },
+  ],
+  accessories: [
+    { id: "bags", label: "Bags & Purses", emoji: "👜" },
+    { id: "belts-scarves", label: "Belts & Scarves", emoji: "🧣" },
+    { id: "hats", label: "Hats & Caps", emoji: "🧢" },
+    { id: "jewelry", label: "Jewelry", emoji: "💍" },
+    { id: "all-accessories", label: "Mix of Accessories", emoji: "📦" },
+  ],
+  other: null,
+};
+
+const UPLOAD_SUBTITLES = {
+  tops: "Take a photo of your tops — hanging or laid flat.",
+  bottoms: "Take a photo of your bottoms — hanging or folded in a row.",
+  outerwear: "Take a photo of your outerwear — hanging works best.",
+  dresses: "Take a photo of your dresses — spread them out so each is visible.",
+  shoes: "Take a photo of your shoes — lined up in pairs works best.",
+  accessories: "Take a photo of your accessories — laid flat on a surface works best.",
+  other: "Take a photo — spread items out so each one is clearly visible.",
+};
+
+const PHOTO_TIPS = {
+  tops:
+    "💡 Hang on a rail or fan out on a bed — make sure each neckline is visible. Have lots? Scan in batches of 10-15.",
+  bottoms: `💡 Two options:
+- Hanging: fan out on a rail, every hanger visible
+- Flat lay: lay in a row with NO overlap, waistband of each item clearly visible.
+Use a plain light floor or bed — avoid patterned backgrounds.`,
+  outerwear:
+    "💡 Hang on a rail if possible — spread each piece so collars are visible. Have lots? Scan in batches of 10-15.",
+  dresses:
+    "💡 Hang each dress separately and spread them out. Have lots? Scan in batches of 10-15 — hang a section, scan, then move on.",
+  shoes: "💡 Line up in pairs on the floor — side by side works best. Photograph from slightly above.",
+  accessories:
+    "💡 Lay flat on a light surface — spread out so each item is clearly distinct from the others.",
+  other: "💡 Spread items out so each one is clearly visible. Scan in batches if you have lots.",
+};
+
+const getCategoryPrompt = (categoryId, subcategoryId) => {
+  const cat = SCAN_CATEGORIES.find((c) => c.id === categoryId);
+
+  const subcat =
+    subcategoryId && !subcategoryId.startsWith("all-")
+      ? SCAN_SUBCATEGORIES[categoryId]?.find((s) => s.id === subcategoryId)
+      : null;
+
+  const label = subcat?.label || cat?.label || "clothing items";
+
+  const focusInstructions = {
+    tops: `Step 1: Count the total number of hangers visible in the image. This is your ground truth item count — do not guess lower.
+Step 2: For each hanger, identify the garment hanging below it — classify as one of: T-Shirt, Shirt, Blouse, Sweater, Cardigan, Hoodie, Tank, or Other Top.
+Step 3: Group identical subcategories together and note their colors.
+Return multiple objects if subcategories differ.`,
+    bottoms: `Step 1: Scan for waistbands only — count each distinct waistband you can see from top to bottom in the image. Each waistband = one item, even if the rest of the garment is hidden underneath.
+Step 2: For each waistband identify: denim/non-denim, color, style.
+Step 3: Group by subcategory.`,
+    outerwear: `Step 1: Count the total number of hangers visible in the image. This is your ground truth item count — do not guess lower.
+Step 2: For each hanger, identify the garment — classify as one of: Blazer, Coat, Jacket, Vest, or Other Outerwear.
+Step 3: Group identical subcategories together and note their colors.
+Return multiple objects if subcategories differ.`,
+    dresses:
+      "Count dresses, jumpsuits, rompers. Split by subcategory: e.g. separate Casual Dresses from Formal Dresses from Jumpsuits.",
+    shoes:
+      "Count pairs of shoes, boots, sneakers, heels, sandals. Each pair = 1 item. Split by subcategory: e.g. separate Sneakers from Boots from Heels.",
+    accessories:
+      "Count bags, belts, scarves, hats, jewelry. Split by subcategory: e.g. separate Bags from Belts from Scarves.",
+    other: "Count all visible fashion items. Split by type where possible.",
+  };
+
+  const focus = focusInstructions[categoryId] || focusInstructions.other;
+
+  const specificFocus = subcat
+    ? `These are ALL ${subcat.label}. Count every single one you can see. Do not classify — they are all ${subcat.label}. Just count, identify colors and style variations.`
+    : focus;
+
+  return `Analyze this photo carefully. The user is scanning their ${label} collection only.
+${specificFocus}
+Be thorough — look at every visible item including those partially hidden.
+IMPORTANT: Return MULTIPLE result objects when subcategories differ significantly.
+
+CRITICAL COUNTING INSTRUCTION:
+Perform a spatial scan FIRST. Map every item you can see from left to right (or top to bottom for flat lays) in the spatial_scan array. You must list EACH individual item separately before aggregating. This ensures nothing is missed.
+
+Return ONLY a valid JSON object with this exact structure, no explanation, no markdown, no backticks:
+{
+  "spatial_scan": [
+    "1. [position]: [color] [subcategory] - [detail]",
+    "2. [position]: [color] [subcategory] - [detail]",
+    "...one entry per item"
+  ],
+  "results": [
+    {
+      "category": "specific subcategory name",
+      "count": number,
+      "colors": string[],
+      "style": string
+    }
+  ]
+}
+
+The results array MUST match the total count from spatial_scan exactly.
+Focus ONLY on ${label}. Ignore furniture, walls, floors, hangers.`;
+};
+
+const getValidationPrompt = (categoryId) => {
+  const cat = SCAN_CATEGORIES.find((c) => c.id === categoryId);
+  const label = cat?.label || "clothing items";
+  return `Look at this photo. Does it contain ${label}?
+Answer with ONLY a JSON object, no explanation:
+{
+  "isValid": true or false,
+  "confidence": "high" or "low",
+  "reason": "one sentence explanation"
+}`;
+};
+
 /**
  * Closet bulk photo analysis — optional persist via `onSaveItems`; onboarding uses `onScanComplete` only.
  * @typedef {{ id: string, category: string, count: number, colors: string[], style: string, included: boolean }} ClosetScanRow
@@ -95,7 +268,9 @@ export function ClosetScanner({
   onSaveItems,
   isSaving = false,
 }) {
-  const [phase, setPhase] = useState("upload");
+  const [phase, setPhase] = useState("category");
+  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [selectedSubcategory, setSelectedSubcategory] = useState(null);
   const [toast, setToast] = useState(null);
   const [banner, setBanner] = useState(null);
   const [compressedBlob, setCompressedBlob] = useState(null);
@@ -105,12 +280,25 @@ export function ClosetScanner({
   const [msgIndex, setMsgIndex] = useState(0);
   const fileRef = useRef(null);
 
+  const currentSubcat =
+    selectedSubcategory && selectedCategory
+      ? SCAN_SUBCATEGORIES[selectedCategory]?.find((s) => s.id === selectedSubcategory)
+      : null;
+  const selectedCat = SCAN_CATEGORIES.find((c) => c.id === selectedCategory);
+  const badgeLabel = currentSubcat
+    ? `${currentSubcat.emoji} ${currentSubcat.label}`
+    : selectedCat
+      ? `${selectedCat.emoji} ${selectedCat.label}`
+      : "";
+
   const revokeSafe = useCallback((u) => {
     if (u && String(u).startsWith("blob:")) URL.revokeObjectURL(u);
   }, []);
 
   const resetFlow = useCallback(() => {
-    setPhase("upload");
+    setPhase("category");
+    setSelectedCategory(null);
+    setSelectedSubcategory(null);
     setCompressedBlob(null);
     setPreviewUrl((prev) => {
       revokeSafe(prev);
@@ -127,6 +315,8 @@ export function ClosetScanner({
       resetFlow();
       return undefined;
     }
+    setSelectedCategory(null);
+    setSelectedSubcategory(null);
     return undefined;
   }, [isOpen, resetFlow]);
 
@@ -178,7 +368,27 @@ export function ClosetScanner({
 
     try {
       const b64 = await blobToBase64(compressedBlob);
-      const text = await callClosetPhotoVision(b64, CLOSET_SCAN_PROMPT);
+
+      try {
+        const validationText = await callClosetPhotoVision(b64, getValidationPrompt(selectedCategory));
+
+        const clean = validationText.replace(/```json|```/g, "").trim();
+        const validation = JSON.parse(clean);
+
+        if (!validation.isValid) {
+          setPhase("upload");
+          setBanner(
+            `This photo doesn't look like ${
+              SCAN_CATEGORIES.find((c) => c.id === selectedCategory)?.label
+            }. ${validation.reason} Please try a different photo.`
+          );
+          return;
+        }
+      } catch {
+        console.warn("Validation check failed, proceeding anyway");
+      }
+
+      const text = await callClosetPhotoVision(b64, getCategoryPrompt(selectedCategory, selectedSubcategory));
       try {
         const arr = parseResultsArray(text);
         if (!arr.length) {
@@ -233,10 +443,10 @@ export function ClosetScanner({
 
     if (onSaveItems) {
       try {
-        await onSaveItems({ rows: toSave, photoBlob: compressedBlob ?? null });
+        await onSaveItems({ rows: toSave, photoBlob: compressedBlob ?? null, category: selectedCategory });
         showToast("Added to your wardrobe!");
         const done = (thumbnail) => {
-          onScanComplete?.({ rows: rowPayload, thumbnail });
+          onScanComplete?.({ rows: rowPayload, thumbnail, category: selectedCategory });
           window.setTimeout(() => onClose(), 380);
         };
         if (onScanComplete) {
@@ -259,7 +469,7 @@ export function ClosetScanner({
 
     if (onScanComplete) {
       const deliver = (thumbnail) => {
-        onScanComplete({ rows: rowPayload, thumbnail });
+        onScanComplete({ rows: rowPayload, thumbnail, category: selectedCategory });
         showToast("Coming soon");
         window.setTimeout(() => onClose(), 260);
       };
@@ -391,24 +601,259 @@ export function ClosetScanner({
             </div>
           ) : null}
 
+          {phase === "category" && (
+            <div>
+              <h2
+                style={{
+                  fontFamily: "var(--font-serif)",
+                  fontSize: "var(--text-2xl)",
+                  color: "var(--color-bg)",
+                  margin: "0 0 var(--space-2)",
+                  fontWeight: 700,
+                }}
+              >
+                What are you scanning?
+              </h2>
+              <p
+                style={{
+                  fontSize: "var(--text-sm)",
+                  color: "rgba(250,247,242,0.6)",
+                  margin: "0 0 var(--space-6)",
+                  lineHeight: 1.55,
+                }}
+              >
+                Scanning one category at a time gives much more accurate results.
+              </p>
+
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  gap: "var(--space-3)",
+                  marginBottom: "var(--space-6)",
+                }}
+              >
+                {SCAN_CATEGORIES.map((cat) => (
+                  <button
+                    key={cat.id}
+                    type="button"
+                    onClick={() => {
+                      setSelectedCategory(cat.id);
+                      setSelectedSubcategory(null);
+                      const subs = SCAN_SUBCATEGORIES[cat.id];
+                      if (subs && subs.length > 0) {
+                        setPhase("subcategory");
+                      } else {
+                        setPhase("upload");
+                      }
+                    }}
+                    style={{
+                      padding: "var(--space-4)",
+                      borderRadius: "var(--radius-lg)",
+                      border:
+                        selectedCategory === cat.id
+                          ? "2px solid var(--color-amber)"
+                          : "1px solid var(--color-amber-border)",
+                      background:
+                        selectedCategory === cat.id
+                          ? "var(--color-amber-light)"
+                          : "rgba(250,247,242,0.04)",
+                      cursor: "pointer",
+                      textAlign: "left",
+                      transition: "var(--transition)",
+                      minHeight: "var(--touch-target)",
+                    }}
+                  >
+                    <div style={{ fontSize: "1.5rem", marginBottom: "var(--space-1)" }}>{cat.emoji}</div>
+                    <div
+                      style={{
+                        fontWeight: 600,
+                        fontSize: "var(--text-sm)",
+                        color: "var(--color-bg)",
+                        marginBottom: "var(--space-1)",
+                      }}
+                    >
+                      {cat.label}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: "var(--text-xs)",
+                        color: "rgba(250,247,242,0.5)",
+                        lineHeight: 1.4,
+                      }}
+                    >
+                      {cat.tip}
+                    </div>
+                  </button>
+                ))}
+              </div>
+
+              <button
+                type="button"
+                onClick={onClose}
+                style={{
+                  width: "100%",
+                  marginTop: "var(--space-3)",
+                  padding: "var(--space-3)",
+                  background: "none",
+                  border: "none",
+                  color: "rgba(250,247,242,0.45)",
+                  fontSize: "var(--text-sm)",
+                  cursor: "pointer",
+                  textDecoration: "underline",
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          )}
+
+          {phase === "subcategory" && (
+            <div>
+              <button
+                type="button"
+                onClick={() => {
+                  setPhase("category");
+                  setSelectedSubcategory(null);
+                }}
+                style={{
+                  background: "none",
+                  border: "none",
+                  color: "var(--color-amber)",
+                  cursor: "pointer",
+                  fontSize: "var(--text-sm)",
+                  fontWeight: 600,
+                  padding: "0 0 var(--space-4) 0",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "var(--space-1)",
+                  minHeight: "var(--touch-target)",
+                }}
+              >
+                ← Back
+              </button>
+
+              <h2
+                style={{
+                  fontFamily: "var(--font-serif)",
+                  fontSize: "var(--text-2xl)",
+                  color: "var(--color-bg)",
+                  margin: "0 0 var(--space-2)",
+                  fontWeight: 700,
+                }}
+              >
+                Which type?
+              </h2>
+              <p
+                style={{
+                  fontSize: "var(--text-sm)",
+                  color: "rgba(250,247,242,0.6)",
+                  margin: "0 0 var(--space-6)",
+                  lineHeight: 1.55,
+                }}
+              >
+                More specific = more accurate results. Choose &quot;Mix&quot; if you have multiple types together.
+              </p>
+
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  gap: "var(--space-3)",
+                  marginBottom: "var(--space-4)",
+                }}
+              >
+                {(SCAN_SUBCATEGORIES[selectedCategory] || []).map((sub) => (
+                  <button
+                    key={sub.id}
+                    type="button"
+                    onClick={() => {
+                      setSelectedSubcategory(sub.id);
+                      setPhase("upload");
+                    }}
+                    style={{
+                      padding: "var(--space-4)",
+                      borderRadius: "var(--radius-lg)",
+                      border: "1px solid var(--color-amber-border)",
+                      background: "rgba(250,247,242,0.04)",
+                      cursor: "pointer",
+                      textAlign: "left",
+                      transition: "var(--transition)",
+                      minHeight: "var(--touch-target)",
+                    }}
+                  >
+                    <div style={{ fontSize: "1.5rem", marginBottom: "var(--space-1)" }}>{sub.emoji}</div>
+                    <div
+                      style={{
+                        fontWeight: 600,
+                        fontSize: "var(--text-sm)",
+                        color: "var(--color-bg)",
+                      }}
+                    >
+                      {sub.label}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {phase === "upload" && (
             <>
+              {selectedCategory && (
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "var(--space-2)",
+                    marginBottom: "var(--space-4)",
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (selectedSubcategory !== null) {
+                        setPhase("subcategory");
+                      } else {
+                        setPhase("category");
+                      }
+                    }}
+                    style={{
+                      background: "none",
+                      border: "none",
+                      color: "var(--color-amber)",
+                      cursor: "pointer",
+                      fontSize: "var(--text-sm)",
+                      fontWeight: 600,
+                      padding: 0,
+                      minHeight: "var(--touch-target)",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "var(--space-1)",
+                    }}
+                  >
+                    ← Back
+                  </button>
+                  <Badge variant="amber">{badgeLabel}</Badge>
+                </div>
+              )}
               <h2 id="closet-scanner-headline" style={{ margin: "0 0 8px", fontSize: "1.45rem", fontWeight: 600 }}>
-                Scan your closet
+                {`Scan your ${SCAN_CATEGORIES.find((c) => c.id === selectedCategory)?.label || "closet"}`}
               </h2>
               <p style={{ margin: "0 0 18px", color: "rgba(250,247,242,0.72)", lineHeight: 1.55, fontSize: "0.95rem" }}>
-                Take a photo of your hanging clothes, shelves, or drawer. We&apos;ll identify everything.
+                {UPLOAD_SUBTITLES[selectedCategory] || "Take a photo and we'll identify everything."}
               </p>
               <p
                 style={{
-                  margin: "0 0 16px",
-                  fontSize: "0.82rem",
+                  margin: "0 0 var(--space-4)",
+                  fontSize: "var(--text-xs)",
                   color: "rgba(196,129,58,0.85)",
-                  lineHeight: 1.5,
                   fontStyle: "italic",
+                  lineHeight: 1.5,
+                  whiteSpace: "pre-line",
                 }}
               >
-                💡 Tip: scan one section at a time — hanging clothes, then shelves, then drawers. You can add multiple photos.
+                {PHOTO_TIPS[selectedCategory]}
               </p>
 
               <input

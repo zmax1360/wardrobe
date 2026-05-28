@@ -65,7 +65,7 @@ export const agentTraceHooks = {
   getActiveNav: () => "wardrobe",
 };
 
-const CLOSET_SCAN_MAX_TOKENS = 1000;
+const CLOSET_SCAN_MAX_TOKENS = 2000;
 
 /**
  * Vision call via `/api/chat` (Anthropic). Uses JPEG base64 — same transport as `callTextCompletion` anthropic branch.
