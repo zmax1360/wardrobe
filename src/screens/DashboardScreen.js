@@ -97,7 +97,8 @@ export function DashboardScreen({ wardrobe, setActiveNav, profile, events = [] }
   const summary = wardrobeSummary(wardrobe);
   const upcomingEvents = getUpcomingEvents(events);
   const greeting = getGreeting();
-  const firstName = profile?.name?.split(" ")[0] || profile?.displayName?.split(" ")[0] || "";
+  const rawName = profile?.name?.split(" ")[0] || profile?.displayName?.split(" ")[0] || "";
+  const firstName = rawName ? rawName.charAt(0).toUpperCase() + rawName.slice(1) : "";
 
   const hasWardrobe = wardrobe.length > 0;
 
@@ -198,6 +199,91 @@ export function DashboardScreen({ wardrobe, setActiveNav, profile, events = [] }
         ))}
       </div>
 
+      {/* Upcoming events */}
+      {upcomingEvents.length > 0 && (
+        <div style={{
+          marginBottom: 32,
+          padding: "20px 22px",
+          background: "var(--color-bg-secondary)",
+          borderRadius: "var(--radius-lg)",
+          border: "1px solid var(--color-border)",
+        }}>
+          <div style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            marginBottom: 14,
+          }}>
+            <div style={{
+              fontSize: "var(--text-xs)",
+              fontWeight: 600,
+              letterSpacing: "0.08em",
+              textTransform: "uppercase",
+              color: "var(--color-text-muted)",
+            }}>
+              Upcoming
+            </div>
+            <button
+              type="button"
+              onClick={() => setActiveNav("calendar")}
+              style={{
+                fontSize: "var(--text-xs)",
+                color: "var(--color-amber)",
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                padding: 0,
+                fontWeight: 500,
+              }}
+            >
+              View all
+            </button>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {upcomingEvents.map((ev) => (
+              <div
+                key={ev.id || ev.date}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 12,
+                }}
+              >
+                <div>
+                  <div style={{
+                    fontSize: "var(--text-sm)",
+                    fontWeight: 600,
+                    color: "var(--color-text-primary)",
+                    marginBottom: 2,
+                  }}>
+                    {ev.title}
+                  </div>
+                  <div style={{
+                    fontSize: "var(--text-xs)",
+                    color: "var(--color-text-muted)",
+                  }}>
+                    {ev.dressCode && `${ev.dressCode} · `}{ev.occasionType}
+                  </div>
+                </div>
+                <div style={{
+                  fontSize: "var(--text-xs)",
+                  fontWeight: 600,
+                  color: "var(--color-amber)",
+                  whiteSpace: "nowrap",
+                  background: "rgba(196, 129, 58, 0.1)",
+                  padding: "4px 10px",
+                  borderRadius: "var(--radius-full)",
+                }}>
+                  {formatEventDate(ev.date)}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Wardrobe status */}
       {hasWardrobe ? (
         <div
           style={{

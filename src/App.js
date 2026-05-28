@@ -1397,7 +1397,7 @@ export default function App() {
 
         <main style={mergeStyles(ui.contentWrap, { flex: 1, padding: "32px 32px 48px", minWidth: 0 })}>
           {activeNav === "dashboard" && (
-            <DashboardScreen wardrobe={wardrobe} setActiveNav={setActiveNav} profile={profile} />
+            <DashboardScreen wardrobe={wardrobe} setActiveNav={setActiveNav} profile={profile} events={events} />
           )}
 
           {activeNav === "postScanNaming" && (
