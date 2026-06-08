@@ -621,6 +621,8 @@ Always return exactly 3 outfits. Each must be meaningfully different — vary th
             fontSize: "var(--text-sm)",
             cursor: "pointer",
             fontFamily: "var(--font-sans)",
+            marginBottom: 20,
+            transition: baseTransition,
           }}
         >
           {loading ? "Planning…" : "Plan my outfit"}
