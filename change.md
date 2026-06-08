@@ -1289,3 +1289,79 @@ After saving a closet scan, users should name individual items per category befo
 Successful scan save navigates to naming screen; Done splits `count > 1` rows into named items; Skip keeps aggregates and goes to wardrobe.
 
 ---
+
+### [Date: 2026-05-28] - Onboarding step 7 visual tile quick-add
+
+**Background:**
+Users were dropping off at step 7 (wardrobe scan). The scan-first flow was replaced with a tap-to-select tile picker so users can seed their wardrobe quickly; closet scanning remains optional via a secondary link.
+
+**Changed:**
+
+- `src/components/Onboarding.js`
+
+**Impact:**
+Step 7 shows a 22-item category tile grid; selected tiles are added to the wardrobe on "Build my wardrobe →". ClosetScanner modal is unchanged and reachable via "Scan your closet instead".
+
+---
+
+### [Date: 2026-05-28] - Twemoji for consistent cross-platform emoji
+
+**Background:**
+Native emoji rendering varies by OS (especially macOS). Twemoji SVG assets provide consistent visuals for wardrobe tiles, onboarding picks, and closet scanner categories.
+
+**Changed:**
+
+- `src/components/Emoji.js` (new)
+- `src/screens/WardrobeScreen.js`
+- `src/components/Onboarding.js`
+- `src/components/ClosetScanner.js`
+
+**Impact:**
+`@twemoji/api` (already in package.json) powers a shared `<Emoji>` component; card placeholders, category headers, coverage pills, onboarding tiles, and scanner category grids render Twemoji SVGs instead of system emoji glyphs.
+
+---
+
+### [Date: 2026-05-28] - Phosphor Icons for wardrobe card placeholders
+
+**Background:**
+Wardrobe card and category headers needed consistent cross-platform visuals without relying on system emoji or Twemoji parsing.
+
+**Changed:**
+
+- `package.json` / `package-lock.json` (`@phosphor-icons/react`)
+- `src/screens/WardrobeScreen.js`
+- `src/components/TwemojiSpan.js` (deleted)
+
+**Impact:**
+Wardrobe card placeholders and category accordion headers use Phosphor icons (`getItemIcon` / `CATEGORY_ICON`). `TwemojiSpan` removed. `@twemoji/api` kept for `Emoji.js` used in onboarding tiles, closet scanner, and wardrobe coverage pills.
+
+---
+
+### [Date: 2026-05-28] - Onboarding tile gender filter + color preferences
+
+**Background:**
+Step 7 wardrobe tile picker should surface gender-relevant clothing types by default and capture the user’s usual color palette for profile personalization.
+
+**Changed:**
+
+- `src/components/Onboarding.js`
+
+**Impact:**
+Tiles include `gender` tags and filter by `draft.gender` with a “Show all clothing types” toggle. Color palette chips save `colorPreferences` on the draft when building the wardrobe. Expanded tile list adds dresses, crop tops, ballet flats, belts, watches, and more.
+
+---
+
+### [Date: 2026-05-28] - AI-generated starter wardrobe on onboarding
+
+**Background:**
+Onboarding step 7 should build a personalized 50-item wardrobe via AI instead of only adding manually selected tiles — first 20 items block briefly, remaining 30 load in the background.
+
+**Changed:**
+
+- `src/services/aiService.js` (`generateStarterWardrobe`)
+- `src/components/Onboarding.js`
+
+**Impact:**
+“Build my wardrobe” requires color picks, calls AI for 20 items then advances onboarding; 30 more items generate in background. Tile selections remain as fallback if AI fails. Uses existing `/api/chat` proxy (not direct Anthropic client calls).
+
+---

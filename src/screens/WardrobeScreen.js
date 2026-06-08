@@ -1,6 +1,18 @@
 import React, { useState, useRef } from "react";
+import {
+  TShirt,
+  Hoodie,
+  Pants,
+  Dress,
+  Sneaker,
+  Boot,
+  Handbag,
+  CoatHanger,
+  ShirtFolded,
+} from "@phosphor-icons/react";
 
 import { ClosetScanner } from "../components/ClosetScanner";
+import { Emoji } from "../components/Emoji";
 import { FINANCE } from "../styles/financeTheme";
 import { COLORS, baseTransition } from "../styles/theme";
 import { calculateCPW, getPurchasePriceNum, getTimesWorn, WARDROBE_OCCASION_VALUES } from "../utils/wardrobeFinance";
@@ -18,6 +30,79 @@ const MANUAL_CATEGORIES = [
   "Activewear",
   "Formal",
 ];
+
+const CATEGORY_ORDER = [
+  "Tops",
+  "Bottoms",
+  "Dresses",
+  "Outerwear",
+  "Shoes",
+  "Accessories",
+  "Activewear",
+  "Formal",
+];
+
+const CATEGORY_ICON = {
+  Tops: TShirt,
+  Bottoms: Pants,
+  Dresses: Dress,
+  Outerwear: CoatHanger,
+  Shoes: Sneaker,
+  Accessories: Handbag,
+  Activewear: TShirt,
+  Formal: ShirtFolded,
+  Other: TShirt,
+};
+
+const ITEM_ICON = {
+  "hoodie": Hoodie,
+  "hoodies": Hoodie,
+  "dress": Dress,
+  "dresses": Dress,
+  "skirt": Dress,
+  "skirts": Dress,
+  "jeans": Pants,
+  "trousers": Pants,
+  "chinos": Pants,
+  "pants": Pants,
+  "leggings": Pants,
+  "casual pants": Pants,
+  "shorts": Pants,
+  "sneakers": Sneaker,
+  "boots": Boot,
+  "heels": Boot,
+  "loafers": Sneaker,
+  "sandals": Sneaker,
+  "bag": Handbag,
+  "bags": Handbag,
+  "blazer": ShirtFolded,
+  "blazers": ShirtFolded,
+  "jacket": CoatHanger,
+  "jackets": CoatHanger,
+  "coat": CoatHanger,
+  "coats": CoatHanger,
+  "sweater": TShirt,
+  "sweaters": TShirt,
+  "cardigan": TShirt,
+  "cardigans": TShirt,
+  "button-up shirts": ShirtFolded,
+  "shirts": ShirtFolded,
+  "t-shirts": TShirt,
+  "t-shirt": TShirt,
+  "blouse": TShirt,
+  "blouses": TShirt,
+};
+
+function getItemIcon(item) {
+  if (item.imagePreview) return null; // has real photo, no icon needed
+  const key = (item.name || "").toLowerCase().trim();
+  if (ITEM_ICON[key]) return ITEM_ICON[key];
+  for (const [k, v] of Object.entries(ITEM_ICON)) {
+    if (key.endsWith(k)) return v;
+  }
+  return CATEGORY_ICON[item.category] || TShirt;
+}
+
 const SEASON_OPTIONS = ["Spring", "Summer", "Fall", "Winter", "All"];
 
 const COVERAGE_CATEGORIES = [
@@ -157,6 +242,16 @@ export function WardrobeScreen({
   const [showClosetScanner, setShowClosetScanner] = useState(false);
   const [scannerCategory, setScannerCategory] = useState(null);
   const [expandedScanId, setExpandedScanId] = useState(null);
+  const [expandedCategories, setExpandedCategories] = useState(new Set());
+
+  const toggleCategory = (cat) => {
+    setExpandedCategories((prev) => {
+      const next = new Set(prev);
+      if (next.has(cat)) next.delete(cat);
+      else next.add(cat);
+      return next;
+    });
+  };
 
   const modalFileRef = useRef(null);
   const manualImageInputRef = useRef(null);
@@ -201,6 +296,20 @@ export function WardrobeScreen({
 
   const scanItems = filteredWardrobe.filter(isClosetScanWardrobeItem);
   const regularItems = filteredWardrobe.filter((item) => !isClosetScanWardrobeItem(item));
+
+  const groupedItems = CATEGORY_ORDER.reduce((acc, cat) => {
+    const items = regularItems.filter((it) => it.category === cat);
+    if (items.length > 0) acc.push({ category: cat, items });
+    return acc;
+  }, []);
+
+  // Catch items with unknown/missing category
+  const uncategorized = regularItems.filter(
+    (it) => !CATEGORY_ORDER.includes(it.category)
+  );
+  if (uncategorized.length > 0) {
+    groupedItems.push({ category: "Other", items: uncategorized });
+  }
 
   const coveredCategories = new Set(wardrobe.map((item) => item.category));
   const coverageScore = Math.round(
@@ -313,7 +422,7 @@ export function WardrobeScreen({
         style={{
           background: GALLERY_BG,
           color: FINANCE.text,
-          fontFamily: "'Inter', 'DM Sans', sans-serif",
+          fontFamily: "'Cormorant Garamond', serif",
           minHeight: 400,
         }}
       >
@@ -348,7 +457,7 @@ export function WardrobeScreen({
                 fontSize: "0.85rem",
                 fontWeight: 600,
                 cursor: "pointer",
-                fontFamily: "'Inter', sans-serif",
+                fontFamily: "var(--font-sans)",
                 display: "flex",
                 alignItems: "center",
                 gap: 6,
@@ -373,7 +482,7 @@ export function WardrobeScreen({
                 fontSize: "0.85rem",
                 fontWeight: 600,
                 cursor: "pointer",
-                fontFamily: "'Inter', sans-serif",
+                fontFamily: "var(--font-sans)",
               }}
             >
               + Add piece
@@ -558,7 +667,7 @@ export function WardrobeScreen({
                       transition: "var(--transition)",
                     }}
                   >
-                    <span>{cat.emoji}</span>
+                    <Emoji emoji={cat.emoji} size={14} />
                     <span>{cat.label}</span>
                     <span>{covered ? "✓" : "+"}</span>
                   </div>
@@ -874,9 +983,66 @@ export function WardrobeScreen({
               </p>
             )}
 
-            {regularItems.length > 0 && (
-              <div className="wardrobe-gallery-grid">
-                {regularItems.map((it) => {
+            {groupedItems.map(({ category, items }) => {
+              const isOpen = expandedCategories.has(category);
+              return (
+              <div key={category} style={{ marginBottom: 4 }}>
+                <button
+                  type="button"
+                  onClick={() => toggleCategory(category)}
+                  style={{
+                    width: "100%",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    padding: "12px 0",
+                    background: "none",
+                    border: "none",
+                    borderBottom: "1px solid var(--color-border, #f0ece6)",
+                    cursor: "pointer",
+                    fontFamily: "inherit",
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    {(() => {
+                      const Icon = CATEGORY_ICON[category] || TShirt;
+                      return <Icon size={18} weight="regular" color="#c4813a" />;
+                    })()}
+                    <span style={{
+                      fontSize: "0.85rem",
+                      fontWeight: 600,
+                      color: "var(--color-text-primary, #1a1208)",
+                      letterSpacing: "0.01em",
+                    }}>
+                      {category}
+                    </span>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span style={{
+                      fontSize: "0.78rem",
+                      fontWeight: 600,
+                      color: "var(--color-text-muted, #9a8a78)",
+                      background: "var(--color-bg-secondary, #f5f0e8)",
+                      padding: "2px 8px",
+                      borderRadius: 99,
+                    }}>
+                      {items.length}
+                    </span>
+                    <span style={{
+                      fontSize: "0.75rem",
+                      color: "var(--color-text-muted, #9a8a78)",
+                      transform: isOpen ? "rotate(180deg)" : "rotate(0deg)",
+                      transition: "transform 0.2s ease",
+                      display: "inline-block",
+                    }}>
+                      ▾
+                    </span>
+                  </div>
+                </button>
+
+                {isOpen && (
+                  <div className="wardrobe-gallery-grid" style={{ marginTop: 16, marginBottom: 24 }}>
+                    {items.map((it) => {
                   const pp = getPurchasePriceNum(it);
                   const wc = getTimesWorn(it);
                   const cpwFormatted = pp > 0 ? calculateCPW(pp, wc).toFixed(2) : null;
@@ -943,7 +1109,7 @@ export function WardrobeScreen({
                             fontSize: "0.72rem",
                             cursor: "pointer",
                             color: FINANCE.text,
-                            fontFamily: "'Inter', sans-serif",
+                            fontFamily: "var(--font-sans)",
                           }}
                         >
                           Edit
@@ -959,7 +1125,7 @@ export function WardrobeScreen({
                             color: COLORS.danger,
                             fontSize: "0.72rem",
                             cursor: "pointer",
-                            fontFamily: "'Inter', sans-serif",
+                            fontFamily: "var(--font-sans)",
                           }}
                         >
                           Remove
@@ -985,7 +1151,7 @@ export function WardrobeScreen({
                             fontSize: "0.72rem",
                             cursor: "pointer",
                             color: FINANCE.text,
-                            fontFamily: "'Inter', sans-serif",
+                            fontFamily: "var(--font-sans)",
                           }}
                         >
                           + Log wear
@@ -1003,6 +1169,7 @@ export function WardrobeScreen({
                         overflow: "hidden",
                         display: "flex",
                         flexDirection: "column",
+                        alignSelf: "start",
                       }}
                     >
                       <div className="wardrobe-card-inner">
@@ -1010,8 +1177,9 @@ export function WardrobeScreen({
                           className="wardrobe-card-image-frame"
                           style={{
                             position: "relative",
-                            aspectRatio: "3 / 4",
                             width: "100%",
+                            height: 100,
+                            flexShrink: 0,
                             boxSizing: "border-box",
                             display: "flex",
                             alignItems: "center",
@@ -1029,7 +1197,12 @@ export function WardrobeScreen({
                             />
                           ) : (
                             <div className="wardrobe-card-placeholder" aria-hidden>
-                              {(it.name || "?").trim().charAt(0).toUpperCase()}
+                              {(() => {
+                                const Icon = getItemIcon(it);
+                                return Icon ? (
+                                  <Icon size={48} weight="thin" color="#c4813a" />
+                                ) : null;
+                              })()}
                             </div>
                           )}
                           {it.imageUploading ? (
@@ -1065,10 +1238,9 @@ export function WardrobeScreen({
                         <div
                           className="wardrobe-card-text-block"
                           style={{
-                            paddingTop: 20,
+                            paddingTop: 8,
                             display: "flex",
                             flexDirection: "column",
-                            flex: 1,
                             minHeight: 0,
                           }}
                         >
@@ -1163,8 +1335,11 @@ export function WardrobeScreen({
                     </div>
                   );
                 })}
+                  </div>
+                )}
               </div>
-            )}
+              );
+            })}
           </>
         )}
       </div>

@@ -17,8 +17,8 @@
   --color-success: #2e7d32;
 
   /* Typography */
-  --font-sans: "Inter", "DM Sans", system-ui, sans-serif;
-  --font-serif: "Georgia", serif;
+  --font-serif: 'Cormorant Garamond', 'Playfair Display', Georgia, serif;
+  --font-sans: 'DM Sans', 'Inter', system-ui, sans-serif;
   --text-xs: 0.75rem;
   --text-sm: 0.875rem;
   --text-base: 1rem;

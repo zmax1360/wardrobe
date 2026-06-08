@@ -90,7 +90,7 @@ function LandingNavLogo() {
       to="/"
       className="fos-lp-logo"
       style={{
-        fontFamily: "Georgia, 'Times New Roman', serif",
+        fontFamily: "var(--font-serif)",
         fontSize: "1.15rem",
         fontWeight: 500,
         color: BRAND_WARM,
@@ -239,7 +239,7 @@ function WaitlistFlow() {
         </div>
         <h3
           style={{
-            fontFamily: "Georgia, 'Times New Roman', serif",
+            fontFamily: "var(--font-serif)",
             fontSize: "1.85rem",
             color: BRAND_WARM,
             margin: "0 0 12px",
@@ -315,7 +315,7 @@ function WaitlistFlow() {
 
       {step === 2 && (
         <div>
-          <p style={{ color: BRAND_WARM, fontSize: "1.1rem", margin: "0 0 18px", lineHeight: 1.45, fontFamily: "Georgia, serif" }}>
+          <p style={{ color: BRAND_WARM, fontSize: "1.1rem", margin: "0 0 18px", lineHeight: 1.45, fontFamily: "var(--font-serif)" }}>
             What&apos;s your biggest wardrobe frustration?
           </p>
           <p
@@ -360,7 +360,7 @@ function WaitlistFlow() {
 
       {step === 3 && (
         <div>
-          <p style={{ color: BRAND_WARM, fontSize: "1.1rem", margin: "0 0 18px", lineHeight: 1.45, fontFamily: "Georgia, serif" }}>
+          <p style={{ color: BRAND_WARM, fontSize: "1.1rem", margin: "0 0 18px", lineHeight: 1.45, fontFamily: "var(--font-serif)" }}>
             How do you currently keep track of your clothes?
           </p>
           <p
@@ -405,7 +405,7 @@ function WaitlistFlow() {
 
       {step === 4 && (
         <div>
-          <p style={{ color: BRAND_WARM, fontSize: "1.1rem", margin: "0 0 18px", lineHeight: 1.45, fontFamily: "Georgia, serif" }}>
+          <p style={{ color: BRAND_WARM, fontSize: "1.1rem", margin: "0 0 18px", lineHeight: 1.45, fontFamily: "var(--font-serif)" }}>
             Fashion OS is launching at $9.99/month. Would you pay that?
           </p>
           <div className="fos-lp-cards">
@@ -547,7 +547,7 @@ export default function LandingPage() {
           max-width: 720px;
         }
         .fos-lp-headline {
-          font-family: Georgia, 'Times New Roman', serif;
+          font-family: var(--font-serif);
           font-weight: 600;
           font-size: clamp(2.3rem, 6vw, 3.85rem);
           line-height: 1.06;
@@ -555,7 +555,7 @@ export default function LandingPage() {
           letter-spacing: -0.035em;
         }
         .fos-lp-subheadline {
-          font-family: Georgia, 'Times New Roman', serif;
+          font-family: var(--font-serif);
           font-weight: 400;
           font-size: clamp(1.68rem, 4.8vw, 2.85rem);
           line-height: 1.08;
@@ -564,7 +564,7 @@ export default function LandingPage() {
           color: rgba(250,247,242,0.92);
         }
         .fos-lp-lead {
-          font-family: Georgia, serif;
+          font-family: var(--font-serif);
           font-size: clamp(1.08rem, 2.8vw, 1.42rem);
           line-height: 1.42;
           color: rgba(250,247,242,0.72);
@@ -609,7 +609,7 @@ export default function LandingPage() {
         .fos-lp-btn-secondary:hover { border-color: ${BRAND_ACCENT}; color: ${BRAND_ACCENT};}
 
         .fos-lp-section-title {
-          font-family: Georgia, serif;
+          font-family: var(--font-serif);
           font-weight: 500;
           font-size: clamp(1.85rem, 4.2vw, 2.5rem);
           margin: 0 0 clamp(36px, 6vw, 52px);
@@ -649,7 +649,7 @@ export default function LandingPage() {
           pointer-events: none;
         }
         .fos-lp-card-num {
-          font-family: Georgia, serif;
+          font-family: var(--font-serif);
           font-size: 1.85rem;
           color: ${BRAND_ACCENT};
           font-weight: 600;
@@ -706,7 +706,7 @@ export default function LandingPage() {
           margin: 0;
         }
         .fos-lp-hiw-num {
-          font-family: Georgia, serif;
+          font-family: var(--font-serif);
           font-size: clamp(0.92rem, 2vw, 1rem);
           font-weight: 600;
           letter-spacing: 0.38em;
@@ -714,7 +714,7 @@ export default function LandingPage() {
           margin: 0 0 10px;
         }
         .fos-lp-hiw-headline {
-          font-family: Georgia, serif;
+          font-family: var(--font-serif);
           font-weight: 500;
           font-size: clamp(1.52rem, 3.8vw, 2rem);
           line-height: 1.14;
@@ -782,7 +782,7 @@ export default function LandingPage() {
         }
         .fos-lp-feat h3 {
           margin: 0 0 8px;
-          font-family: Georgia, serif;
+          font-family: var(--font-serif);
           font-weight: 500;
           font-size: 1.12rem;
         }
@@ -870,7 +870,7 @@ export default function LandingPage() {
           margin-right: auto;
         }
         section#waitlist .fos-lp-waitlist-title {
-          font-family: Georgia, serif;
+          font-family: var(--font-serif);
           font-weight: 500;
           font-size: 32px;
           margin: 0 0 12px;
