@@ -242,3 +242,110 @@ export function parseCatalogJson(text) {
       (preview ? `Response started with: "${preview}${s.length > 100 ? "…" : ""}"` : "")
   );
 }
+
+export async function generateStarterWardrobe(profile, batchSize = 20, offset = 0) {
+  const {
+    gender = "undisclosed",
+    styles = [],
+    colorPreferences = [],
+    bodyType = "",
+    climate = "cold winters, warm summers",
+    occasions = [],
+  } = profile;
+
+  const colorList = colorPreferences.length > 0
+    ? colorPreferences.join(", ")
+    : "black, navy, grey, white, beige";
+
+  const styleList = styles.length > 0 ? styles.join(", ") : "casual, classic";
+  const occasionList = occasions.length > 0 ? occasions.join(", ") : "everyday, casual";
+
+  const genderNote = gender === "male"
+    ? "This is a male wardrobe — no dresses, skirts, heels or feminine items."
+    : gender === "female"
+      ? "This is a female wardrobe — include dresses, skirts, feminine cuts where appropriate."
+      : "This is a gender-neutral wardrobe — include a mix of classic unisex pieces.";
+
+  const system = `You are a personal stylist building a realistic wardrobe. 
+${genderNote}
+Climate: ${climate}
+Style: ${styleList}
+Occasions: ${occasionList}
+Preferred colors: ${colorList}
+Body type/sizing: ${bodyType || "not specified"}
+
+Generate exactly ${batchSize} wardrobe items (items ${offset + 1} to ${offset + batchSize} of a 50-item wardrobe).
+A realistic wardrobe has multiples of common items — e.g. 3-4 t-shirts in different colors, 2-3 jeans, 2 jackets etc.
+Each item must use one of the preferred colors or a neutral that complements them.
+Return ONLY a JSON array. No markdown, no explanation.
+Each item: { "name": "...", "category": "...", "color": "...", "colors": ["..."], "style": "...", "season": "all|spring|summer|fall|winter" }
+Categories must be one of: Tops, Bottoms, Outerwear, Shoes, Accessories, Dresses.
+Names should be specific: "Navy Slim Chinos" not just "Chinos". Include color in the name.`;
+
+  const user = `Generate ${batchSize} wardrobe items for a ${gender} person with ${styleList} style who prefers ${colorList} colors. Items ${offset + 1}-${offset + batchSize} of 50.`;
+
+  const authHeader = await getFirebaseAuthHeader();
+  const res = await fetch(ANTHROPIC_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "anthropic-version": "2023-06-01",
+      ...authHeader,
+    },
+    body: JSON.stringify({
+      model: CLAUDE_MODEL,
+      max_tokens: 4000,
+      system,
+      messages: [{ role: "user", content: user }],
+    }),
+  });
+
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new Error(errText || `Anthropic error ${res.status}`);
+  }
+
+  const data = await res.json();
+  const text = Array.isArray(data?.content)
+    ? data.content.filter((c) => c.type === "text").map((c) => c.text).join("")
+    : data?.content?.[0]?.text || "[]";
+  const clean = String(text).replace(/```json|```/gi, "").trim();
+
+  const tryParseArray = (raw) => {
+    try {
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed : null;
+    } catch {
+      return null;
+    }
+  };
+
+  let items = tryParseArray(clean);
+  if (!items) {
+    const start = clean.indexOf("[");
+    const end = clean.lastIndexOf("]");
+    if (start !== -1 && end > start) {
+      items = tryParseArray(clean.slice(start, end + 1));
+    }
+  }
+
+  if (!items?.length) return [];
+
+  return items.map((item, i) => ({
+    id: `ai-wardrobe-${offset + i}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    name: item.name || "Unnamed Item",
+    category: item.category || "Tops",
+    color: item.color || "black",
+    colors: Array.isArray(item.colors) ? item.colors : [item.color || "black"],
+    style: item.style || styleList,
+    season: item.season || "all",
+    source: "ai_generated",
+    tags: ["ai-wardrobe", "onboarding"],
+    laundryStatus: "clean",
+    timesWorn: 0,
+    description: "",
+    purchasePrice: "",
+    imagePreview: "",
+    imageFilename: "",
+  }));
+}

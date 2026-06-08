@@ -2,6 +2,7 @@
 
 body {
   margin: 0;
+  font-family: var(--font-sans);
 }
 
 /* Prevent accidental horizontal scroll on mobile */
@@ -18,7 +19,7 @@ h3,
 h4,
 h5,
 h6 {
-  font-family: "Playfair Display", "Cormorant Garamond", Georgia, serif;
+  font-family: var(--font-serif);
   letter-spacing: -0.03em;
 }
 
@@ -122,7 +123,7 @@ h6 {
     text-overflow: ellipsis;
     max-width: 100%;
     letter-spacing: 0.02em;
-    font-family: "Inter", "DM Sans", sans-serif;
+    font-family: var(--font-sans);
     font-weight: 600;
   }
 
@@ -238,7 +239,7 @@ h6 {
     justify-content: center;
   }
   .app-more-item-label {
-    font-family: "Inter", "DM Sans", sans-serif;
+    font-family: var(--font-sans);
     font-weight: 700;
     font-size: 0.9rem;
     line-height: 1.15;
@@ -266,10 +267,10 @@ h6 {
 
 .wardrobe-gallery-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 4rem;
-  margin-top: 80px;
-  align-items: stretch;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 16px;
+  margin-top: 24px;
+  align-items: start;
 }
 
 /* Cards — white field, hairline edge */
@@ -294,12 +295,12 @@ h6 {
   display: flex;
   flex-direction: column;
   min-height: 0;
-  padding: 3rem;
+  padding: 10px;
 }
 
 .wardrobe-card-category {
   font-size: 9px;
-  font-family: "Inter", sans-serif;
+  font-family: var(--font-sans);
   font-weight: 700;
   color: #64748b;
   text-transform: uppercase;
@@ -307,7 +308,7 @@ h6 {
 }
 
 .wardrobe-card-mood {
-  font-family: "Inter", sans-serif;
+  font-family: var(--font-sans);
   font-size: 0.65rem;
   font-style: italic;
   font-weight: 400;
@@ -333,7 +334,7 @@ h6 {
 }
 
 .wardrobe-card-name {
-  font-family: "Cormorant Garamond", "Playfair Display", serif;
+  font-family: var(--font-serif);
   font-size: 0.9rem;
   font-weight: 600;
   line-height: 1.25;
@@ -347,7 +348,7 @@ h6 {
 }
 
 .wardrobe-card-cpw {
-  font-family: "Inter", sans-serif;
+  font-family: var(--font-sans);
   font-size: 0.75rem;
   font-weight: 800;
   color: #1a1a1a;
@@ -388,7 +389,7 @@ h6 {
 }
 
 .wardrobe-link-preview-brand {
-  font-family: "Inter", sans-serif;
+  font-family: var(--font-sans);
   font-size: 0.65rem;
   font-weight: 700;
   text-transform: uppercase;
@@ -398,7 +399,6 @@ h6 {
 
 .wardrobe-link-preview-frame {
   position: relative;
-  aspect-ratio: 3 / 4;
   width: 100%;
   box-sizing: border-box;
   overflow: hidden;
@@ -424,7 +424,7 @@ h6 {
 }
 
 .wardrobe-link-preview-title {
-  font-family: "Cormorant Garamond", "Playfair Display", serif;
+  font-family: var(--font-serif);
   font-size: 0.95rem;
   font-weight: 600;
   line-height: 1.3;
@@ -438,7 +438,7 @@ h6 {
 }
 
 .wardrobe-link-preview-price {
-  font-family: "Inter", sans-serif;
+  font-family: var(--font-sans);
   font-size: 0.9rem;
   font-weight: 700;
   color: #1a1a1a;
@@ -452,7 +452,7 @@ h6 {
   border: none;
   font-weight: 600;
   cursor: pointer;
-  font-family: "Inter", sans-serif;
+  font-family: var(--font-sans);
   font-size: 0.88rem;
 }
 
@@ -465,7 +465,7 @@ h6 {
   padding: 6px 14px;
   border-radius: 999px;
   font-size: 0.8rem;
-  font-family: "Inter", sans-serif;
+  font-family: var(--font-sans);
   font-weight: 500;
   border: 1px solid rgba(0, 0, 0, 0.12);
   background: transparent;
@@ -517,7 +517,7 @@ h6 {
   border: none;
   background: transparent;
   font-size: 0.92rem;
-  font-family: "Inter", "DM Sans", sans-serif;
+  font-family: var(--font-sans);
   color: #1a1a1a;
   outline: none;
 }
@@ -683,7 +683,7 @@ h6 {
   border-radius: 8px;
   padding: 10px 14px;
   font-size: 0.9rem;
-  font-family: "Inter", "DM Sans", sans-serif;
+  font-family: var(--font-sans);
   color: #1a1a1a;
   outline: none;
   transition: border-color 0.2s ease;
@@ -780,7 +780,7 @@ h6 {
 }
 
 .wardrobe-manual-placeholder-letter {
-  font-family: "Cormorant Garamond", "Playfair Display", serif;
+  font-family: var(--font-serif);
   font-size: 2.25rem;
   font-weight: 600;
   color: #b85c3c;
@@ -803,7 +803,7 @@ h6 {
   background: none;
   border: none;
   cursor: pointer;
-  font-family: "Inter", sans-serif;
+  font-family: var(--font-sans);
 }
 
 .wardrobe-manual-details-panel {
@@ -833,7 +833,7 @@ h6 {
   padding: 6px 12px;
   border-radius: 999px;
   font-size: 0.8rem;
-  font-family: "Inter", sans-serif;
+  font-family: var(--font-sans);
   font-weight: 500;
   border: 1px solid rgba(184, 92, 60, 0.45);
   background: transparent;
@@ -858,7 +858,7 @@ h6 {
   color: #faf9f6;
   font-size: 0.92rem;
   font-weight: 600;
-  font-family: "Inter", sans-serif;
+  font-family: var(--font-sans);
   cursor: pointer;
   transition: opacity 0.2s ease;
 }
@@ -874,12 +874,9 @@ h6 {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #e8e6e3;
-  font-family: "Cormorant Garamond", "Playfair Display", serif;
-  font-size: 2.5rem;
-  font-weight: 600;
-  color: #b85c3c;
-  letter-spacing: -0.02em;
+  background: transparent;
+  font-size: 2.2rem;
+  line-height: 1;
 }
 
 .wardrobe-card-image-frame {
@@ -928,7 +925,7 @@ h6 {
 }
 
 .wardrobe-card-wear-label {
-  font-family: "Inter", sans-serif;
+  font-family: var(--font-sans);
   font-size: 9px;
   font-weight: 400;
   color: #c8c8c8;
@@ -967,11 +964,11 @@ h6 {
   min-height: 100vh;
   background: #ffffff;
   color: #1a1a1a;
-  font-family: "Inter", "DM Sans", sans-serif;
+  font-family: var(--font-sans);
 }
 
 .equity-page-title {
-  font-family: "Playfair Display", "Cormorant Garamond", Georgia, serif;
+  font-family: var(--font-serif);
   font-size: 2.8rem;
   font-weight: 600;
   letter-spacing: -0.04em;
@@ -1004,7 +1001,7 @@ h6 {
 
 .equity-stat-label {
   font-size: 9px;
-  font-family: "Inter", sans-serif;
+  font-family: var(--font-sans);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.15em;
@@ -1012,7 +1009,7 @@ h6 {
 }
 
 .equity-stat-value {
-  font-family: "Cormorant Garamond", "Playfair Display", serif;
+  font-family: var(--font-serif);
   font-size: 1.85rem;
   font-weight: 600;
   letter-spacing: -0.03em;
@@ -1036,7 +1033,7 @@ h6 {
 }
 
 .equity-section-title {
-  font-family: "Playfair Display", "Cormorant Garamond", Georgia, serif;
+  font-family: var(--font-serif);
   font-size: 1.25rem;
   font-weight: 600;
   letter-spacing: -0.03em;
@@ -1068,7 +1065,7 @@ h6 {
   font-size: 0.75rem;
   font-weight: 600;
   color: #64748b;
-  font-family: "Inter", sans-serif;
+  font-family: var(--font-sans);
 }
 
 .equity-select,
@@ -1079,7 +1076,7 @@ h6 {
   background: #ffffff;
   color: #1a1a1a;
   font-size: 0.9rem;
-  font-family: "Inter", sans-serif;
+  font-family: var(--font-sans);
 }
 
 .equity-input {
@@ -1090,7 +1087,7 @@ h6 {
 .equity-sim-outcome {
   padding: 10px 0;
   font-size: 0.95rem;
-  font-family: "Inter", sans-serif;
+  font-family: var(--font-sans);
 }
 
 .equity-sim-cpw {
@@ -1142,7 +1139,7 @@ h6 {
 }
 
 .equity-asset-name {
-  font-family: "Cormorant Garamond", "Playfair Display", serif;
+  font-family: var(--font-serif);
   font-size: 0.9rem;
   font-weight: 600;
   line-height: 1.25;
@@ -1156,7 +1153,7 @@ h6 {
 .equity-asset-meta {
   font-size: 0.8rem;
   color: #64748b;
-  font-family: "Inter", sans-serif;
+  font-family: var(--font-sans);
   margin-top: 2px;
 }
 
@@ -1177,11 +1174,11 @@ h6 {
   min-height: 100vh;
   background: #ffffff;
   color: #1a1a1a;
-  font-family: "Inter", "DM Sans", sans-serif;
+  font-family: var(--font-sans);
 }
 
 .dashboard-page-title {
-  font-family: "Playfair Display", "Cormorant Garamond", Georgia, serif;
+  font-family: var(--font-serif);
   font-size: 2.8rem;
   font-weight: 600;
   letter-spacing: -0.04em;
@@ -1199,7 +1196,7 @@ h6 {
 .dashboard-agent-status {
   margin: 0 0 28px;
   font-size: 10px;
-  font-family: "Inter", sans-serif;
+  font-family: var(--font-sans);
   font-weight: 500;
   color: #94a3b8;
   letter-spacing: 0.06em;
@@ -1224,7 +1221,7 @@ h6 {
 
 .dashboard-kpi-label {
   font-size: 9px;
-  font-family: "Inter", sans-serif;
+  font-family: var(--font-sans);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.15em;
@@ -1232,7 +1229,7 @@ h6 {
 }
 
 .dashboard-kpi-value {
-  font-family: "Cormorant Garamond", "Playfair Display", serif;
+  font-family: var(--font-serif);
   font-size: 1.65rem;
   font-weight: 600;
   letter-spacing: -0.03em;
@@ -1244,7 +1241,7 @@ h6 {
   font-size: 0.72rem;
   color: #94a3b8;
   margin-top: 6px;
-  font-family: "Inter", sans-serif;
+  font-family: var(--font-sans);
 }
 
 .dashboard-action-card {
@@ -1258,7 +1255,7 @@ h6 {
 
 .dashboard-action-eyebrow {
   font-size: 9px;
-  font-family: "Inter", sans-serif;
+  font-family: var(--font-sans);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.15em;
@@ -1296,7 +1293,7 @@ h6 {
   border: none;
   padding: 0;
   margin: 0;
-  font-family: "Inter", sans-serif;
+  font-family: var(--font-sans);
   font-size: 0.88rem;
   font-weight: 500;
   color: #64748b;
@@ -1324,7 +1321,7 @@ h6 {
 }
 
 .dashboard-empty-cta-title {
-  font-family: "Playfair Display", "Cormorant Garamond", Georgia, serif;
+  font-family: var(--font-serif);
   font-size: 1.5rem;
   font-weight: 600;
   letter-spacing: -0.03em;
@@ -1337,7 +1334,7 @@ h6 {
   font-size: 0.88rem;
   line-height: 1.55;
   color: rgba(255, 255, 255, 0.72);
-  font-family: "Inter", sans-serif;
+  font-family: var(--font-sans);
 }
 
 .dashboard-empty-cta-button {
@@ -1349,7 +1346,7 @@ h6 {
   border: 1px solid rgba(255, 255, 255, 0.35);
   background: #ffffff;
   color: #0f0f0f;
-  font-family: "Inter", sans-serif;
+  font-family: var(--font-sans);
   font-size: 0.82rem;
   font-weight: 600;
   letter-spacing: 0.04em;
@@ -1374,7 +1371,7 @@ h6 {
 
 .dashboard-spotlight-eyebrow {
   font-size: 9px;
-  font-family: "Inter", sans-serif;
+  font-family: var(--font-sans);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.15em;
@@ -1387,7 +1384,7 @@ h6 {
   font-size: 0.92rem;
   line-height: 1.65;
   color: #475569;
-  font-family: "Inter", sans-serif;
+  font-family: var(--font-sans);
 }
 
 .dashboard-spotlight-copy strong {
@@ -1434,7 +1431,7 @@ h6 {
   border: none;
   background: transparent;
   cursor: pointer;
-  font-family: "Inter", sans-serif;
+  font-family: var(--font-sans);
   transition: opacity 0.2s ease, color 0.2s ease;
   color: #8a8a8a;
 }
@@ -1573,5 +1570,26 @@ h6 {
   .wardrobe-page-header button {
     flex: 1;
     justify-content: center;
+  }
+}
+
+@media (max-width: 600px) {
+  .planner-outfits-grid {
+    display: flex !important;
+    flex-direction: row !important;
+    overflow-x: auto !important;
+    scroll-snap-type: x mandatory !important;
+    gap: 12px !important;
+    padding-bottom: 8px !important;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .planner-outfits-grid::-webkit-scrollbar {
+    display: none;
+  }
+  .planner-outfits-grid > div {
+    flex: 0 0 85vw !important;
+    max-width: 85vw !important;
+    scroll-snap-align: start;
   }
 }

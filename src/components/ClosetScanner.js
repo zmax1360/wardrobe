@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { callClosetPhotoVision } from "../services/aiService";
 import { blobToBase64, compressImage } from "../utils/compressImage";
+import { Emoji } from "./Emoji";
 import { Badge } from "./ui";
 
 const BRAND_BG = "#1a1208";
@@ -286,12 +287,6 @@ export function ClosetScanner({
       ? SCAN_SUBCATEGORIES[selectedCategory]?.find((s) => s.id === selectedSubcategory)
       : null;
   const selectedCat = SCAN_CATEGORIES.find((c) => c.id === selectedCategory);
-  const badgeLabel = currentSubcat
-    ? `${currentSubcat.emoji} ${currentSubcat.label}`
-    : selectedCat
-      ? `${selectedCat.emoji} ${selectedCat.label}`
-      : "";
-
   const revokeSafe = useCallback((u) => {
     if (u && String(u).startsWith("blob:")) URL.revokeObjectURL(u);
   }, []);
@@ -542,7 +537,7 @@ export function ClosetScanner({
           borderRadius: "clamp(0px, 2vw, 16px)",
           border: `1px solid ${BORDER_SOFT}`,
           color: TEXT_WARM,
-          fontFamily: "'Inter', 'DM Sans', system-ui, sans-serif",
+          fontFamily: "var(--font-sans)",
           margin: "auto",
           boxSizing: "border-box",
           boxShadow: "0 24px 80px rgba(0,0,0,0.55)",
@@ -680,7 +675,9 @@ export function ClosetScanner({
                       minHeight: "var(--touch-target)",
                     }}
                   >
-                    <div style={{ fontSize: "1.5rem", marginBottom: "var(--space-1)" }}>{cat.emoji}</div>
+                    <div style={{ marginBottom: "var(--space-1)" }}>
+                      <Emoji emoji={cat.emoji} size={24} />
+                    </div>
                     <div
                       style={{
                         fontWeight: 600,
@@ -798,7 +795,9 @@ export function ClosetScanner({
                       minHeight: "var(--touch-target)",
                     }}
                   >
-                    <div style={{ fontSize: "1.5rem", marginBottom: "var(--space-1)" }}>{sub.emoji}</div>
+                    <div style={{ marginBottom: "var(--space-1)" }}>
+                      <Emoji emoji={sub.emoji} size={24} />
+                    </div>
                     <div
                       style={{
                         fontWeight: 600,
@@ -850,7 +849,12 @@ export function ClosetScanner({
                   >
                     ← Back
                   </button>
-                  <Badge variant="amber">{badgeLabel}</Badge>
+                  <Badge variant="amber">
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                      <Emoji emoji={currentSubcat?.emoji || selectedCat?.emoji} size={14} />
+                      {currentSubcat?.label || selectedCat?.label}
+                    </span>
+                  </Badge>
                 </div>
               )}
               <h2 id="closet-scanner-headline" style={{ margin: "0 0 8px", fontSize: "1.45rem", fontWeight: 600 }}>

@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { COLORS } from "../constants/colors";
+import { generateStarterWardrobe } from "../services/aiService";
 import { buildWardrobeItems } from "../utils/categoryMap";
 import { ClosetScanner } from "./ClosetScanner";
+import { Emoji } from "./Emoji";
 
 async function parseStepWithAI(step, userText, currentDraft, brands) {
   const prompts = {
@@ -126,6 +128,69 @@ function tileBase(selected, transition) {
   };
 }
 
+const WARDROBE_TILES = [
+  // Tops — unisex
+  { id: "t-shirt", label: "T-Shirts", category: "Tops", color: "white", colors: ["white"], gender: ["male", "female", "nonbinary", "undisclosed"] },
+  { id: "button-shirt", label: "Button-up Shirts", category: "Tops", color: "white", colors: ["white", "blue"], gender: ["male", "female", "nonbinary", "undisclosed"] },
+  { id: "sweater", label: "Sweaters", category: "Tops", color: "cream", colors: ["cream"], gender: ["male", "female", "nonbinary", "undisclosed"] },
+  { id: "hoodie", label: "Hoodies", category: "Tops", color: "grey", colors: ["grey"], gender: ["male", "female", "nonbinary", "undisclosed"] },
+  { id: "tank", label: "Tank Tops", category: "Tops", color: "white", colors: ["white"], gender: ["male", "female", "nonbinary", "undisclosed"] },
+  // Tops — female leaning
+  { id: "blouse", label: "Blouses", category: "Tops", color: "white", colors: ["white"], gender: ["female", "nonbinary", "undisclosed"] },
+  { id: "crop-top", label: "Crop Tops", category: "Tops", color: "white", colors: ["white"], gender: ["female", "nonbinary", "undisclosed"] },
+  // Bottoms — unisex
+  { id: "jeans", label: "Jeans", category: "Bottoms", color: "blue", colors: ["light blue"], gender: ["male", "female", "nonbinary", "undisclosed"] },
+  { id: "trousers", label: "Trousers", category: "Bottoms", color: "black", colors: ["black"], gender: ["male", "female", "nonbinary", "undisclosed"] },
+  { id: "chinos", label: "Chinos", category: "Bottoms", color: "beige", colors: ["beige"], gender: ["male", "female", "nonbinary", "undisclosed"] },
+  { id: "shorts", label: "Shorts", category: "Bottoms", color: "navy", colors: ["navy"], gender: ["male", "female", "nonbinary", "undisclosed"] },
+  { id: "leggings", label: "Leggings", category: "Bottoms", color: "black", colors: ["black"], gender: ["female", "nonbinary", "undisclosed"] },
+  // Bottoms — female leaning
+  { id: "skirt", label: "Skirts", category: "Bottoms", color: "black", colors: ["black"], gender: ["female", "nonbinary", "undisclosed"] },
+  { id: "mini-skirt", label: "Mini Skirts", category: "Bottoms", color: "black", colors: ["black"], gender: ["female", "nonbinary", "undisclosed"] },
+  // Dresses — female leaning
+  { id: "dress", label: "Dresses", category: "Dresses", color: "black", colors: ["black"], gender: ["female", "nonbinary", "undisclosed"] },
+  { id: "maxi-dress", label: "Maxi Dresses", category: "Dresses", color: "floral", colors: ["white", "floral"], gender: ["female", "nonbinary", "undisclosed"] },
+  // Outerwear — unisex
+  { id: "jacket", label: "Jacket", category: "Outerwear", color: "navy", colors: ["navy"], gender: ["male", "female", "nonbinary", "undisclosed"] },
+  { id: "coat", label: "Coat", category: "Outerwear", color: "camel", colors: ["camel"], gender: ["male", "female", "nonbinary", "undisclosed"] },
+  { id: "blazer", label: "Blazer", category: "Outerwear", color: "grey", colors: ["grey"], gender: ["male", "female", "nonbinary", "undisclosed"] },
+  // Shoes — unisex
+  { id: "sneakers", label: "Sneakers", category: "Shoes", color: "white", colors: ["white"], gender: ["male", "female", "nonbinary", "undisclosed"] },
+  { id: "boots", label: "Boots", category: "Shoes", color: "brown", colors: ["brown"], gender: ["male", "female", "nonbinary", "undisclosed"] },
+  { id: "loafers", label: "Loafers", category: "Shoes", color: "black", colors: ["black"], gender: ["male", "female", "nonbinary", "undisclosed"] },
+  { id: "sandals", label: "Sandals", category: "Shoes", color: "tan", colors: ["tan"], gender: ["male", "female", "nonbinary", "undisclosed"] },
+  // Shoes — female leaning
+  { id: "heels", label: "Heels", category: "Shoes", color: "black", colors: ["black"], gender: ["female", "nonbinary", "undisclosed"] },
+  { id: "ballet-flats", label: "Ballet Flats", category: "Shoes", color: "black", colors: ["black"], gender: ["female", "nonbinary", "undisclosed"] },
+  // Accessories — unisex
+  { id: "bag", label: "Bags", category: "Accessories", color: "black", colors: ["black"], gender: ["male", "female", "nonbinary", "undisclosed"] },
+  { id: "scarf", label: "Scarves", category: "Accessories", color: "grey", colors: ["grey"], gender: ["male", "female", "nonbinary", "undisclosed"] },
+  { id: "belt", label: "Belts", category: "Accessories", color: "black", colors: ["black"], gender: ["male", "female", "nonbinary", "undisclosed"] },
+  { id: "watch", label: "Watches", category: "Accessories", color: "silver", colors: ["silver"], gender: ["male", "female", "nonbinary", "undisclosed"] },
+];
+
+const COLOR_PALETTE = [
+  { id: "black", label: "Black", hex: "#1a1a1a" },
+  { id: "white", label: "White", hex: "#f5f5f5" },
+  { id: "navy", label: "Navy", hex: "#1a237e" },
+  { id: "grey", label: "Grey", hex: "#9e9e9e" },
+  { id: "beige", label: "Beige", hex: "#d4b896" },
+  { id: "camel", label: "Camel", hex: "#c19a6b" },
+  { id: "brown", label: "Brown", hex: "#4e342e" },
+  { id: "cream", label: "Cream", hex: "#fff8e1" },
+  { id: "red", label: "Red", hex: "#c62828" },
+  { id: "burgundy", label: "Burgundy", hex: "#6a1b1b" },
+  { id: "pink", label: "Pink", hex: "#f48fb1" },
+  { id: "blue", label: "Blue", hex: "#1565c0" },
+  { id: "light blue", label: "Light Blue", hex: "#90caf9" },
+  { id: "green", label: "Green", hex: "#2e7d32" },
+  { id: "olive", label: "Olive", hex: "#827717" },
+  { id: "yellow", label: "Yellow", hex: "#f9a825" },
+  { id: "orange", label: "Orange", hex: "#e65100" },
+  { id: "purple", label: "Purple", hex: "#6a1b9a" },
+  { id: "multicolor", label: "Prints", hex: "linear-gradient(135deg, #f48fb1, #90caf9, #a5d6a7)" },
+];
+
 export function Onboarding({
   onboardingStep,
   draft,
@@ -160,6 +225,91 @@ export function Onboarding({
     (draft.styles || []).filter((s) => STYLE_PREFS.includes(s)).slice(0, 3)
   );
   const [parsing, setParsing] = useState(false);
+  const [selectedTiles, setSelectedTiles] = useState(new Set());
+  const [selectedColors, setSelectedColors] = useState(new Set());
+  const [showAllTiles, setShowAllTiles] = useState(false);
+  const [generating, setGenerating] = useState(false);
+  const [generateProgress, setGenerateProgress] = useState("");
+
+  const toggleColor = (id) => {
+    setSelectedColors((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleTile = (id) => {
+    setSelectedTiles((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const flushTilesToWardrobe = async () => {
+    setGenerating(true);
+    setGenerateProgress("Analysing your style...");
+
+    const profile = {
+      gender: draft?.gender || "undisclosed",
+      styles: draft?.styles || [],
+      colorPreferences: [...selectedColors],
+      bodyType: draft?.bodyType || "",
+      climate: "cold winters, warm summers",
+      occasions: draft?.occasions || [],
+      name: draft?.name || "",
+    };
+
+    if (selectedColors.size > 0) {
+      setDraft((d) => ({ ...d, colorPreferences: [...selectedColors] }));
+    }
+
+    try {
+      setGenerateProgress("Building your wardrobe...");
+      const firstBatch = await generateStarterWardrobe(profile, 20, 0);
+      firstBatch.forEach((item) => addItem(item));
+      setGenerateProgress("Almost there...");
+
+      goNextOnboarding();
+      setGenerating(false);
+
+      setTimeout(async () => {
+        try {
+          const secondBatch = await generateStarterWardrobe(profile, 30, 20);
+          secondBatch.forEach((item) => addItem(item));
+        } catch (e) {
+          console.warn("Background wardrobe generation failed:", e);
+        }
+      }, 500);
+    } catch (err) {
+      console.error("Wardrobe generation failed:", err);
+      setGenerating(false);
+      const fallbackItems = WARDROBE_TILES
+        .filter((t) => selectedTiles.has(t.id))
+        .map((t) => ({
+          id: `tile-${t.id}-${Date.now()}`,
+          name: t.label,
+          category: t.category,
+          color: t.color,
+          colors: t.colors,
+          style: "casual",
+          source: "onboarding_tile",
+          tags: ["onboarding"],
+          laundryStatus: "clean",
+          timesWorn: 0,
+          season: "all",
+          description: "",
+          purchasePrice: "",
+          imagePreview: "",
+          imageFilename: "",
+        }));
+      fallbackItems.forEach((item) => addItem(item));
+      goNextOnboarding();
+    }
+  };
 
   useEffect(() => {
     if (onboardingStep === 8) goNextOnboarding();
@@ -222,7 +372,7 @@ export function Onboarding({
     background: COLORS.surface2,
     color: COLORS.text,
     fontSize: "1rem",
-    fontFamily: "'DM Sans', sans-serif",
+    fontFamily: "var(--font-sans)",
     outline: "none",
     lineHeight: 1.5,
     transition: baseTransition,
@@ -389,7 +539,7 @@ export function Onboarding({
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          fontFamily: "'DM Sans', sans-serif",
+          fontFamily: "var(--font-sans)",
           color: COLORS.textMuted,
           fontSize: "0.95rem",
         }}
@@ -405,7 +555,7 @@ export function Onboarding({
         minHeight: "100vh",
         background: COLORS.bg,
         color: COLORS.text,
-        fontFamily: "'DM Sans', sans-serif",
+        fontFamily: "var(--font-sans)",
         padding: "40px 20px 56px",
         display: "flex",
         justifyContent: "center",
@@ -421,7 +571,7 @@ export function Onboarding({
       <div style={{ width: "100%", maxWidth: 520 }}>
         <h1
           style={{
-            fontFamily: "'Cormorant Garamond', serif",
+            fontFamily: "var(--font-serif)",
             fontWeight: 600,
             fontSize: "2.1rem",
             margin: "0 0 6px",
@@ -475,7 +625,7 @@ export function Onboarding({
               </div>
               <h2
                 style={{
-                  fontFamily: "'Cormorant Garamond', serif",
+                  fontFamily: "var(--font-serif)",
                   fontSize: "1.65rem",
                   fontWeight: 600,
                   margin: "0 0 10px",
@@ -494,161 +644,252 @@ export function Onboarding({
             </>
           )}
 
-          {isWardrobeStep && (
+          {isWardrobeStep && (() => {
+            const userGender = draft?.gender || "undisclosed";
+            const visibleTiles = showAllTiles
+              ? WARDROBE_TILES
+              : WARDROBE_TILES.filter((t) => t.gender.includes(userGender));
+
+            return (
             <>
               <div style={{ color: COLORS.textMuted, fontSize: "0.72rem", marginBottom: 16, letterSpacing: "0.06em", textTransform: "uppercase" }}>
                 Step 7 of 7
               </div>
               <div style={{ textAlign: "center", marginBottom: 10 }}>
-                <div style={{ fontSize: 48, lineHeight: 1.1 }} aria-hidden>
-                  👗
-                </div>
+                <div style={{ fontSize: 48, lineHeight: 1.1 }} aria-hidden>👗</div>
               </div>
-              <h2
-                style={{
-                  fontFamily: "'Cormorant Garamond', serif",
-                  fontSize: "1.65rem",
-                  fontWeight: 600,
-                  margin: "0 0 8px",
-                  textAlign: "center",
-                  lineHeight: 1.25,
-                }}
-              >
-                Now let&apos;s meet your wardrobe
+              <h2 style={{
+                fontFamily: "var(--font-serif)",
+                fontSize: "1.55rem",
+                fontWeight: 600,
+                margin: "0 0 6px",
+                textAlign: "center",
+                lineHeight: 1.25,
+              }}>
+                What do you own?
               </h2>
-              <p style={{ color: COLORS.textMuted, fontSize: "0.95rem", margin: "0 auto 18px", textAlign: "center", maxWidth: 420, lineHeight: 1.5 }}>
-                Scan one or more photos of your closet.
-                <br />
-                We&apos;ll identify everything automatically.
+              <p style={{ color: COLORS.textMuted, fontSize: "0.88rem", margin: "0 auto 20px", textAlign: "center", maxWidth: 380, lineHeight: 1.5 }}>
+                Tap everything you have. We'll build your first outfit suggestion instantly.
               </p>
 
-              <div style={{ marginBottom: 14 }}>
-                {completedScans.length === 0 ? (
-                  <p
-                    style={{
-                      color: COLORS.textMuted,
-                      fontSize: "0.92rem",
-                      textAlign: "center",
-                      margin: "6px 0 6px",
-                      padding: "20px 12px",
-                      borderRadius: 12,
-                      border: `1px dashed ${COLORS.border}`,
-                      background: COLORS.surface2,
-                      lineHeight: 1.5,
-                    }}
-                  >
-                    No photos scanned yet
-                  </p>
-                ) : (
-                  completedScans.map((scan, i) => (
-                    <div
-                      key={scan.id}
+              {/* Tile grid */}
+              <div style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(3, 1fr)",
+                gap: 8,
+                marginBottom: 20,
+                maxHeight: 340,
+                overflowY: "auto",
+                paddingRight: 2,
+              }}>
+                {visibleTiles.map((tile) => {
+                  const selected = selectedTiles.has(tile.id);
+                  return (
+                    <button
+                      key={tile.id}
+                      type="button"
+                      onClick={() => toggleTile(tile.id)}
                       style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 12,
-                        padding: "12px 14px",
+                        padding: "12px 8px",
                         borderRadius: 12,
-                        border: "1px solid rgba(196,129,58,0.3)",
-                        background: "rgba(12,8,4,0.06)",
-                        marginBottom: 10,
+                        border: `2px solid ${selected ? COLORS.primary : COLORS.border}`,
+                        background: selected ? COLORS.primarySoft : COLORS.surface2,
+                        cursor: "pointer",
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        gap: 6,
+                        transition: "all 0.15s ease",
+                        fontFamily: "var(--font-sans)",
                       }}
                     >
-                      {scan.thumbnail ? (
-                        <img
-                          src={scan.thumbnail}
-                          alt={`Scan ${i + 1}`}
-                          style={{
-                            width: 56,
-                            height: 56,
-                            objectFit: "cover",
-                            borderRadius: 8,
-                            flexShrink: 0,
-                          }}
-                        />
-                      ) : null}
-                      <div>
-                        <div style={{ fontWeight: 600, fontSize: "0.95rem" }}>Scan {i + 1}</div>
-                        <div style={{ color: "#c4813a", fontSize: "0.85rem", fontWeight: 500 }}>{scan.itemCount} items found</div>
-                      </div>
-                    </div>
-                  ))
-                )}
+                      <Emoji emoji={tile.emoji} size={26} />
+                      <span style={{ fontSize: "0.72rem", fontWeight: 600, color: COLORS.text, textAlign: "center", lineHeight: 1.2 }}>
+                        {tile.label}
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
 
               <button
                 type="button"
-                onClick={() => setScannerOpen(true)}
+                onClick={() => setShowAllTiles((v) => !v)}
+                style={{
+                  background: "none",
+                  border: "none",
+                  color: COLORS.primary,
+                  fontSize: "0.8rem",
+                  cursor: "pointer",
+                  textDecoration: "underline",
+                  marginBottom: 8,
+                  fontFamily: "var(--font-sans)",
+                }}
+              >
+                {showAllTiles ? "Show fewer items" : "Show all clothing types"}
+              </button>
+
+              {/* Selected count */}
+              <p style={{ textAlign: "center", fontSize: "0.82rem", color: COLORS.textMuted, margin: "0 0 16px" }}>
+                {selectedTiles.size > 0
+                  ? `${selectedTiles.size} item type${selectedTiles.size > 1 ? "s" : ""} selected`
+                  : "Tap items you own above"}
+              </p>
+
+              {/* Color preferences */}
+              <div style={{ marginBottom: 16 }}>
+                <p style={{
+                  fontSize: "0.82rem",
+                  fontWeight: 600,
+                  color: COLORS.text,
+                  margin: "0 0 10px",
+                  textAlign: "center",
+                }}>
+                  What colors do you usually wear?
+                </p>
+                <div style={{
+                  display: "flex",
+                  flexWrap: "wrap",
+                  gap: 8,
+                  justifyContent: "center",
+                }}>
+                  {COLOR_PALETTE.map((c) => {
+                    const selected = selectedColors.has(c.id);
+                    return (
+                      <button
+                        key={c.id}
+                        type="button"
+                        onClick={() => toggleColor(c.id)}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 6,
+                          padding: "5px 10px",
+                          borderRadius: 99,
+                          border: `1.5px solid ${selected ? COLORS.primary : COLORS.border}`,
+                          background: selected ? "rgba(196,129,58,0.08)" : "transparent",
+                          cursor: "pointer",
+                          fontFamily: "var(--font-sans)",
+                          fontSize: "0.78rem",
+                          fontWeight: selected ? 600 : 400,
+                          color: COLORS.text,
+                        }}
+                      >
+                        <span style={{
+                          width: 12,
+                          height: 12,
+                          borderRadius: "50%",
+                          background: c.hex,
+                          flexShrink: 0,
+                          border: "0.5px solid rgba(0,0,0,0.15)",
+                        }} />
+                        {c.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Primary CTA */}
+              <button
+                type="button"
+                onClick={!generating && selectedColors.size > 0 ? flushTilesToWardrobe : undefined}
+                disabled={generating || selectedColors.size === 0}
                 style={{
                   width: "100%",
                   padding: "14px 20px",
                   borderRadius: 10,
                   border: "none",
-                  background: COLORS.primary,
-                  color: "#FFFFFF",
-                  cursor: "pointer",
+                  background: selectedColors.size > 0 && !generating ? COLORS.primary : COLORS.surface2,
+                  color: selectedColors.size > 0 && !generating ? "#FFFFFF" : COLORS.textMuted,
+                  cursor: selectedColors.size > 0 && !generating ? "pointer" : "default",
                   fontWeight: 600,
-                  transition: baseTransition,
-                  fontFamily: "'DM Sans', sans-serif",
+                  fontFamily: "var(--font-sans)",
                   fontSize: "1rem",
+                  marginBottom: 10,
+                  transition: "all 0.15s ease",
                 }}
               >
-                Scan a Photo
+                {generating
+                  ? generateProgress
+                  : selectedColors.size > 0
+                    ? "Build my wardrobe →"
+                    : "Pick your colors to continue"}
               </button>
+
+              {generating && (
+                <div style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 8,
+                  marginTop: 12,
+                  fontSize: "0.82rem",
+                  color: COLORS.textMuted,
+                }}>
+                  <div style={{
+                    width: 16,
+                    height: 16,
+                    borderRadius: "50%",
+                    border: "2px solid rgba(196,129,58,0.2)",
+                    borderTopColor: "#c4813a",
+                    animation: "spin 0.8s linear infinite",
+                    flexShrink: 0,
+                  }} />
+                  <span>AI is personalising your wardrobe</span>
+                </div>
+              )}
+
+              {/* Optional scan link */}
+              <p style={{ textAlign: "center", fontSize: "0.82rem", color: COLORS.textMuted, margin: 0 }}>
+                Have photos?{" "}
+                <button
+                  type="button"
+                  onClick={() => setScannerOpen(true)}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    color: COLORS.primary,
+                    cursor: "pointer",
+                    fontSize: "0.82rem",
+                    fontWeight: 600,
+                    padding: 0,
+                    fontFamily: "var(--font-sans)",
+                    textDecoration: "underline",
+                  }}
+                >
+                  Scan your closet instead
+                </button>
+              </p>
+
+              {/* Skip */}
               <button
                 type="button"
                 onClick={() => void goNextOnboarding()}
                 style={{
                   width: "100%",
-                  marginTop: 12,
-                  padding: "10px 8px",
+                  marginTop: 14,
+                  padding: "8px",
                   border: "none",
                   background: "none",
                   color: COLORS.textMuted,
-                  fontSize: "0.93rem",
-                  fontWeight: 500,
-                  textDecoration: "underline",
+                  fontSize: "0.85rem",
                   cursor: "pointer",
-                  fontFamily: "'DM Sans', sans-serif",
+                  fontFamily: "var(--font-sans)",
+                  textDecoration: "underline",
                 }}
               >
                 Skip for now
               </button>
 
-              {completedScans.length > 0 ? (
-                <div style={{ marginTop: 22, textAlign: "center" }}>
-                  <p style={{ color: "#c4813a", fontWeight: 700, margin: "0 0 16px", fontSize: "0.98rem" }}>
-                    {wardrobeTotalFound} items found across {completedScans.length} scan{completedScans.length > 1 ? "s" : ""}
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => void flushCompletedClosetScansToWardrobe()}
-                    style={{
-                      width: "100%",
-                      padding: "14px 20px",
-                      borderRadius: 10,
-                      border: "none",
-                      background: COLORS.primary,
-                      color: "#FFFFFF",
-                      cursor: "pointer",
-                      fontWeight: 600,
-                      transition: baseTransition,
-                      fontFamily: "'DM Sans', sans-serif",
-                      fontSize: "1rem",
-                    }}
-                  >
-                    Continue →
-                  </button>
-                </div>
-              ) : null}
-
-              {wardrobeError ? (
-                <p style={{ color: COLORS.danger, fontSize: "0.88rem", textAlign: "center", marginTop: 16, marginBottom: 0 }}>
+              {wardrobeError && (
+                <p style={{ color: COLORS.danger, fontSize: "0.88rem", textAlign: "center", marginTop: 12 }}>
                   {wardrobeError}
                 </p>
-              ) : null}
+              )}
             </>
-          )}
+            );
+          })()}
 
           {profileUiStep === 1 && (
             <input
@@ -686,7 +927,7 @@ export function Onboarding({
                       alignItems: "center",
                       gap: 8,
                       background: selected ? COLORS.primarySoft : COLORS.surface2,
-                      fontFamily: "'DM Sans', sans-serif",
+                      fontFamily: "var(--font-sans)",
                     }}
                   >
                     <span style={{ fontSize: 36, lineHeight: 1 }}>{opt.icon}</span>
@@ -723,7 +964,7 @@ export function Onboarding({
                         fontSize: "0.82rem",
                         cursor: "pointer",
                         transition: baseTransition,
-                        fontFamily: "'DM Sans', sans-serif",
+                        fontFamily: "var(--font-sans)",
                       }}
                     >
                       {c}
@@ -745,7 +986,7 @@ export function Onboarding({
                         fontSize: "0.82rem",
                         cursor: "pointer",
                         transition: baseTransition,
-                        fontFamily: "'DM Sans', sans-serif",
+                        fontFamily: "var(--font-sans)",
                       }}
                     >
                       {c}
@@ -767,7 +1008,7 @@ export function Onboarding({
                         fontSize: "0.82rem",
                         cursor: "pointer",
                         transition: baseTransition,
-                        fontFamily: "'DM Sans', sans-serif",
+                        fontFamily: "var(--font-sans)",
                       }}
                     >
                       {c}
@@ -807,10 +1048,10 @@ export function Onboarding({
                         gap: 10,
                         textAlign: "left",
                         background: selected ? COLORS.primarySoft : COLORS.surface2,
-                        fontFamily: "'DM Sans', sans-serif",
+                        fontFamily: "var(--font-sans)",
                       }}
                     >
-                      <span style={{ fontSize: 26, lineHeight: 1 }}>{emoji}</span>
+                      <Emoji emoji={emoji} size={26} />
                       <span style={{ fontWeight: 600, fontSize: "0.88rem", color: COLORS.text, lineHeight: 1.3 }}>{name}</span>
                     </button>
                   );
@@ -836,7 +1077,7 @@ export function Onboarding({
                       gap: 14,
                       textAlign: "left",
                       background: selected ? COLORS.primarySoft : COLORS.surface2,
-                      fontFamily: "'DM Sans', sans-serif",
+                      fontFamily: "var(--font-sans)",
                     }}
                   >
                     <span style={{ fontSize: 30 }}>{BUDGET_EMOJI[b.id] || "◇"}</span>
@@ -862,7 +1103,7 @@ export function Onboarding({
               </div>
               <h2
                 style={{
-                  fontFamily: "'Cormorant Garamond', serif",
+                  fontFamily: "var(--font-serif)",
                   fontSize: "1.6rem",
                   fontWeight: 600,
                   margin: "0 0 8px",
@@ -921,7 +1162,7 @@ export function Onboarding({
                     color: onboardingStep === 1 || scannerOpen ? COLORS.textMuted : COLORS.text,
                     cursor: onboardingStep === 1 || scannerOpen ? "default" : "pointer",
                     transition: baseTransition,
-                    fontFamily: "'DM Sans', sans-serif",
+                    fontFamily: "var(--font-sans)",
                     fontWeight: 500,
                   }}
                 >
@@ -942,7 +1183,7 @@ export function Onboarding({
                     color: COLORS.text,
                     cursor: "pointer",
                     transition: baseTransition,
-                    fontFamily: "'DM Sans', sans-serif",
+                    fontFamily: "var(--font-sans)",
                     fontWeight: 500,
                   }}
                 >
@@ -961,7 +1202,7 @@ export function Onboarding({
                     cursor: canContinue ? "pointer" : "default",
                     fontWeight: 600,
                     transition: baseTransition,
-                    fontFamily: "'DM Sans', sans-serif",
+                    fontFamily: "var(--font-sans)",
                     marginLeft: "auto",
                   }}
                 >
@@ -982,7 +1223,7 @@ export function Onboarding({
                     color: onboardingStep === 1 || parsing ? COLORS.textMuted : COLORS.text,
                     cursor: onboardingStep === 1 || parsing ? "default" : "pointer",
                     transition: baseTransition,
-                    fontFamily: "'DM Sans', sans-serif",
+                    fontFamily: "var(--font-sans)",
                     fontWeight: 500,
                   }}
                 >
@@ -1004,7 +1245,7 @@ export function Onboarding({
                       cursor: canContinue ? "pointer" : "default",
                       fontWeight: 600,
                       transition: baseTransition,
-                      fontFamily: "'DM Sans', sans-serif",
+                      fontFamily: "var(--font-sans)",
                       marginLeft: "auto",
                     }}
                   >

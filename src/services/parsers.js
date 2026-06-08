@@ -160,20 +160,33 @@ export function parseGapAnalysisGaps(text) {
 export function parsePlannerResponse(text) {
   const data = parseEvaluatorJson(text);
   if (!data || typeof data !== "object") return null;
+
+  // New format: { outfits: [...] }
+  if (Array.isArray(data.outfits) && data.outfits.length > 0) {
+    const outfits = data.outfits.map((o) => ({
+      name: String(o.name || o.title || "Outfit").trim(),
+      items: Array.isArray(o.items) ? o.items.map((x) => String(x).trim()).filter(Boolean) : [],
+      why: String(o.why || o.rationale || "").trim(),
+    }));
+    return { outfits };
+  }
+
+  // Legacy format fallback: { primary_outfit, alternate_outfit }
   const primary = data.primary_outfit || data.main_outfit || data.primary;
   if (!primary || typeof primary !== "object") return null;
-  const name = String(primary.name || primary.title || "").trim();
-  const items = Array.isArray(primary.items) ? primary.items.map((x) => String(x).trim()).filter(Boolean) : [];
-  const why = String(primary.why || primary.rationale || "").trim();
-  const altRaw = data.alternate_outfit ?? data.alternative_outfit ?? data.alternative ?? null;
-  let alternate = null;
+  const outfits = [{
+    name: String(primary.name || primary.title || "Outfit").trim(),
+    items: Array.isArray(primary.items) ? primary.items.map((x) => String(x).trim()).filter(Boolean) : [],
+    why: String(primary.why || primary.rationale || "").trim(),
+  }];
+  const altRaw = data.alternate_outfit ?? data.alternative_outfit ?? null;
   if (altRaw && typeof altRaw === "object") {
     const an = String(altRaw.name || altRaw.title || "").trim();
     const ai = Array.isArray(altRaw.items) ? altRaw.items.map((x) => String(x).trim()).filter(Boolean) : [];
     const aw = String(altRaw.why || altRaw.rationale || "").trim();
-    if (an || ai.length || aw) alternate = { name: an, items: ai, why: aw };
+    if (an || ai.length) outfits.push({ name: an || "Alternative", items: ai, why: aw });
   }
-  return { name: name || "Outfit", items, why, alternate };
+  return { outfits };
 }
 
 export function parseShopperRecommendations(text) {
