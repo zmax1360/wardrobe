@@ -55,6 +55,38 @@ const CATEGORY_ICON = {
 };
 
 const ITEM_ICON = {
+  "crew neck t-shirt": TShirt,
+  "graphic tee": TShirt,
+  "polo shirt": ShirtFolded,
+  "oxford shirt": ShirtFolded,
+  "flannel shirt": ShirtFolded,
+  "linen shirt": ShirtFolded,
+  "slim fit jeans": Pants,
+  "straight jeans": Pants,
+  "skinny jeans": Pants,
+  "chino pants": Pants,
+  "slim chinos": Pants,
+  "cargo pants": Pants,
+  "sweatpants": Pants,
+  "joggers": Pants,
+  "puffer jacket": CoatHanger,
+  "denim jacket": CoatHanger,
+  "trench coat": CoatHanger,
+  "wool coat": CoatHanger,
+  "leather jacket": CoatHanger,
+  "ankle boots": Boot,
+  "chelsea boots": Boot,
+  "combat boots": Boot,
+  "low-top sneakers": Sneaker,
+  "high-top sneakers": Sneaker,
+  "running shoes": Sneaker,
+  "leather loafers": Sneaker,
+  "tote bag": Handbag,
+  "crossbody bag": Handbag,
+  "leather belt": ShirtFolded,
+  "baseball cap": TShirt,
+  "knit beanie": TShirt,
+  "minimalist watch": TShirt,
   "hoodie": Hoodie,
   "hoodies": Hoodie,
   "dress": Dress,
@@ -94,12 +126,29 @@ const ITEM_ICON = {
 };
 
 function getItemIcon(item) {
-  if (item.imagePreview) return null; // has real photo, no icon needed
+  if (item.imagePreview) return null;
+
+  // Try item-level emoji field first
+  if (item.emoji) return null; // has emoji, handled separately
+
   const key = (item.name || "").toLowerCase().trim();
+
+  // Exact match
   if (ITEM_ICON[key]) return ITEM_ICON[key];
+
+  // Ends-with match for color-prefixed AI names
+  // e.g. "Navy Cotton Crew Neck T-Shirt" → ends with "t-shirt" → TShirt
   for (const [k, v] of Object.entries(ITEM_ICON)) {
-    if (key.endsWith(k)) return v;
+    if (key.endsWith(k.toLowerCase())) return v;
   }
+
+  // Word-contains match — last resort
+  // e.g. "Black Slim Fit Jeans" contains "jeans" → Pants
+  for (const [k, v] of Object.entries(ITEM_ICON)) {
+    if (key.includes(k.toLowerCase())) return v;
+  }
+
+  // Category fallback
   return CATEGORY_ICON[item.category] || TShirt;
 }
 

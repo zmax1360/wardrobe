@@ -6,6 +6,7 @@ import { ui } from "../styles/ui";
 import { mergeStyles } from "../utils/styleUtils";
 import { compareCleanItemsByPriorityCPW } from "../utils/wardrobeFinance";
 import { runAgent } from "../agents/agentOrchestrator";
+import { OutfitConfirmScreen } from "../components/OutfitConfirmScreen";
 
 export function PlannerScreen({
   profile,
@@ -22,6 +23,10 @@ export function PlannerScreen({
   formatDisplayDate,
   daysRelativeLabel,
   parsePlannerResponse,
+  plannerHistory = [],
+  recordSession,
+  recordChoice,
+  updateItem,
 }) {
   const [mode, setMode] = useState("everyday");
   const [occasion, setOccasion] = useState("");
@@ -34,6 +39,10 @@ export function PlannerScreen({
   const [plannerPlan, setPlannerPlan] = useState(null);
   const [error, setError] = useState("");
   const [matchedItems, setMatchedItems] = useState([]);
+  const [currentSessionId, setCurrentSessionId] = useState(null);
+  const [chosenIdx, setChosenIdx] = useState(null);
+  const [confirmingOutfit, setConfirmingOutfit] = useState(null);
+  const [activeOutfitIdx, setActiveOutfitIdx] = useState(0);
 
   const fetchWeather = useCallback(async () => {
     setWeatherLoading(true);
@@ -175,9 +184,13 @@ export function PlannerScreen({
     setPlannerPlan(null);
     setError("");
     setMatchedItems([]);
+    setConfirmingOutfit(null);
   };
 
   const planOutfit = async (occasionOverride = null) => {
+    setChosenIdx(null);
+    setCurrentSessionId(null);
+    setConfirmingOutfit(null);
     setError("");
     setResult("");
     if (wardrobe.length === 0) {
@@ -255,15 +268,26 @@ Rules:
 
 Respond with ONLY valid JSON (no markdown):
 {
-  "primary_outfit": {
-    "name": "short evocative title",
-    "items": ["exact names from wardrobe list"],
-    "why": "one line"
-  },
-  "alternate_outfit": null
+  "outfits": [
+    {
+      "name": "short evocative title",
+      "items": ["exact names from wardrobe list"],
+      "why": "one line"
+    },
+    {
+      "name": "short evocative title",
+      "items": ["exact names from wardrobe list"],
+      "why": "one line"
+    },
+    {
+      "name": "short evocative title",
+      "items": ["exact names from wardrobe list"],
+      "why": "one line"
+    }
+  ]
 }
 
-Set alternate_outfit to a second option only if clearly useful; otherwise null.`;
+Always return exactly 3 outfits. Each must be meaningfully different — vary the mood, formality, or layering. All items must be exact names from the wardrobe list.`;
 
     const user = "Return the JSON outfit plan now.";
 
@@ -278,12 +302,24 @@ Set alternate_outfit to a second option only if clearly useful; otherwise null.`
       setResult(text);
       const parsed = parsePlannerResponse(text);
       setPlannerPlan(parsed);
-      if (parsed) {
-        const primaryText = [parsed.name, ...parsed.items, parsed.why].join(" ");
-        const altText = parsed.alternate
-          ? [parsed.alternate.name, ...parsed.alternate.items, parsed.alternate.why].join(" ")
-          : "";
-        setMatchedItems(matchOutfitItems(primaryText + altText, cleanItems));
+      const weatherText = weather ? weather.summary : "";
+      if (parsed?.outfits?.length && recordSession) {
+        const sessionId = await recordSession({
+          weather: weatherText,
+          occasion: occasionText,
+          outfits: parsed.outfits.map((o) => ({
+            name: o.name,
+            items: o.items,
+          })),
+        });
+        setCurrentSessionId(sessionId);
+        setChosenIdx(null);
+      }
+      if (parsed?.outfits?.length) {
+        const allText = parsed.outfits
+          .map((o) => [o.name, ...o.items, o.why].join(" "))
+          .join(" ");
+        setMatchedItems(matchOutfitItems(allText, cleanItems));
       } else {
         setMatchedItems(matchOutfitItems(text, cleanItems));
       }
@@ -575,29 +611,16 @@ Set alternate_outfit to a second option only if clearly useful; otherwise null.`
             (mode === "event" && (upcomingSorted.length === 0 || !selectedEventId))
           }
           style={{
+            width: "100%",
+            borderRadius: "var(--radius-full)",
             padding: "12px 24px",
-            borderRadius: 8,
             border: "none",
-            background:
-              loading ||
-              wardrobe.length === 0 ||
-              cleanItems.length === 0 ||
-              (mode === "everyday" && !occasion.trim() && !autoplan) ||
-              (mode === "event" && (upcomingSorted.length === 0 || !selectedEventId))
-                ? COLORS.border
-                : COLORS.primary,
-            color: "#FFFFFF",
+            background: "var(--color-amber)",
+            color: "#fff",
             fontWeight: 600,
-            cursor:
-              loading ||
-              wardrobe.length === 0 ||
-              cleanItems.length === 0 ||
-              (mode === "everyday" && !occasion.trim() && !autoplan) ||
-              (mode === "event" && (upcomingSorted.length === 0 || !selectedEventId))
-                ? "default"
-                : "pointer",
-            marginBottom: 20,
-            transition: baseTransition,
+            fontSize: "var(--text-sm)",
+            cursor: "pointer",
+            fontFamily: "var(--font-sans)",
           }}
         >
           {loading ? "Planning…" : "Plan my outfit"}
@@ -640,93 +663,177 @@ Set alternate_outfit to a second option only if clearly useful; otherwise null.`
       {result && (
         <div style={{ marginTop: 8 }}>
           {plannerPlan ? (
-            <>
-              <div style={mergeStyles(ui.panel, { padding: "20px 22px", marginBottom: plannerPlan.alternate ? 14 : 16 })}>
-                <div style={type.meta}>Main outfit</div>
+            confirmingOutfit ? (
+              <OutfitConfirmScreen
+                outfit={confirmingOutfit}
+                wardrobe={wardrobe}
+                updateItem={updateItem}
+                onConfirm={() => {
+                  setConfirmingOutfit(null);
+                  setPlannerPlan(null);
+                  setActiveOutfitIdx(0);
+                  setChosenIdx(null);
+                  setCurrentSessionId(null);
+                  setTimeout(() => setActiveNav("dashboard"), 300);
+                }}
+                onChangeMyMind={() => {
+                  setConfirmingOutfit(null);
+                  setChosenIdx(null);
+                }}
+              />
+            ) : (
+            <div style={{ width: "100%", maxWidth: "100%" }}>
+            <div
+              className="planner-outfits-grid"
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(3, 1fr)",
+                gap: 12,
+                alignItems: "start",
+              }}
+            >
+              {(plannerPlan.outfits || []).map((outfit, idx) => (
                 <div
-                  style={{
-                    fontFamily: "'Cormorant Garamond', serif",
-                    fontSize: "1.35rem",
-                    fontWeight: 600,
-                    marginTop: 6,
-                    marginBottom: 12,
-                    color: COLORS.text,
-                  }}
+                  key={idx}
+                  style={mergeStyles(ui.panel, { padding: "20px 22px" })}
                 >
-                  {plannerPlan.name}
-                </div>
-                {plannerPlan.items.length > 0 ? (
-                  <ul style={{ margin: "0 0 12px", paddingLeft: 18, color: COLORS.text, fontSize: "0.9rem", lineHeight: 1.5 }}>
-                    {plannerPlan.items.map((line, i) => (
-                      <li key={i}>{line}</li>
-                    ))}
-                  </ul>
-                ) : null}
-                {plannerPlan.why ? (
-                  <div style={{ fontSize: "0.88rem", color: COLORS.textMuted, lineHeight: 1.55 }}>{plannerPlan.why}</div>
-                ) : null}
-                {matchedItems.filter((it) =>
-                  plannerPlan.items.some((label) => String(label).toLowerCase().includes(it.name.toLowerCase()))
-                ).length > 0 && (
-                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 14 }}>
-                    {matchedItems
-                      .filter((it) =>
-                        plannerPlan.items.some((label) =>
-                          String(label).toLowerCase().includes(it.name.toLowerCase())
-                        )
-                      )
-                      .map((item) => (
-                        <div
-                          key={item.id}
-                          style={{
-                            width: 56,
-                            height: 68,
-                            borderRadius: 8,
-                            overflow: "hidden",
-                            border: `1px solid ${COLORS.border}`,
-                            background: COLORS.surface2,
-                          }}
-                        >
-                          {item.imagePreview ? (
-                            <img src={item.imagePreview} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                          ) : (
-                            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%" }}>
-                              👗
-                            </div>
-                          )}
-                        </div>
-                      ))}
+                  <div style={{
+                    fontSize: "var(--text-xs)",
+                    fontWeight: 600,
+                    letterSpacing: "0.08em",
+                    textTransform: "uppercase",
+                    color: COLORS.textMuted,
+                    marginBottom: 6,
+                  }}>
+                    {idx === 0 ? "Main outfit" : idx === 1 ? "Alternative" : "Third option"}
                   </div>
-                )}
-              </div>
-              {plannerPlan.alternate ? (
-                <div style={mergeStyles(ui.panel, { padding: "18px 20px", marginBottom: 16, opacity: 0.95 })}>
-                  <div style={type.meta}>Alternative</div>
-                  <div
-                    style={{
-                      fontFamily: "'Cormorant Garamond', serif",
-                      fontSize: "1.15rem",
-                      fontWeight: 600,
-                      marginTop: 6,
-                      marginBottom: 10,
-                      color: COLORS.text,
-                    }}
-                  >
-                    {plannerPlan.alternate.name || "Option B"}
+                  <div style={{
+                    fontFamily: "var(--font-serif)",
+                    fontSize: "var(--text-xl)",
+                    fontWeight: 700,
+                    color: COLORS.text,
+                    marginBottom: 10,
+                    lineHeight: 1.2,
+                  }}>
+                    {outfit.name}
                   </div>
-                  {plannerPlan.alternate.items.length > 0 ? (
-                    <ul style={{ margin: "0 0 10px", paddingLeft: 18, color: COLORS.text, fontSize: "0.88rem", lineHeight: 1.45 }}>
-                      {plannerPlan.alternate.items.map((line, i) => (
-                        <li key={i}>{line}</li>
+                  {outfit.items.length > 0 && (
+                    <ul style={{ margin: "0 0 10px", padding: "0 0 0 16px", lineHeight: 1.7 }}>
+                      {outfit.items.map((line, i) => (
+                        <li key={i} style={{ fontSize: "var(--text-sm)", color: COLORS.text }}>
+                          {line}
+                        </li>
                       ))}
                     </ul>
-                  ) : null}
-                  {plannerPlan.alternate.why ? (
-                    <div style={{ fontSize: "0.85rem", color: COLORS.textMuted, lineHeight: 1.5 }}>{plannerPlan.alternate.why}</div>
-                  ) : null}
+                  )}
+                  {outfit.why && (
+                    <div style={{ fontSize: "0.88rem", color: COLORS.textMuted, lineHeight: 1.55 }}>
+                      {outfit.why}
+                    </div>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setConfirmingOutfit({ ...outfit, idx });
+                      if (recordChoice && currentSessionId) {
+                        recordChoice(currentSessionId, idx, outfit.name);
+                      }
+                    }}
+                    style={{
+                      marginTop: 14,
+                      width: "100%",
+                      padding: "10px 16px",
+                      borderRadius: "var(--radius-full)",
+                      border: chosenIdx === idx
+                        ? "none"
+                        : "1px solid var(--color-border)",
+                      background: chosenIdx === idx
+                        ? "var(--color-amber)"
+                        : "transparent",
+                      color: chosenIdx === idx ? "#fff" : "var(--color-text-primary)",
+                      fontSize: "var(--text-sm)",
+                      fontWeight: 600,
+                      cursor: "pointer",
+                      transition: "all 0.2s ease",
+                      fontFamily: "var(--font-sans)",
+                    }}
+                  >
+                    {chosenIdx === idx ? "✓ Wearing this today" : "I'll wear this"}
+                  </button>
+                  {(() => {
+                    const previewItems = cleanItems.filter((it) =>
+                      outfit.items.some((label) =>
+                        String(label).toLowerCase().includes(it.name.toLowerCase()) ||
+                        it.name.toLowerCase().includes(String(label).toLowerCase())
+                      )
+                    ).filter((it) => it.imagePreview).slice(0, 4);
+                    if (!previewItems.length) return null;
+                    return (
+                      <div style={{ display: "flex", gap: 6, marginTop: 12, flexWrap: "wrap" }}>
+                        {previewItems.map((it) => (
+                          <img
+                            key={it.id}
+                            src={it.imagePreview}
+                            alt={it.name}
+                            style={{
+                              width: 52,
+                              height: 52,
+                              objectFit: "cover",
+                              borderRadius: 8,
+                              border: "1px solid var(--color-border)",
+                            }}
+                          />
+                        ))}
+                      </div>
+                    );
+                  })()}
                 </div>
-              ) : null}
-            </>
+              ))}
+            </div>
+
+            {/* Mobile dot indicators */}
+            <div style={{
+              display: "flex",
+              justifyContent: "center",
+              gap: 6,
+              marginTop: 10,
+            }}>
+              {(plannerPlan.outfits || []).map((_, idx) => (
+                <div
+                  key={idx}
+                  style={{
+                    width: 6,
+                    height: 6,
+                    borderRadius: "50%",
+                    background: idx === 0 ? COLORS.primary : COLORS.border,
+                    transition: "background 0.2s",
+                  }}
+                />
+              ))}
+            </div>
+
+            <div style={{ width: "100%", marginTop: 12 }}>
+              <button
+                type="button"
+                onClick={resetPlan}
+                style={{
+                  width: "100%",
+                  borderRadius: "var(--radius-full)",
+                  padding: "12px 24px",
+                  border: "1.5px solid var(--color-border)",
+                  background: "transparent",
+                  color: "var(--color-text-primary)",
+                  fontWeight: 600,
+                  fontSize: "var(--text-sm)",
+                  cursor: "pointer",
+                  fontFamily: "var(--font-sans)",
+                }}
+              >
+                Plan another
+              </button>
+            </div>
+            </div>
+            )
           ) : (
             <div
               style={{
@@ -744,22 +851,6 @@ Set alternate_outfit to a second option only if clearly useful; otherwise null.`
               {result}
             </div>
           )}
-          <button
-            type="button"
-            onClick={resetPlan}
-            style={{
-              padding: "10px 20px",
-              borderRadius: 8,
-              border: `1px solid ${COLORS.border}`,
-              background: COLORS.surface,
-              color: COLORS.text,
-              cursor: "pointer",
-              fontWeight: 600,
-              transition: baseTransition,
-            }}
-          >
-            Plan another
-          </button>
         </div>
       )}
     </div>

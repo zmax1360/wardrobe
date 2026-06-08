@@ -874,7 +874,7 @@ h6 {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #f0ece6;
+  background: transparent;
   font-size: 2.2rem;
   line-height: 1;
 }
@@ -1570,5 +1570,26 @@ h6 {
   .wardrobe-page-header button {
     flex: 1;
     justify-content: center;
+  }
+}
+
+@media (max-width: 600px) {
+  .planner-outfits-grid {
+    display: flex !important;
+    flex-direction: row !important;
+    overflow-x: auto !important;
+    scroll-snap-type: x mandatory !important;
+    gap: 12px !important;
+    padding-bottom: 8px !important;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .planner-outfits-grid::-webkit-scrollbar {
+    display: none;
+  }
+  .planner-outfits-grid > div {
+    flex: 0 0 85vw !important;
+    max-width: 85vw !important;
+    scroll-snap-align: start;
   }
 }

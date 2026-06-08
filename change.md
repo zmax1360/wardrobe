@@ -1365,3 +1365,76 @@ Onboarding step 7 should build a personalized 50-item wardrobe via AI instead of
 “Build my wardrobe” requires color picks, calls AI for 20 items then advances onboarding; 30 more items generate in background. Tile selections remain as fallback if AI fails. Uses existing `/api/chat` proxy (not direct Anthropic client calls).
 
 ---
+
+### [Date: 2026-05-28] - Planner history, outfit choice, auto wear logging
+
+**Background:**
+Part 1 of planner persistence: record each recommendation session, track which outfit the user chose, and increment wear counts when they confirm.
+
+**Changed:**
+
+- `src/hooks/usePlannerHistory.js` (new)
+- `src/App.js`
+- `src/screens/PlannerScreen.js`
+
+**Impact:**
+Planner sessions save to localStorage and Firestore `plannerHistory`. Each outfit card has “I'll wear this” — choice is recorded and matched wardrobe items get `timesWorn + 1`.
+
+---
+
+### [Date: 2026-05-28] - Outfit confirm screen with item swap
+
+**Background:**
+After choosing an outfit, users need a confirmation step to review items, swap individual pieces from their wardrobe, and finalize wear tracking before returning to the dashboard.
+
+**Changed:**
+
+- `src/components/OutfitConfirmScreen.js` (new)
+- `src/screens/PlannerScreen.js`
+
+**Impact:**
+“I'll wear this” now opens the confirm screen instead of immediately marking items dirty. Wear counts and laundry status update only on “Done, getting dressed”. Confirm navigates to dashboard after 300ms; “Change my mind” returns to the outfit carousel.
+
+---
+
+### [Date: 2026-05-28] - Outfit confirm emoji placeholder styling
+
+**Background:**
+Emoji placeholders in OutfitConfirmScreen had a gray background box; they should render as bare emoji icons like elsewhere in the app.
+
+**Changed:**
+
+- `src/components/OutfitConfirmScreen.js`
+
+**Impact:**
+No impact
+
+---
+
+### [Date: 2026-05-28] - Wardrobe card placeholder background removed
+
+**Background:**
+Wardrobe card emoji placeholders should render without a tinted background box, consistent with OutfitConfirmScreen placeholders.
+
+**Changed:**
+
+- `src/index.css`
+
+**Impact:**
+No impact
+
+---
+
+### [Date: 2026-05-28] - Stricter outfit item resolution in confirm screen
+
+**Background:**
+Loose partial matching in OutfitConfirmScreen could resolve multiple outfit lines to the same wardrobe item, causing duplicate dirty/wear updates on confirm.
+
+**Changed:**
+
+- `src/components/OutfitConfirmScreen.js`
+
+**Impact:**
+Confirming an outfit only marks each matched wardrobe item dirty once; unresolved outfit lines remain placeholders without `updateItem` calls.
+
+---

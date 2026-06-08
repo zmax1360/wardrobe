@@ -81,6 +81,7 @@ import { callClosetPhotoVision, parseCatalogJson } from "./services/aiService";
 import { runAgent } from "./agents/agentOrchestrator";
 import { useAgentActivity } from "./hooks/useAgentActivity";
 import { useAgentInsights } from "./hooks/useAgentInsights";
+import { usePlannerHistory } from "./hooks/usePlannerHistory";
 import { useWardrobe, uploadWardrobeImage } from "./hooks/useWardrobe";
 import { AppLayout, AppLayoutSidebarDataProvider } from "./layout/AppLayout";
 import { WardrobeScreen } from "./screens/WardrobeScreen";
@@ -186,6 +187,7 @@ export default function App() {
   const [plannerAutoplan, setPlannerAutoplan] = useState(false);
   const [postScanNamingItems, setPostScanNamingItems] = useState([]);
   const { wardrobe, setWardrobe, addItem, updateItem, removeItem } = useWardrobe(hydrated, firebaseUser);
+  const { history: plannerHistory, recordSession, recordChoice } = usePlannerHistory(firebaseUser);
   const [events, setEvents] = useState(() => {
     const e = loadJson(STORAGE_EVENTS, []);
     return Array.isArray(e) ? e : [];
@@ -1483,6 +1485,10 @@ export default function App() {
               formatDisplayDate={formatDisplayDate}
               daysRelativeLabel={daysRelativeLabel}
               parsePlannerResponse={parsePlannerResponse}
+              plannerHistory={plannerHistory}
+              recordSession={recordSession}
+              recordChoice={recordChoice}
+              updateItem={updateItem}
             />
           )}
           {activeNav === "shopper" && (
