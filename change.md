@@ -1438,3 +1438,34 @@ Loose partial matching in OutfitConfirmScreen could resolve multiple outfit line
 Confirming an outfit only marks each matched wardrobe item dirty once; unresolved outfit lines remain placeholders without `updateItem` calls.
 
 ---
+
+### [Date: 2026-05-28] - /api/chat 401 diagnostics and auth reliability
+
+**Background:**
+Production `/api/chat` returns 401 when requests lack a Firebase ID token or when Vercel Admin env vars fail token verification; client auth could race before `authStateReady`.
+
+**Changed:**
+
+- `api/chat.js` (distinct error codes: `missing_token`, `invalid_token`, `admin_config`)
+- `src/firebase.js` (`authStateReady` + `getIdToken`)
+- `src/services/aiService.js` (`postChat` guard when unsigned)
+
+**Impact:**
+Unsigned users see a clear sign-in message instead of a generic 401. Vercel logs distinguish invalid tokens from missing Firebase Admin configuration.
+
+---
+
+### [Date: 2026-05-28] - Planner /api/chat 401 client retry and error messages
+
+**Background:**
+PlannerScreen 401s from `/api/chat` showed only in the network tab; production logs stayed quiet and errors were raw JSON.
+
+**Changed:**
+
+- `src/firebase.js` (`getIdToken(forceRefresh)`)
+- `src/services/aiService.js` (401 token refresh retry, `parseChatError` user messages)
+
+**Impact:**
+Planner shows readable auth errors in the UI. Stale tokens retry once with a forced refresh before surfacing failure.
+
+---

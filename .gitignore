@@ -35,6 +35,6 @@ yarn-error.log*
 
 # React
 .eslintcache
-
+.zip
 # Agent pipeline (dev-agent backups, local artifacts)
 agents/backups/serviceAccountKey.json

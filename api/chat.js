@@ -14,14 +14,28 @@ if (!getApps().length) {
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).end();
 
+  const { FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY, ANTHROPIC_API_KEY } =
+    process.env;
+  if (!FIREBASE_PROJECT_ID || !FIREBASE_CLIENT_EMAIL || !FIREBASE_PRIVATE_KEY) {
+    console.error("api/chat: Firebase Admin env vars missing");
+    return res.status(500).json({ error: "Server auth not configured", code: "admin_config" });
+  }
+  if (!ANTHROPIC_API_KEY) {
+    console.error("api/chat: ANTHROPIC_API_KEY missing");
+    return res.status(500).json({ error: "AI service not configured", code: "ai_config" });
+  }
+
   const authHeader = req.headers.authorization || "";
   const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7).trim() : "";
-  if (!token) return res.status(401).json({ error: "Unauthorized" });
+  if (!token) {
+    return res.status(401).json({ error: "Unauthorized", code: "missing_token" });
+  }
 
   try {
     await getAuth().verifyIdToken(token);
-  } catch {
-    return res.status(401).json({ error: "Unauthorized" });
+  } catch (err) {
+    console.error("api/chat: verifyIdToken failed:", err?.message || err);
+    return res.status(401).json({ error: "Unauthorized", code: "invalid_token" });
   }
 
   const response = await fetch("https://api.anthropic.com/v1/messages", {
