@@ -83,18 +83,27 @@ async function requireAuth(req, res, next) {
   const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : null;
 
   if (!token) {
+    console.error("[api/chat] auth_missing_token (local)");
     return res.status(401).json({
       error: "Unauthorized — no token provided",
+      code: "missing_token",
     });
   }
 
   try {
     const decoded = await admin.auth().verifyIdToken(token);
     req.user = decoded;
+    console.log("[api/chat] auth_ok (local)", { uid: decoded.uid, tokenLength: token.length });
     next();
-  } catch (_err) {
+  } catch (err) {
+    console.error("[api/chat] auth_invalid_token (local)", {
+      error: err?.message || err,
+      code: err?.code || null,
+      tokenLength: token.length,
+    });
     return res.status(401).json({
       error: "Unauthorized — invalid token",
+      code: "invalid_token",
     });
   }
 }

@@ -24,10 +24,20 @@ export async function getFirebaseAuthHeader(forceRefresh = false) {
   try {
     await auth.authStateReady();
     const user = auth.currentUser;
-    if (!user) return {};
+    if (!user) {
+      console.warn("[firebase] getFirebaseAuthHeader: no signed-in user", { forceRefresh });
+      return {};
+    }
     const token = await user.getIdToken(forceRefresh);
+    console.log("[firebase] getFirebaseAuthHeader: token ready", {
+      uid: user.uid,
+      forceRefresh,
+      tokenLength: token.length,
+      projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID || null,
+    });
     return { Authorization: `Bearer ${token}` };
-  } catch {
+  } catch (err) {
+    console.error("[firebase] getFirebaseAuthHeader failed:", err?.message || err);
     return {};
   }
 }

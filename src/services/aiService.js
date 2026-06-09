@@ -86,9 +86,20 @@ function parseChatError(status, errText) {
 
 async function postChat(body, forceRefresh = false) {
   const authHeader = await getFirebaseAuthHeader(forceRefresh);
-  if (!authHeader.Authorization) {
+  const hasAuth = Boolean(authHeader.Authorization);
+
+  console.log("[postChat] request", {
+    url: ANTHROPIC_URL,
+    model: body?.model || null,
+    forceRefresh,
+    hasAuth,
+  });
+
+  if (!hasAuth) {
+    console.error("[postChat] blocked: no auth token");
     throw new Error("Please sign in to use the planner.");
   }
+
   const res = await fetch(ANTHROPIC_URL, {
     method: "POST",
     headers: {
@@ -98,14 +109,23 @@ async function postChat(body, forceRefresh = false) {
     },
     body: JSON.stringify(body),
   });
+
   if (res.status === 401 && !forceRefresh) {
+    console.warn("[postChat] 401 — retrying with refreshed token");
     return postChat(body, true);
   }
+
   if (!res.ok) {
     const errText = await res.text();
-    console.error("[postChat]", res.status, errText);
+    console.error("[postChat] failed", {
+      status: res.status,
+      forceRefresh,
+      body: errText,
+    });
     throw new Error(parseChatError(res.status, errText));
   }
+
+  console.log("[postChat] success", { status: res.status, model: body?.model || null });
   return res.json();
 }
 

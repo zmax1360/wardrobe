@@ -1469,3 +1469,21 @@ PlannerScreen 401s from `/api/chat` showed only in the network tab; production l
 Planner shows readable auth errors in the UI. Stale tokens retry once with a forced refresh before surfacing failure.
 
 ---
+
+### [Date: 2026-06-09] - Structured /api/chat auth logging for production debugging
+
+**Background:**
+Planner `/api/chat` 401s were hard to diagnose in Vercel because production logs lacked structured auth failure details.
+
+**Changed:**
+
+- `api/chat.js` (JSON logs: `request`, `auth_ok`, `auth_missing_token`, `auth_invalid_token`, `admin_config_missing`, `anthropic_response`)
+- `server.js` (matching local dev auth logs)
+- `src/firebase.js` (client token readiness logs)
+- `src/services/aiService.js` (postChat request/retry/failure logs)
+- `src/screens/PlannerScreen.js` (planOutfit error log)
+
+**Impact:**
+Vercel logs show request ID, missing env var names, token length, Firebase UID on success, and verifyIdToken error messages. Browser console shows `[postChat]` and `[firebase]` traces. No tokens or secrets are logged.
+
+---

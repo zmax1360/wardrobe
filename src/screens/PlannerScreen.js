@@ -324,6 +324,7 @@ Always return exactly 3 outfits. Each must be meaningfully different — vary th
         setMatchedItems(matchOutfitItems(text, cleanItems));
       }
     } catch (e) {
+      console.error("[PlannerScreen] planOutfit failed:", e?.message || e);
       setError(e.message || "Request failed.");
     } finally {
       setLoading(false);
