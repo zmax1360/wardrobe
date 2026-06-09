@@ -1487,3 +1487,32 @@ Planner `/api/chat` 401s were hard to diagnose in Vercel because production logs
 Vercel logs show request ID, missing env var names, token length, Firebase UID on success, and verifyIdToken error messages. Browser console shows `[postChat]` and `[firebase]` traces. No tokens or secrets are logged.
 
 ---
+
+### [Date: 2026-06-09] - /api/chat auth failures log as errors + X-Chat-Auth header
+
+**Background:**
+Auth failures were logged with `console.log`, which is easy to miss in Vercel's invocation view; users also needed a Network-tab signal without opening function logs.
+
+**Changed:**
+
+- `api/chat.js` (`console.error` for auth/config failures, `X-Chat-Auth` response header)
+
+**Impact:**
+Vercel Runtime Logs show auth failures under errors. Browser Network → `/api/chat` → Response Headers includes `X-Chat-Auth: invalid_token` (etc.) for quick diagnosis.
+
+---
+
+### [Date: 2026-06-09] - Fix Anthropic API key 401 masquerading as Firebase auth failure
+
+**Background:**
+Planner `[postChat] failed` showed Anthropic `authentication_error` JSON with status 401 after Firebase auth had already succeeded — caused by missing/invalid `ANTHROPIC_API_KEY` on Vercel, not user sign-in.
+
+**Changed:**
+
+- `api/chat.js` (map Anthropic auth failures to `502` + `anthropic_auth`, `X-Chat-Auth` header)
+- `src/services/aiService.js` (detect Anthropic errors, skip Firebase token retry, clear user message)
+
+**Impact:**
+Users see "Set ANTHROPIC_API_KEY on Vercel" instead of "Authentication failed". Firebase token refresh no longer retries on Anthropic key errors.
+
+---

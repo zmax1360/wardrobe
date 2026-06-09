@@ -11,8 +11,10 @@ if (!getApps().length) {
   });
 }
 
-function logChat(event, details = {}) {
-  console.log(JSON.stringify({ scope: "api/chat", event, ...details }));
+function logChat(event, details = {}, level = "log") {
+  const line = JSON.stringify({ scope: "api/chat", event, ...details });
+  if (level === "error") console.error(line);
+  else console.log(line);
 }
 
 export default async function handler(req, res) {
@@ -37,18 +39,21 @@ export default async function handler(req, res) {
   ].filter(Boolean);
 
   if (missingAdmin.length) {
-    logChat("admin_config_missing", { requestId, missing: missingAdmin });
+    logChat("admin_config_missing", { requestId, missing: missingAdmin }, "error");
+    res.setHeader("X-Chat-Auth", "admin_config_missing");
     return res.status(500).json({ error: "Server auth not configured", code: "admin_config" });
   }
   if (!ANTHROPIC_API_KEY) {
-    logChat("ai_config_missing", { requestId });
+    logChat("ai_config_missing", { requestId }, "error");
+    res.setHeader("X-Chat-Auth", "ai_config_missing");
     return res.status(500).json({ error: "AI service not configured", code: "ai_config" });
   }
 
   const authHeader = req.headers.authorization || "";
   const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7).trim() : "";
   if (!token) {
-    logChat("auth_missing_token", { requestId });
+    logChat("auth_missing_token", { requestId }, "error");
+    res.setHeader("X-Chat-Auth", "missing_token");
     return res.status(401).json({ error: "Unauthorized", code: "missing_token" });
   }
 
@@ -67,7 +72,8 @@ export default async function handler(req, res) {
       tokenLength: token.length,
       error: err?.message || String(err),
       code: err?.code || null,
-    });
+    }, "error");
+    res.setHeader("X-Chat-Auth", "invalid_token");
     return res.status(401).json({ error: "Unauthorized", code: "invalid_token" });
   }
 
@@ -81,11 +87,38 @@ export default async function handler(req, res) {
     body: JSON.stringify(req.body),
   });
 
-  const data = await response.json();
+  let data;
+  try {
+    data = await response.json();
+  } catch (err) {
+    logChat("anthropic_parse_error", { requestId, status: response.status, error: err?.message }, "error");
+    res.setHeader("X-Chat-Auth", "anthropic_error");
+    return res.status(502).json({ error: "AI service returned an invalid response", code: "anthropic_parse_error" });
+  }
+
   logChat("anthropic_response", {
     requestId,
     status: response.status,
     model: req.body?.model || null,
-  });
-  res.status(response.status).json(data);
+    errorType: data?.error?.type || null,
+  }, response.ok ? "log" : "error");
+
+  if (!response.ok) {
+    if (response.status === 401 || data?.error?.type === "authentication_error") {
+      logChat("anthropic_auth_failed", { requestId }, "error");
+      res.setHeader("X-Chat-Auth", "anthropic_auth");
+      return res.status(502).json({
+        error: "AI API key is invalid on the server. Set ANTHROPIC_API_KEY on Vercel.",
+        code: "anthropic_auth",
+      });
+    }
+    res.setHeader("X-Chat-Auth", "anthropic_error");
+    return res.status(response.status).json({
+      error: data?.error?.message || "AI service error",
+      code: "anthropic_error",
+    });
+  }
+
+  res.setHeader("X-Chat-Auth", "ok");
+  res.status(200).json(data);
 }
