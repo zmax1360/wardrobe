@@ -59,15 +59,33 @@ export const agentTraceHooks = {
 
 const CLOSET_SCAN_MAX_TOKENS = 2000;
 
+function isAnthropicAuthError(parsed) {
+  return (
+    parsed?.type === "error" &&
+    (parsed?.error?.type === "authentication_error" ||
+      String(parsed?.error?.message || "").toLowerCase().includes("api key"))
+  );
+}
+
 function parseChatError(status, errText) {
   let code = "";
   let message = errText || `Request failed (${status})`;
+  let parsed = null;
   try {
-    const parsed = JSON.parse(errText);
+    parsed = JSON.parse(errText);
     code = parsed.code || "";
-    if (parsed.error) message = parsed.error;
+    if (typeof parsed.error === "string") message = parsed.error;
+    else if (parsed.error?.message) message = parsed.error.message;
+    else if (parsed.error) message = String(parsed.error);
   } catch {
     // keep raw text
+  }
+
+  if (code === "anthropic_auth" || isAnthropicAuthError(parsed)) {
+    return "AI API key is invalid on the server. Set ANTHROPIC_API_KEY on Vercel (not REACT_APP_ANTHROPIC_API_KEY).";
+  }
+  if (code === "anthropic_error" || code === "anthropic_parse_error") {
+    return message || "AI service error. Please try again.";
   }
   if (status === 401) {
     if (code === "missing_token") {
@@ -76,10 +94,19 @@ function parseChatError(status, errText) {
     if (code === "invalid_token") {
       return "Your session could not be verified. Sign out, sign back in, and try again.";
     }
+    if (isAnthropicAuthError(parsed)) {
+      return "AI API key is invalid on the server. Set ANTHROPIC_API_KEY on Vercel.";
+    }
     return "Authentication failed. Please sign in again.";
   }
   if (status === 500 && code === "admin_config") {
-    return "AI service is not configured on the server. Contact support.";
+    return "Server auth is not configured. Set FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, and FIREBASE_PRIVATE_KEY on Vercel.";
+  }
+  if (status === 500 && code === "ai_config") {
+    return "AI service is not configured on the server. Set ANTHROPIC_API_KEY on Vercel.";
+  }
+  if (status === 502 && code === "anthropic_auth") {
+    return "AI API key is invalid on the server. Set ANTHROPIC_API_KEY on Vercel.";
   }
   return message;
 }
@@ -110,16 +137,28 @@ async function postChat(body, forceRefresh = false) {
     body: JSON.stringify(body),
   });
 
-  if (res.status === 401 && !forceRefresh) {
-    console.warn("[postChat] 401 — retrying with refreshed token");
-    return postChat(body, true);
-  }
-
   if (!res.ok) {
     const errText = await res.text();
+    let parsed = null;
+    try {
+      parsed = JSON.parse(errText);
+    } catch {
+      // ignore
+    }
+    const isFirebaseAuth =
+      parsed?.code === "missing_token" || parsed?.code === "invalid_token";
+    const isAnthropic = isAnthropicAuthError(parsed) || parsed?.code === "anthropic_auth";
+
+    if (res.status === 401 && isFirebaseAuth && !forceRefresh) {
+      console.warn("[postChat] 401 — retrying with refreshed Firebase token");
+      return postChat(body, true);
+    }
+
     console.error("[postChat] failed", {
       status: res.status,
       forceRefresh,
+      isFirebaseAuth,
+      isAnthropic,
       body: errText,
     });
     throw new Error(parseChatError(res.status, errText));
