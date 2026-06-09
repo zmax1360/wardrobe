@@ -1487,3 +1487,18 @@ Planner `/api/chat` 401s were hard to diagnose in Vercel because production logs
 Vercel logs show request ID, missing env var names, token length, Firebase UID on success, and verifyIdToken error messages. Browser console shows `[postChat]` and `[firebase]` traces. No tokens or secrets are logged.
 
 ---
+
+### [Date: 2026-06-09] - Distinguish Anthropic 401 from Firebase auth 401
+
+**Background:**
+Planner showed generic "Authentication failed" when Anthropic rejected the server API key — forwarded as a bare 401 without a `code` field, masking the real misconfiguration.
+
+**Changed:**
+
+- `api/chat.js` (map Anthropic auth failures to `502` + `anthropic_auth` code)
+- `src/services/aiService.js` (specific messages for `anthropic_auth`, `admin_config`, `ai_config`)
+
+**Impact:**
+Users and logs can tell Firebase token issues apart from missing/invalid `ANTHROPIC_API_KEY` on Vercel.
+
+---

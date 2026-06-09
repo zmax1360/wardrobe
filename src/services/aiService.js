@@ -76,10 +76,19 @@ function parseChatError(status, errText) {
     if (code === "invalid_token") {
       return "Your session could not be verified. Sign out, sign back in, and try again.";
     }
-    return "Authentication failed. Please sign in again.";
+    return `Authentication failed (${code || "unknown"}). Please sign in again.`;
   }
   if (status === 500 && code === "admin_config") {
-    return "AI service is not configured on the server. Contact support.";
+    return "Server auth is not configured. Set FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, and FIREBASE_PRIVATE_KEY on Vercel.";
+  }
+  if (status === 500 && code === "ai_config") {
+    return "AI service is not configured on the server. Set ANTHROPIC_API_KEY on Vercel.";
+  }
+  if (code === "anthropic_auth") {
+    return "AI API key is invalid on the server. Check ANTHROPIC_API_KEY on Vercel.";
+  }
+  if (code === "anthropic_error" || code === "anthropic_parse_error") {
+    return message || "AI service error. Please try again.";
   }
   return message;
 }

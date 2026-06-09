@@ -81,11 +81,41 @@ export default async function handler(req, res) {
     body: JSON.stringify(req.body),
   });
 
-  const data = await response.json();
+  let data;
+  try {
+    data = await response.json();
+  } catch (err) {
+    logChat("anthropic_parse_error", {
+      requestId,
+      status: response.status,
+      error: err?.message || String(err),
+    });
+    return res.status(502).json({
+      error: "AI service returned an invalid response",
+      code: "anthropic_parse_error",
+    });
+  }
+
   logChat("anthropic_response", {
     requestId,
     status: response.status,
     model: req.body?.model || null,
   });
-  res.status(response.status).json(data);
+
+  if (!response.ok) {
+    if (response.status === 401) {
+      logChat("anthropic_auth_failed", { requestId });
+      return res.status(502).json({
+        error: "AI service API key is invalid or missing on the server",
+        code: "anthropic_auth",
+      });
+    }
+    return res.status(response.status).json({
+      error: data?.error?.message || data?.error || "AI service error",
+      code: "anthropic_error",
+      details: data,
+    });
+  }
+
+  res.status(200).json(data);
 }
