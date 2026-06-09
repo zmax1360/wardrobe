@@ -20,37 +20,24 @@ export const db = getFirestore(app);
 export const storage = getStorage(app);
 
 /** Bearer token for same-origin `/api/*` calls (Firebase ID token). */
-export async function getFirebaseAuthHeader() {
-  return new Promise((resolve) => {
-    // If already signed in, use immediately
-    if (auth.currentUser) {
-      auth.currentUser
-        .getIdToken()
-        .then((token) =>
-          resolve({
-            Authorization: `Bearer ${token}`,
-          })
-        )
-        .catch(() => resolve({}));
-      return;
+export async function getFirebaseAuthHeader(forceRefresh = false) {
+  try {
+    await auth.authStateReady();
+    const user = auth.currentUser;
+    if (!user) {
+      console.warn("[firebase] getFirebaseAuthHeader: no signed-in user", { forceRefresh });
+      return {};
     }
-    // Wait for auth state to restore (max 5 seconds)
-    const timeout = setTimeout(() => resolve({}), 5000);
-    const unsubscribe = auth.onAuthStateChanged((user) => {
-      clearTimeout(timeout);
-      unsubscribe();
-      if (!user) {
-        resolve({});
-        return;
-      }
-      user
-        .getIdToken()
-        .then((token) =>
-          resolve({
-            Authorization: `Bearer ${token}`,
-          })
-        )
-        .catch(() => resolve({}));
+    const token = await user.getIdToken(forceRefresh);
+    console.log("[firebase] getFirebaseAuthHeader: token ready", {
+      uid: user.uid,
+      forceRefresh,
+      tokenLength: token.length,
+      projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID || null,
     });
-  });
+    return { Authorization: `Bearer ${token}` };
+  } catch (err) {
+    console.error("[firebase] getFirebaseAuthHeader failed:", err?.message || err);
+    return {};
+  }
 }

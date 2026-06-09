@@ -59,6 +59,76 @@ export const agentTraceHooks = {
 
 const CLOSET_SCAN_MAX_TOKENS = 2000;
 
+function parseChatError(status, errText) {
+  let code = "";
+  let message = errText || `Request failed (${status})`;
+  try {
+    const parsed = JSON.parse(errText);
+    code = parsed.code || "";
+    if (parsed.error) message = parsed.error;
+  } catch {
+    // keep raw text
+  }
+  if (status === 401) {
+    if (code === "missing_token") {
+      return "Please sign in to use the planner.";
+    }
+    if (code === "invalid_token") {
+      return "Your session could not be verified. Sign out, sign back in, and try again.";
+    }
+    return "Authentication failed. Please sign in again.";
+  }
+  if (status === 500 && code === "admin_config") {
+    return "AI service is not configured on the server. Contact support.";
+  }
+  return message;
+}
+
+async function postChat(body, forceRefresh = false) {
+  const authHeader = await getFirebaseAuthHeader(forceRefresh);
+  const hasAuth = Boolean(authHeader.Authorization);
+
+  console.log("[postChat] request", {
+    url: ANTHROPIC_URL,
+    model: body?.model || null,
+    forceRefresh,
+    hasAuth,
+  });
+
+  if (!hasAuth) {
+    console.error("[postChat] blocked: no auth token");
+    throw new Error("Please sign in to use the planner.");
+  }
+
+  const res = await fetch(ANTHROPIC_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "anthropic-version": "2023-06-01",
+      ...authHeader,
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (res.status === 401 && !forceRefresh) {
+    console.warn("[postChat] 401 — retrying with refreshed token");
+    return postChat(body, true);
+  }
+
+  if (!res.ok) {
+    const errText = await res.text();
+    console.error("[postChat] failed", {
+      status: res.status,
+      forceRefresh,
+      body: errText,
+    });
+    throw new Error(parseChatError(res.status, errText));
+  }
+
+  console.log("[postChat] success", { status: res.status, model: body?.model || null });
+  return res.json();
+}
+
 /**
  * Vision call via `/api/chat` (Anthropic). Uses JPEG base64 — same transport as `callTextCompletion` anthropic branch.
  */
@@ -83,21 +153,7 @@ export async function callClosetPhotoVision(base64Jpeg, userPromptText) {
       },
     ],
   };
-  const authHeader = await getFirebaseAuthHeader();
-  const res = await fetch(ANTHROPIC_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "anthropic-version": "2023-06-01",
-      ...authHeader,
-    },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) {
-    const errText = await res.text();
-    throw new Error(errText || `Anthropic error ${res.status}`);
-  }
-  const data = await res.json();
+  const data = await postChat(body);
   const text = Array.isArray(data?.content)
     ? data.content.filter((c) => c.type === "text").map((c) => c.text).join("")
     : data?.content?.[0]?.text;
@@ -180,21 +236,7 @@ export async function callTextCompletion(system, user, explicitTaskLabel) {
       system,
       messages: [{ role: "user", content: user }],
     };
-    const authHeader = await getFirebaseAuthHeader();
-    const res = await fetch(ANTHROPIC_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "anthropic-version": "2023-06-01",
-        ...authHeader,
-      },
-      body: JSON.stringify(body),
-    });
-    if (!res.ok) {
-      const errText = await res.text();
-      throw new Error(errText || `Anthropic error ${res.status}`);
-    }
-    const data = await res.json();
+    const data = await postChat(body);
     const text = Array.isArray(data?.content)
       ? data.content.filter((c) => c.type === "text").map((c) => c.text).join("")
       : data?.content?.[0]?.text;
@@ -284,28 +326,12 @@ Names should be specific: "Navy Slim Chinos" not just "Chinos". Include color in
 
   const user = `Generate ${batchSize} wardrobe items for a ${gender} person with ${styleList} style who prefers ${colorList} colors. Items ${offset + 1}-${offset + batchSize} of 50.`;
 
-  const authHeader = await getFirebaseAuthHeader();
-  const res = await fetch(ANTHROPIC_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "anthropic-version": "2023-06-01",
-      ...authHeader,
-    },
-    body: JSON.stringify({
-      model: CLAUDE_MODEL,
-      max_tokens: 4000,
-      system,
-      messages: [{ role: "user", content: user }],
-    }),
+  const data = await postChat({
+    model: CLAUDE_MODEL,
+    max_tokens: 4000,
+    system,
+    messages: [{ role: "user", content: user }],
   });
-
-  if (!res.ok) {
-    const errText = await res.text();
-    throw new Error(errText || `Anthropic error ${res.status}`);
-  }
-
-  const data = await res.json();
   const text = Array.isArray(data?.content)
     ? data.content.filter((c) => c.type === "text").map((c) => c.text).join("")
     : data?.content?.[0]?.text || "[]";

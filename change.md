@@ -1438,3 +1438,52 @@ Loose partial matching in OutfitConfirmScreen could resolve multiple outfit line
 Confirming an outfit only marks each matched wardrobe item dirty once; unresolved outfit lines remain placeholders without `updateItem` calls.
 
 ---
+
+### [Date: 2026-05-28] - /api/chat 401 diagnostics and auth reliability
+
+**Background:**
+Production `/api/chat` returns 401 when requests lack a Firebase ID token or when Vercel Admin env vars fail token verification; client auth could race before `authStateReady`.
+
+**Changed:**
+
+- `api/chat.js` (distinct error codes: `missing_token`, `invalid_token`, `admin_config`)
+- `src/firebase.js` (`authStateReady` + `getIdToken`)
+- `src/services/aiService.js` (`postChat` guard when unsigned)
+
+**Impact:**
+Unsigned users see a clear sign-in message instead of a generic 401. Vercel logs distinguish invalid tokens from missing Firebase Admin configuration.
+
+---
+
+### [Date: 2026-05-28] - Planner /api/chat 401 client retry and error messages
+
+**Background:**
+PlannerScreen 401s from `/api/chat` showed only in the network tab; production logs stayed quiet and errors were raw JSON.
+
+**Changed:**
+
+- `src/firebase.js` (`getIdToken(forceRefresh)`)
+- `src/services/aiService.js` (401 token refresh retry, `parseChatError` user messages)
+
+**Impact:**
+Planner shows readable auth errors in the UI. Stale tokens retry once with a forced refresh before surfacing failure.
+
+---
+
+### [Date: 2026-06-09] - Structured /api/chat auth logging for production debugging
+
+**Background:**
+Planner `/api/chat` 401s were hard to diagnose in Vercel because production logs lacked structured auth failure details.
+
+**Changed:**
+
+- `api/chat.js` (JSON logs: `request`, `auth_ok`, `auth_missing_token`, `auth_invalid_token`, `admin_config_missing`, `anthropic_response`)
+- `server.js` (matching local dev auth logs)
+- `src/firebase.js` (client token readiness logs)
+- `src/services/aiService.js` (postChat request/retry/failure logs)
+- `src/screens/PlannerScreen.js` (planOutfit error log)
+
+**Impact:**
+Vercel logs show request ID, missing env var names, token length, Firebase UID on success, and verifyIdToken error messages. Browser console shows `[postChat]` and `[firebase]` traces. No tokens or secrets are logged.
+
+---
